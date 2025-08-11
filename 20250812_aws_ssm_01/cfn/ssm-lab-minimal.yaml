@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Minimal SSM lab - VPC + public subnet + AL2023 EC2 with SSM role (no inbound rules)
+
+Parameters:
+  Project:
+    Type: String
+    Default: atlas
+    Description: Short project prefix used in resource names/tags (e.g., atlas)
+
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.0.1.0/24
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+
+  AmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - { Key: Name,    Value: !Sub '${Project}-vpc' }
+        - { Key: Project, Value: !Ref Project }
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - { Key: Name,    Value: !Sub '${Project}-igw' }
+        - { Key: Project, Value: !Ref Project }
+
+  VPCGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetCidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - { Key: Name,    Value: !Sub '${Project}-public-a' }
+        - { Key: Project, Value: !Ref Project }
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - { Key: Name,    Value: !Sub '${Project}-rt-public' }
+        - { Key: Project, Value: !Ref Project }
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRTA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  InstanceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${Project} SG (egress only)'
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - { Key: Name,    Value: !Sub '${Project}-sg' }
+        - { Key: Project, Value: !Ref Project }
+
+  SsmInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - { Key: Project, Value: !Ref Project }
+
+  SsmInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref SsmInstanceRole]
+
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref SsmInstanceProfile
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          GroupSet: [!Ref InstanceSG]
+          SubnetId: !Ref PublicSubnet
+      Tags:
+        - { Key: Name,    Value: !Sub '${Project}-ec2' }
+        - { Key: Project, Value: !Ref Project }
+
+Outputs:
+  Project:
+    Value: !Ref Project
+  InstanceId:
+    Value: !Ref EC2
+  SubnetId:
+    Value: !Ref PublicSubnet
+  VpcId:
+    Value: !Ref VPC
