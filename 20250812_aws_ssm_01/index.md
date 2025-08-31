@@ -7,7 +7,7 @@
 - [01 · CloudFormation 部署最小实验环境](./01_cfn_deploy.md)
 - [02 · Session Manager 免密登录 EC2（浏览器 Shell）](./02_ssm_session.md)
 - [03 · Run Command 批量执行脚本（示例：安装 htop）](./03_run_command.md)
-- [（🙏未上传）04 · Parameter Store（创建/读取/在脚本中使用）](./04_parameter_store.md)
+- [04 · Parameter Store（创建/读取/在脚本中使用）](./04_parameter_store.md)
 - [（🙏未上传）05 · 会话日志落地（CloudWatch Logs / S3）](./05_session_logging.md)
 
 ## CloudFormation 基础设施部署模板

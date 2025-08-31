@@ -4,7 +4,6 @@
 > **前置**：已完成 01、02；目标实例为“受管实例（Managed instance）”。  
 > **系统**：Amazon Linux 2023（`dnf`）。  
 
----
 ## 你将完成
 
 1. 会话管理器打开浏览器 Shell，**执行前检查**（未安装）
@@ -12,7 +11,6 @@
 3. 会话管理器返回 Shell，**执行后验证**（路径与版本）
 4. 理解 **fleet 一致化** 的威力；未来我们也会配置管理 **on-prem** 服务器
 
----
 ## Step 1 · 执行前检查（在实例里手动敲命令）
 
 参考 **[02 · 使用 Session Manager 免密登录 EC2（浏览器 Shell）](./02_ssm_session.md)**  进入会话管理页面。  
@@ -26,7 +24,6 @@ rpm -q htop || echo "rpm: htop not installed"
 
 ![浏览器 Shell：执行前检查](./img/03_run_command/02_precheck_shell.png)
 
----
 ## Step 2 · 通过“运行命令”远程安装（不直接操作实例）
 
 **操作**：Systems Manager → **运行命令** → **运行命令**  
@@ -59,7 +56,6 @@ sudo dnf -y install htop
 ![安装输出结果](./img/03_run_command/08_output_install_2.png)
 ![安装输出结果](./img/03_run_command/08_output_install_3.png)
 
----
 ## Step 3 · 执行后验证（回到会话里手动敲命令）
 在 Shell 中输入：
 ```bash
@@ -73,7 +69,6 @@ htop --version
 
 ![浏览器 Shell：执行后验证](./img/03_run_command/09_postcheck_shell.png)
 
----
 ## 为什么这很强大？
 
 * **无需登录**：安装动作通过 **Run Command** 下发；你只用会话做**前后验证**，更安全。
@@ -81,7 +76,6 @@ htop --version
 * **可审计**：结合后续“会话/命令日志落地（CloudWatch/S3）”，执行与结果**可追溯**。
 * **不止云上**：在后续课程我们会演示如何把 **on-prem/自建服务器** 以托管实例注册到 SSM，用同样方式管理。
 
----
 ## 常见问题与排查
 
 * **AccessDenied / Unauthorized**：实例角色需 **AmazonSSMManagedInstanceCore**；控制台用户也需相应权限。
@@ -93,5 +87,4 @@ htop --version
   ```
 * **无输出**：命令仍在执行；刷新命令详情；或检查是否把输出发往 CloudWatch/S3（见第 05 课）。
 
----
 **下一步**：继续 **[（🙏未上传）04 · Parameter Store（创建/读取/在脚本中使用））](./04_parameter_store.md)**  ，把配置项/密钥集中管理，并在 Run Command 中安全读取；再到 **[（🙏未上传）05 · 会话/命令日志落地](./05_session_logging.md)**   做合规与审计。
