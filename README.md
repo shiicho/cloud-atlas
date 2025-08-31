@@ -29,11 +29,12 @@ A mapped guide to **AWS & Infra** — reproducible labs by **shiicho**.
 
 ## 当前课程 / Current Lessons
 
-- **20250812_aws_ssm_01 – AWS Systems Manager 入门（GUI）**
+- **[20250812_aws_ssm_01 – AWS Systems Manager 入门（GUI）](./20250812_aws_ssm_01/README.md)**
   - [01 · CloudFormation 部署最小 SSM 实验环境](./20250812_aws_ssm_01/01_cfn_deploy.md)
   - [02 · Session Manager 免密登录 EC2（浏览器 Shell）](./20250812_aws_ssm_01/02_ssm_session.md)
   - [03 · Run Command 批量执行脚本（前后对比：安装 htop）](./20250812_aws_ssm_01/03_run_command.md)
-  - 更多小节将陆续补充（Parameter Store、会话/命令日志落地、纯私网 VPC Endpoint、托管 on-prem 等）
+  - [04 · Parameter Store 参数存储（写 MOTD 示例）](./20250812_aws_ssm_01/04_parameter_store.md)
+  - 更多小节将陆续补充（会话/命令日志落地、纯私网 VPC Endpoint、托管 on-prem 等）
 
 ## 前置条件 / Prerequisites
 - 可用的 **AWS 账号**（建议区域 `ap-northeast-1` 东京）  
