@@ -23,6 +23,17 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
 
+  LogGroupName:
+    Type: String
+    Default: /aws/ssm/session
+    Description: CloudWatch Logs LogGroup for Session Manager streaming logs.
+
+  LogRetentionInDays:
+    Type: Number
+    Default: 30
+    AllowedValues: [1,3,5,7,14,30,60,90,120,150,180,365,400,545,731,1096,1827,2192,2557,2922,3288,3653]
+    Description: Retention of the LogGroup in days.
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -101,6 +112,26 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      # ---- Inline policy that lets the instance stream SSM session logs to CW Logs ----
+      Policies:
+        - PolicyName: AllowSsmSessionLogsToCloudWatch
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Describe permissions (read-only) – CW Logs does not fully support resource-level
+              - Effect: Allow
+                Action:
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: "*"
+              # Create log stream + put events to the specific log group
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${LogGroupName}:log-stream:*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${LogGroupName}
       Tags:
         - { Key: Project, Value: !Ref Project }
 
@@ -124,6 +155,12 @@ Resources:
         - { Key: Name, Value: !Sub '${Project}-ec2' }
         - { Key: Project, Value: !Ref Project }
 
+  SessionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroupName
+      RetentionInDays: !Ref LogRetentionInDays
+
 Outputs:
   Project:
     Value: !Ref Project
@@ -133,3 +170,6 @@ Outputs:
     Value: !Ref PublicSubnet
   VpcId:
     Value: !Ref VPC
+  LogGroupName:
+    Value: !Ref SessionLogGroup
+    Description: CloudWatch Logs LogGroup for SSM session streaming.
