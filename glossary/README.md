@@ -11,5 +11,9 @@
 ### AWS 相关
 - [SSM 会话为什么不自动显示 MOTD？](./aws/motd-ssm-autoprint.md)
 
+### 网络概念
+- [轮询与推送（Polling vs Pushing）](./networking/polling-pushing.md) — 理解监控系统的数据获取模式
+- [NAT 与穿透（NAT & Traversal）](./networking/nat-traversal.md) — 为什么某些服务无法从外部访问
+
 ---
 [返回首页](../)
