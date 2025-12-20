@@ -48,7 +48,7 @@
 
 **① 下载 CFN 模板**
 
-从 GitHub 下载模板文件：[cfn/control-node.yaml](https://raw.githubusercontent.com/shiicho/cloud-atlas/main/content/middleware/ansible/01-installation/cfn/control-node.yaml)
+从 GitHub 下载模板文件：[cfn/control-node.yaml](https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/ansible/01-installation/cfn/control-node.yaml)
 
 或在本仓库：`01-installation/cfn/control-node.yaml`
 
