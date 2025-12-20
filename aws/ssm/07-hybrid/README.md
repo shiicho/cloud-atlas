@@ -1,7 +1,7 @@
 # 07 · Hybrid 托管 On-Prem / Docker 主机
 
-> **目标**：把自管主机（on-prem 或 Docker 容器）注册为托管节点，纳入 SSM 统一管理。
-> **前置**：已完成 [01 · CloudFormation 部署](../01-cfn-deploy/)。
+> **目标**：把自管主机（on-prem 或 Docker 容器）注册为托管节点，纳入 SSM 统一管理。  
+> **前置**：已完成 [01 · CloudFormation 部署](../01-cfn-deploy/)。  
 > **状态**：*Placeholder - 内容待补充*
 
 ## 你将完成

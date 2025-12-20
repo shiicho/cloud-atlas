@@ -1,8 +1,8 @@
 # 01 · 通过控制台部署最小 SSM 实验环境（VPC + EC2 + SSM）
 
-> **目标**：用 CloudFormation 控制台一键部署可被 SSM 管理的 EC2（免密钥对、无入站端口）。
-> **模板路径**：`cfn/ssm-lab-minimal.yaml`（参数 `Project` 默认值：`atlas`）
-> **区域**：建议 `ap-northeast-1`（东京）
+> **目标**：用 CloudFormation 控制台一键部署可被 SSM 管理的 EC2（免密钥对、无入站端口）。  
+> **模板路径**：`cfn/ssm-lab-minimal.yaml`（参数 `Project` 默认值：`atlas`）  
+> **区域**：建议 `ap-northeast-1`（东京）  
 > **费用**：t3.micro + 基础网络，成本很低；**完成后记得删除堆栈（参考 Step 8）**
 
 ## 将完成的内容

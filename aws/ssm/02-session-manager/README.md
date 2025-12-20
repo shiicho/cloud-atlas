@@ -1,7 +1,7 @@
 # 02 · 使用 Session Manager 免密登录 EC2（浏览器 Shell）
 
-> **目标**：不需要密钥对、不开入站端口，直接在浏览器打开 EC2 的交互式 Shell。
-> **前置**：已完成 [01 · CloudFormation 部署](../01-cfn-deploy/) 并等待实例启动 1–3 分钟（SSM Agent 会自动注册）。
+> **目标**：不需要密钥对、不开入站端口，直接在浏览器打开 EC2 的交互式 Shell。  
+> **前置**：已完成 [01 · CloudFormation 部署](../01-cfn-deploy/) 并等待实例启动 1–3 分钟（SSM Agent 会自动注册）。  
 > **区域**：建议 `ap-northeast-1`（东京）。
 
 ## 你将完成

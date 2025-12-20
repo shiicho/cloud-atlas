@@ -1,7 +1,7 @@
 # 05 · Session logging 会话/命令日志落地（CloudWatch）
 
-> **目标**：把 **会话管理器** 的交互会话内容（输入/输出）持续记录到 **CloudWatch Logs**，形成审计闭环。
-> **前置**：已完成 [01](../01-cfn-deploy/)/[02](../02-session-manager/)/[03](../03-run-command/)（最小环境 + 会话管理器 + 运行命令）；实例为受管实例（Managed instance）。
+> **目标**：把 **会话管理器** 的交互会话内容（输入/输出）持续记录到 **CloudWatch Logs**，形成审计闭环。  
+> **前置**：已完成 [01](../01-cfn-deploy/)/[02](../02-session-manager/)/[03](../03-run-command/)（最小环境 + 会话管理器 + 运行命令）；实例为受管实例（Managed instance）。  
 > **系统**：Amazon Linux 2023（但本章与 OS 关系不大）。
 
 ## 你将完成 / What you'll do

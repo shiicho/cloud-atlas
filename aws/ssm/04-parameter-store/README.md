@@ -1,7 +1,7 @@
 # 04 · Parameter Store 参数存储（写 MOTD 示例）
 
-> **目标**: 用 **Parameter Store** 集中保存配置/密钥；通过 **Run Command** 在 EC2 上读取并应用。
-> **前置**: 已完成 [01](../01-cfn-deploy/)、[02](../02-session-manager/)；实例为受管实例（Managed instance）。
+> **目标**: 用 **Parameter Store** 集中保存配置/密钥；通过 **Run Command** 在 EC2 上读取并应用。  
+> **前置**: 已完成 [01](../01-cfn-deploy/)、[02](../02-session-manager/)；实例为受管实例（Managed instance）。  
 > **系统**: Amazon Linux 2023（`dnf`）。
 
 ## 你将完成
