@@ -1,13 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
-  Ansible Course - Lesson 03 Managed Nodes
-  2 nodes (webserver + dbserver) with auto SSH configuration
+  Ansible Course - Lesson 09 Managed Nodes
+  2 nodes (webserver + dbserver) with SSH key from parameter
 
 Parameters:
   InstanceType:
     Type: String
     Default: t3.micro
     AllowedValues: [t3.micro, t3.small]
+
+  PublicKey:
+    Type: String
+    Description: SSH public key for ansible user (from ~/.ssh/id_ed25519.pub)
 
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
@@ -27,15 +31,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      Policies:
-        - PolicyName: GetSSHKey
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ssm:GetParameter
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*
 
   ManagedNodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -86,12 +81,8 @@ Resources:
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
-          for i in {1..30}; do
-            PUBLIC_KEY=$(aws ssm get-parameter --name "/ansible-course/control-node-pubkey" --query 'Parameter.Value' --output text --region ${AWS::Region} 2>/dev/null) && break
-            sleep 10
-          done
           mkdir -p /home/ansible/.ssh
-          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          echo "${PublicKey}" > /home/ansible/.ssh/authorized_keys
           chmod 700 /home/ansible/.ssh
           chmod 600 /home/ansible/.ssh/authorized_keys
           chown -R ansible:ansible /home/ansible/.ssh
@@ -119,12 +110,8 @@ Resources:
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
-          for i in {1..30}; do
-            PUBLIC_KEY=$(aws ssm get-parameter --name "/ansible-course/control-node-pubkey" --query 'Parameter.Value' --output text --region ${AWS::Region} 2>/dev/null) && break
-            sleep 10
-          done
           mkdir -p /home/ansible/.ssh
-          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          echo "${PublicKey}" > /home/ansible/.ssh/authorized_keys
           chmod 700 /home/ansible/.ssh
           chmod 600 /home/ansible/.ssh/authorized_keys
           chown -R ansible:ansible /home/ansible/.ssh

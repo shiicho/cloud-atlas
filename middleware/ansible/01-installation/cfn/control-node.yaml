@@ -143,12 +143,6 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
-                  - ssm:PutParameter
-                  - ssm:GetParameter
-                  - ssm:DeleteParameter
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*
-              - Effect: Allow
-                Action:
                   - iam:CreateRole
                   - iam:DeleteRole
                   - iam:PutRolePolicy
@@ -163,8 +157,8 @@ Resources:
                   - iam:GetRole
                   - iam:GetInstanceProfile
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/ansible-managed-*
-                  - !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/ansible-managed-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/ansible-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/ansible-*
       Tags:
         - Key: Name
           Value: ansible-control-role
@@ -203,15 +197,10 @@ Resources:
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
 
-          sudo -u ansible ssh-keygen -t ed25519 -f /home/ansible/.ssh/id_ed25519 -N ""
-
-          PUBLIC_KEY=$(cat /home/ansible/.ssh/id_ed25519.pub)
-          aws ssm put-parameter \
-            --name "/ansible-course/control-node-pubkey" \
-            --value "$PUBLIC_KEY" \
-            --type String \
-            --overwrite \
-            --region ${AWS::Region}
+          # SSH key generation is done manually in the lesson
+          mkdir -p /home/ansible/.ssh
+          chmod 700 /home/ansible/.ssh
+          chown -R ansible:ansible /home/ansible/.ssh
 
           echo "Control Node ready" > /home/ansible/setup-complete.txt
 
