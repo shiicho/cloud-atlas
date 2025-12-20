@@ -1,0 +1,326 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Zabbix Monitoring Lab Environment
+  Creates VPC + 2 EC2 instances: Zabbix Server + Monitored Host
+  Connect via Session Manager (no SSH key required)
+
+  WARNING: AllowedCIDR defaults to 0.0.0.0/0 (open to all)
+  For security, restrict to your IP (e.g., 203.0.113.50/32)
+  Delete stack after lab to avoid charges
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: zabbix-lab
+    Description: Environment name prefix for resources
+
+  AllowedCIDR:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR block allowed to access Zabbix Web UI (restrict to your IP for security)
+
+  ZabbixServerInstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.small
+      - t3.medium
+    Description: Zabbix Server instance type (t3.small is sufficient for lab)
+
+  MonitoredHostInstanceType:
+    Type: String
+    Default: t3.micro
+    Description: Monitored host instance type
+
+Resources:
+  # =============================================================================
+  # VPC and Networking
+  # =============================================================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-public-subnet
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # =============================================================================
+  # IAM Role for SSM Access
+  # =============================================================================
+  SSMInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${EnvironmentName}-ssm-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-ssm-role
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${EnvironmentName}-ssm-profile
+      Roles:
+        - !Ref SSMInstanceRole
+
+  # =============================================================================
+  # Security Groups
+  # =============================================================================
+  ZabbixServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Zabbix Server
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        # Web UI Access (HTTP)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCIDR
+          Description: Zabbix Web UI (HTTP)
+        # Active Agent connections (from VPC internal)
+        - IpProtocol: tcp
+          FromPort: 10051
+          ToPort: 10051
+          CidrIp: 10.0.0.0/16
+          Description: Zabbix Trapper (Active Agent)
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-server-sg
+
+  MonitoredHostSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Monitored Host
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        # Zabbix Agent port (from server only)
+        - IpProtocol: tcp
+          FromPort: 10050
+          ToPort: 10050
+          SourceSecurityGroupId: !Ref ZabbixServerSG
+          Description: Zabbix Passive Agent polling
+        # SNMP (from server only)
+        - IpProtocol: udp
+          FromPort: 161
+          ToPort: 161
+          SourceSecurityGroupId: !Ref ZabbixServerSG
+          Description: SNMP polling from Zabbix Server
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-agent-sg
+
+  # =============================================================================
+  # EC2 Instances
+  # =============================================================================
+  ZabbixServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref ZabbixServerInstanceType
+      # Use SSM Parameter for always-latest Amazon Linux 2023 AMI
+      ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}'
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref ZabbixServerSG
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set timezone to JST
+          timedatectl set-timezone Asia/Tokyo
+
+          # Update system
+          dnf update -y
+
+          # Install Zabbix 7.0 LTS repository (Amazon Linux 2023 version)
+          rpm -Uvh https://repo.zabbix.com/zabbix/7.0/amazonlinux/2023/x86_64/zabbix-release-latest-7.0.amzn2023.noarch.rpm
+          dnf clean all
+
+          # Install MariaDB
+          dnf install -y mariadb105-server
+          systemctl start mariadb
+          systemctl enable mariadb
+
+          # Install Zabbix Server, Web UI, Agent (Apache version for AL2023 compatibility)
+          dnf install -y zabbix-server-mysql zabbix-web-mysql zabbix-apache-conf zabbix-sql-scripts zabbix-selinux-policy zabbix-agent2
+
+          # Create marker file for lesson verification
+          echo "Zabbix packages installed. DB setup required." > /root/zabbix-install-status.txt
+
+          # Note: Database initialization and web setup are done manually in lessons
+
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-zabbix-server
+        - Key: Role
+          Value: zabbix-server
+        - Key: Course
+          Value: middleware-zabbix
+
+  MonitoredHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref MonitoredHostInstanceType
+      # Use SSM Parameter for always-latest Amazon Linux 2023 AMI
+      ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}'
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref MonitoredHostSG
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 8
+            VolumeType: gp3
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set timezone to JST
+          timedatectl set-timezone Asia/Tokyo
+
+          # Update system
+          dnf update -y
+
+          # Install Zabbix 7.0 LTS repository (Amazon Linux 2023 version)
+          rpm -Uvh https://repo.zabbix.com/zabbix/7.0/amazonlinux/2023/x86_64/zabbix-release-latest-7.0.amzn2023.noarch.rpm
+          dnf clean all
+
+          # Install Zabbix Agent 2 (Active mode recommended)
+          dnf install -y zabbix-agent2 zabbix-agent2-plugin-*
+
+          # Install tools for demos
+          dnf install -y httpd net-snmp net-snmp-utils
+
+          # Start httpd for HTTP monitoring demo
+          systemctl start httpd
+          systemctl enable httpd
+          echo "<h1>Zabbix Monitored Host</h1><p>HTTP service is running.</p>" > /var/www/html/index.html
+
+          # Configure SNMP for demo (v2c community: public)
+          cat > /etc/snmp/snmpd.conf << 'EOF'
+          # Zabbix SNMP Demo Configuration
+          rocommunity public
+          syslocation "Tokyo Lab"
+          syscontact "admin@example.com"
+          EOF
+          systemctl start snmpd
+          systemctl enable snmpd
+
+          # Create marker file
+          echo "Agent2 installed. Configuration required." > /root/zabbix-install-status.txt
+
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-monitored-host
+        - Key: Role
+          Value: monitored-host
+        - Key: Course
+          Value: middleware-zabbix
+
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VPC
+
+  ZabbixServerPublicIP:
+    Description: Zabbix Server Public IP
+    Value: !GetAtt ZabbixServer.PublicIp
+
+  ZabbixServerPrivateIP:
+    Description: Zabbix Server Private IP (for agent configuration)
+    Value: !GetAtt ZabbixServer.PrivateIp
+
+  ZabbixWebURL:
+    Description: Zabbix Web UI URL (available after lesson 01 setup)
+    Value: !Sub http://${ZabbixServer.PublicIp}/zabbix
+
+  MonitoredHostPrivateIP:
+    Description: Monitored Host Private IP (for host registration)
+    Value: !GetAtt MonitoredHost.PrivateIp
+
+  MonitoredHostInstanceId:
+    Description: Monitored Host Instance ID (for SSM connection)
+    Value: !Ref MonitoredHost
+
+  ZabbixServerInstanceId:
+    Description: Zabbix Server Instance ID (for SSM connection)
+    Value: !Ref ZabbixServer
+
+  CleanupCommand:
+    Description: Command to delete this stack and avoid charges
+    Value: !Sub aws cloudformation delete-stack --stack-name ${AWS::StackName}
+
+  SSMConnectZabbixServer:
+    Description: SSM Session Manager connect command for Zabbix Server
+    Value: !Sub aws ssm start-session --target ${ZabbixServer}
+
+  SSMConnectMonitoredHost:
+    Description: SSM Session Manager connect command for Monitored Host
+    Value: !Sub aws ssm start-session --target ${MonitoredHost}
