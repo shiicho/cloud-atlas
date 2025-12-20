@@ -1,77 +1,18 @@
----
-# 06-yaml-format/hosts.yaml
-# ==========================
-# YAML inventory format - equivalent to INI but more structured.
-#
-# Structure:
-#   all:                    ← Root group (implicit)
-#     children:             ← Child groups
-#       groupname:
-#         hosts:            ← Hosts in this group
-#           hostname:
-#         vars:             ← Group variables
-#           key: value
-#
-# Benefits:
-#   - Better for complex hierarchies
-#   - Native data types (lists, dicts, booleans)
-#   - Easier to version control and diff
-#   - Required for advanced inventory structures
-#
-# Usage:
-#   ansible -i 06-yaml-format/hosts.yaml all --list-hosts
-#   ansible -i 06-yaml-format/hosts.yaml production -m debug -a "var=env"
-#
-# Comparison with INI:
-#   INI:  [webservers:vars]  →  YAML: webservers: vars:
-#   INI:  [production:children]  →  YAML: production: children:
-
 all:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   children:
     webservers:
       hosts:
         al2023-1.ans.local:
       vars:
         http_port: 80
-        document_root: /var/www/html
-
     dbservers:
       hosts:
         al2023-2.ans.local:
       vars:
         db_port: 3306
-
     production:
       children:
         webservers:
         dbservers:
-      vars:
-        env: prod
-
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-
-# Advanced YAML features (for reference):
-#
-# # Host-specific variables:
-# webservers:
-#   hosts:
-#     al2023-1.ans.local:
-#       nginx_workers: 4
-#       max_connections: 1024
-#
-# # Lists:
-# all:
-#   vars:
-#     ntp_servers:
-#       - ntp1.example.com
-#       - ntp2.example.com
-#
-# # Dictionaries:
-# all:
-#   vars:
-#     ssl_config:
-#       enabled: true
-#       port: 443
-#       cert_path: /etc/ssl/certs
-...

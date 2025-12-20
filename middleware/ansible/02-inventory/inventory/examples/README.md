@@ -89,7 +89,7 @@ ansible -i 04-group-vars all -m debug -a "var=ansible_python_interpreter"
 **测试命令**:
 ```bash
 ansible -i 05-children-groups production --list-hosts
-ansible -i 05-children-groups all -m debug -a "var=env"
+ansible-inventory -i 05-children-groups --graph
 ```
 
 **层级示例**:
@@ -113,7 +113,7 @@ production
 **测试命令**:
 ```bash
 ansible -i 06-yaml-format/hosts.yaml all --list-hosts
-ansible -i 06-yaml-format/hosts.yaml production -m debug -a "var=env"
+ansible -i 06-yaml-format/hosts.yaml webservers -m debug -a "var=http_port"
 ```
 
 **INI vs YAML 对比**:
@@ -136,7 +136,7 @@ ansible -i 06-yaml-format/hosts.yaml production -m debug -a "var=env"
 **测试命令**:
 ```bash
 ansible -i 07-control-local control -m ping
-ansible -i 07-control-local managed --list-hosts
+ansible -i 07-control-local webservers --list-hosts
 ansible -i 07-control-local all --list-hosts
 ```
 

@@ -1,46 +1,13 @@
-# 05-children-groups
-# ===================
-# Hierarchical grouping using :children.
-# Create parent groups that contain other groups.
-#
-# Syntax:
-#   [parent_group:children]
-#   child_group_1
-#   child_group_2
-#
-# Benefits:
-#   - Organize by environment (production, staging, dev)
-#   - Apply settings to multiple groups at once
-#   - Reflect real infrastructure hierarchy
-#   - Target all production servers: ansible -i 05-children-groups production -m ping
-#
-# Usage:
-#   ansible -i 05-children-groups production --list-hosts
-#   ansible -i 05-children-groups all -m debug -a "var=env"
-
+# 05 - Children Groups: Hierarchical grouping
 [webservers]
 al2023-1.ans.local
 
 [dbservers]
 al2023-2.ans.local
 
-# Parent group containing webservers and dbservers
 [production:children]
 webservers
 dbservers
 
-# Variables for all production hosts
-[production:vars]
-env=prod
-
-# Example of additional hierarchy:
-# [staging:children]
-# staging_web
-# staging_db
-#
-# [staging:vars]
-# env=staging
-#
-# [all_environments:children]
-# production
-# staging
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

@@ -1,53 +1,12 @@
-# 07-control-local
-# =================
-# Including the control node in inventory with local connection.
-# Demonstrates ansible_connection=local for localhost operations.
-#
-# Key concepts:
-#   - ansible_connection=local  → Skip SSH, execute commands locally
-#   - Useful for control node self-configuration
-#   - Create logical separation: control vs managed nodes
-#
-# Benefits:
-#   - Manage the control node itself (install tools, configure git, etc.)
-#   - Test playbooks locally before running on remote hosts
-#   - Run local pre-flight checks before deployment
-#
-# Usage:
-#   ansible -i 07-control-local control -m ping
-#   ansible -i 07-control-local managed --list-hosts
-#   ansible -i 07-control-local all --list-hosts
-
-# Control node (localhost)
+# 07 - Control Local: Local connection for control node
 [control]
 control.ans.local ansible_connection=local
 
-# Managed nodes
 [webservers]
 al2023-1.ans.local
 
 [dbservers]
 al2023-2.ans.local
 
-# Group all managed nodes together
-[managed:children]
-webservers
-dbservers
-
-# Example playbook usage:
-# ---
-# - name: Configure control node
-#   hosts: control
-#   tasks:
-#     - name: Install local tools
-#       package:
-#         name: git
-#         state: present
-#
-# - name: Deploy to production
-#   hosts: managed
-#   tasks:
-#     - name: Update packages
-#       package:
-#         name: "*"
-#         state: latest
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

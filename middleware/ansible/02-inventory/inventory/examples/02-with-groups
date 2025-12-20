@@ -1,19 +1,9 @@
-# 02-with-groups
-# ===============
-# Introduction to functional grouping.
-# Hosts are organized by their role (webservers, dbservers).
-#
-# Benefits:
-#   - Target specific groups: ansible -i 02-with-groups webservers -m ping
-#   - Apply role-specific configurations
-#   - Easier to understand infrastructure layout
-#
-# Usage:
-#   ansible -i 02-with-groups webservers --list-hosts
-#   ansible -i 02-with-groups dbservers --list-hosts
-
+# 02 - With Groups: Functional grouping
 [webservers]
 al2023-1.ans.local
 
 [dbservers]
 al2023-2.ans.local
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

@@ -1,36 +1,15 @@
-# 04-group-vars
-# ==============
-# Introduction to variables in inventory.
-# Use :vars sections to define group-specific or global variables.
-#
-# Variable scope:
-#   - [groupname:vars]  → Applies to all hosts in that group
-#   - [all:vars]        → Applies to ALL hosts in the inventory
-#
-# Benefits:
-#   - Centralize configuration (ports, paths, settings)
-#   - Avoid hardcoding values in playbooks
-#   - Override defaults per group
-#
-# Usage:
-#   ansible -i 04-group-vars webservers -m debug -a "var=http_port"
-#   ansible -i 04-group-vars all -m debug -a "var=ansible_python_interpreter"
-
+# 04 - Group Variables: Variables per group
 [webservers]
 al2023-1.ans.local
 
 [dbservers]
 al2023-2.ans.local
 
-# Variables specific to webservers
 [webservers:vars]
 http_port=80
-document_root=/var/www/html
 
-# Variables specific to dbservers
 [dbservers:vars]
 db_port=3306
 
-# Variables that apply to ALL hosts
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

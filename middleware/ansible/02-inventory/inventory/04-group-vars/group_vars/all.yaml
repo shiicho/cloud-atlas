@@ -1,29 +1,5 @@
-# =============================================================================
-# group_vars/all.yaml - Variables for ALL hosts
-# =============================================================================
-#
-# These variables apply to every host in the inventory.
-# Lowest precedence (can be overridden by group or host vars).
-#
-# =============================================================================
-
 ---
-# Environment settings
-# 環境設定
-env: development
-region: ap-northeast-1
-
-# Common packages to install on all hosts
-# 全ホスト共通パッケージ
-common_packages:
-  - htop
-  - vim
-  - curl
-  - jq
-
-# Default user for SSH
-ansible_user: ansible
+# group_vars/all.yaml - Applied to all hosts
 ansible_python_interpreter: /usr/bin/python3
-
-# NTP server (Japan)
-ntp_server: ntp.nict.jp
+env: development
+admin_email: admin@example.com
