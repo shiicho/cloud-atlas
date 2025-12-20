@@ -1,25 +1,23 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   Ansible Course - Lesson 02 Managed Nodes
-  2 nodes (webserver + dbserver) with SSH key from parameter
+  2 nodes (webserver + dbserver) with DNS records
 
 Parameters:
   InstanceType:
     Type: String
     Default: t3.micro
     AllowedValues: [t3.micro, t3.small]
-    Description: Managed node instance type
 
   PublicKey:
     Type: String
-    Description: SSH public key for ansible user (from Control Node ~/.ssh/id_ed25519.pub)
+    Description: SSH public key for ansible user (from ~/.ssh/id_ed25519.pub)
 
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
 
 Resources:
-  # IAM Role for Managed Nodes (SSM only for Session Manager)
   ManagedNodeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -40,7 +38,6 @@ Resources:
       Roles:
         - !Ref ManagedNodeRole
 
-  # Security Group for Managed Nodes
   ManagedNodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -66,7 +63,7 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-sg
 
-  # Managed Node 1 (webserver)
+  # Node 1 - Amazon Linux 2023 (webserver)
   ManagedNode1:
     Type: AWS::EC2::Instance
     Properties:
@@ -78,30 +75,25 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node1-webserver
+          Value: al2023-1
         - Key: Role
           Value: webserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-
-          hostnamectl set-hostname node1-webserver
-          echo "node1-webserver" > /etc/hostname
-
+          hostnamectl set-hostname al2023-1
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
-
           mkdir -p /home/ansible/.ssh
           echo "${PublicKey}" > /home/ansible/.ssh/authorized_keys
           chmod 700 /home/ansible/.ssh
           chmod 600 /home/ansible/.ssh/authorized_keys
           chown -R ansible:ansible /home/ansible/.ssh
-
           dnf install -y python3
 
-  # Managed Node 2 (dbserver)
+  # Node 2 - Amazon Linux 2023 (dbserver)
   ManagedNode2:
     Type: AWS::EC2::Instance
     Properties:
@@ -113,34 +105,50 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node2-dbserver
+          Value: al2023-2
         - Key: Role
           Value: dbserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-
-          hostnamectl set-hostname node2-dbserver
-          echo "node2-dbserver" > /etc/hostname
-
+          hostnamectl set-hostname al2023-2
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
-
           mkdir -p /home/ansible/.ssh
           echo "${PublicKey}" > /home/ansible/.ssh/authorized_keys
           chmod 700 /home/ansible/.ssh
           chmod 600 /home/ansible/.ssh/authorized_keys
           chown -R ansible:ansible /home/ansible/.ssh
-
           dnf install -y python3
 
-Outputs:
-  Node1PrivateIp:
-    Description: Node 1 Private IP
-    Value: !GetAtt ManagedNode1.PrivateIp
+  # DNS Records
+  Node1Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: al2023-1.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt ManagedNode1.PrivateIp
 
-  Node2PrivateIp:
-    Description: Node 2 Private IP
-    Value: !GetAtt ManagedNode2.PrivateIp
+  Node2Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: al2023-2.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt ManagedNode2.PrivateIp
+
+Outputs:
+  Node1Dns:
+    Description: Node 1 DNS Name
+    Value: al2023-1.ans.local
+
+  Node2Dns:
+    Description: Node 2 DNS Name
+    Value: al2023-2.ans.local

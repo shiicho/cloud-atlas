@@ -73,7 +73,7 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node1-amazon-web
+          Value: al2023-1
         - Key: Role
           Value: webserver
         - Key: OS
@@ -82,7 +82,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname node1-amazon-web
+          hostnamectl set-hostname al2023-1
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -105,7 +105,7 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node2-amazon-db
+          Value: al2023-2
         - Key: Role
           Value: dbserver
         - Key: OS
@@ -114,7 +114,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname node2-amazon-db
+          hostnamectl set-hostname al2023-2
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -137,7 +137,7 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node3-ubuntu-app
+          Value: ubuntu-1
         - Key: Role
           Value: appserver
         - Key: OS
@@ -146,7 +146,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname node3-ubuntu-app
+          hostnamectl set-hostname ubuntu-1
           apt-get update
           apt-get install -y python3
           useradd -m -s /bin/bash ansible
@@ -158,15 +158,45 @@ Resources:
           chmod 600 /home/ansible/.ssh/authorized_keys
           chown -R ansible:ansible /home/ansible/.ssh
 
+  Node1Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: al2023-1.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt AmazonNode1.PrivateIp
+
+  Node2Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: al2023-2.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt AmazonNode2.PrivateIp
+
+  Node3Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: ubuntu-1.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt UbuntuNode.PrivateIp
+
 Outputs:
-  Node1PrivateIp:
-    Description: Amazon Linux Node 1 Private IP
-    Value: !GetAtt AmazonNode1.PrivateIp
+  Node1Dns:
+    Description: Amazon Linux Node 1 DNS Name
+    Value: al2023-1.ans.local
 
-  Node2PrivateIp:
-    Description: Amazon Linux Node 2 Private IP
-    Value: !GetAtt AmazonNode2.PrivateIp
+  Node2Dns:
+    Description: Amazon Linux Node 2 DNS Name
+    Value: al2023-2.ans.local
 
-  Node3PrivateIp:
-    Description: Ubuntu Node 3 Private IP
-    Value: !GetAtt UbuntuNode.PrivateIp
+  Node3Dns:
+    Description: Ubuntu Node DNS Name
+    Value: ubuntu-1.ans.local

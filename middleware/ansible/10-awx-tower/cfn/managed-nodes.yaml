@@ -81,14 +81,14 @@ Resources:
             VolumeType: gp3
       Tags:
         - Key: Name
-          Value: awx-server
+          Value: awx
         - Key: Role
           Value: awx
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname awx-server
+          hostnamectl set-hostname awx
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -134,11 +134,31 @@ Resources:
           chown -R ansible:ansible /home/ansible/.ssh
           dnf install -y python3
 
-Outputs:
-  AWXPrivateIp:
-    Description: AWX Server Private IP
-    Value: !GetAtt AWXNode.PrivateIp
+  AWXNodeDns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: awx.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt AWXNode.PrivateIp
 
-  TargetPrivateIp:
-    Description: Target Node Private IP
-    Value: !GetAtt TargetNode.PrivateIp
+  TargetNodeDns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: awx-target.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt TargetNode.PrivateIp
+
+Outputs:
+  AWXDns:
+    Description: AWX Server DNS Name
+    Value: awx.ans.local
+
+  TargetDns:
+    Description: Target Node DNS Name
+    Value: awx-target.ans.local

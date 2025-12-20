@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   Ansible Course - Lesson 06 Managed Nodes
-  2 nodes (webserver + dbserver) with SSH key from parameter
+  2 nodes (webserver + dbserver) with DNS records
 
 Parameters:
   InstanceType:
@@ -70,14 +70,14 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node1-webserver
+          Value: al2023-1
         - Key: Role
           Value: webserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname node1-webserver
+          hostnamectl set-hostname al2023-1
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -99,14 +99,14 @@ Resources:
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: node2-dbserver
+          Value: al2023-2
         - Key: Role
           Value: dbserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname node2-dbserver
+          hostnamectl set-hostname al2023-2
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -117,10 +117,31 @@ Resources:
           chown -R ansible:ansible /home/ansible/.ssh
           dnf install -y python3
 
+  Node1Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: al2023-1.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt ManagedNode1.PrivateIp
+
+  Node2Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: al2023-2.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt ManagedNode2.PrivateIp
+
 Outputs:
-  Node1PrivateIp:
-    Description: Node 1 Private IP
-    Value: !GetAtt ManagedNode1.PrivateIp
-  Node2PrivateIp:
-    Description: Node 2 Private IP
-    Value: !GetAtt ManagedNode2.PrivateIp
+  Node1Dns:
+    Description: Node 1 DNS Name
+    Value: al2023-1.ans.local
+
+  Node2Dns:
+    Description: Node 2 DNS Name
+    Value: al2023-2.ans.local

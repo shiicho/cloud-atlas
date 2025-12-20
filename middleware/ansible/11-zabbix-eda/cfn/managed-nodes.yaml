@@ -85,14 +85,14 @@ Resources:
             VolumeType: gp3
       Tags:
         - Key: Name
-          Value: zabbix-server
+          Value: zabbix
         - Key: Role
           Value: monitoring
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname zabbix-server
+          hostnamectl set-hostname zabbix
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -114,14 +114,14 @@ Resources:
       IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: target1-web
+          Value: target-1
         - Key: Role
           Value: webserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname target1-web
+          hostnamectl set-hostname target-1
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -144,14 +144,14 @@ Resources:
       IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: target2-app
+          Value: target-2
         - Key: Role
           Value: appserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname target2-app
+          hostnamectl set-hostname target-2
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -162,15 +162,45 @@ Resources:
           chown -R ansible:ansible /home/ansible/.ssh
           dnf install -y python3
 
+  ZabbixDns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: zabbix.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt ZabbixServer.PrivateIp
+
+  Target1Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: target-1.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt TargetNode1.PrivateIp
+
+  Target2Dns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: target-2.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt TargetNode2.PrivateIp
+
 Outputs:
-  ZabbixServerPrivateIp:
-    Description: Zabbix Server Private IP
-    Value: !GetAtt ZabbixServer.PrivateIp
+  ZabbixDns:
+    Description: Zabbix Server DNS Name
+    Value: zabbix.ans.local
 
-  Target1PrivateIp:
-    Description: Target 1 Private IP
-    Value: !GetAtt TargetNode1.PrivateIp
+  Target1Dns:
+    Description: Target 1 DNS Name
+    Value: target-1.ans.local
 
-  Target2PrivateIp:
-    Description: Target 2 Private IP
-    Value: !GetAtt TargetNode2.PrivateIp
+  Target2Dns:
+    Description: Target 2 DNS Name
+    Value: target-2.ans.local

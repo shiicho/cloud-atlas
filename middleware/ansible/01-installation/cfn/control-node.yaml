@@ -204,6 +204,28 @@ Resources:
 
           echo "Control Node ready" > /home/ansible/setup-complete.txt
 
+  # Private Hosted Zone for DNS-based inventory
+  PrivateHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: ans.local
+      VPCs:
+        - VPCId: !Ref VPC
+          VPCRegion: !Ref AWS::Region
+      HostedZoneConfig:
+        Comment: Ansible Course Private DNS
+
+  # Control Node DNS Record
+  ControlNodeDns:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref PrivateHostedZone
+      Name: control.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt ControlNode.PrivateIp
+
 Outputs:
   ControlNodeId:
     Description: Control Node Instance ID
@@ -228,6 +250,12 @@ Outputs:
     Value: !Ref ControlNodeSecurityGroup
     Export:
       Name: ansible-course-sg-id
+
+  HostedZoneId:
+    Description: Private Hosted Zone ID
+    Value: !Ref PrivateHostedZone
+    Export:
+      Name: ansible-course-hosted-zone-id
 
   SSMConnectCommand:
     Description: Connect via SSM
