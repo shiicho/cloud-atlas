@@ -1,0 +1,24 @@
+---
+# AWS EC2 Dynamic Inventory with SSM Connection
+plugin: amazon.aws.aws_ec2
+regions:
+  - ap-northeast-1
+
+filters:
+  instance-state-name: running
+  "tag:aws:cloudformation:stack-name": ansible-lesson-02a
+
+hostnames:
+  - tag:Name
+  - instance-id
+
+keyed_groups:
+  - key: tags.Role
+    prefix: role
+  - key: instance_type
+    prefix: type
+
+compose:
+  ansible_host: instance_id
+  ansible_connection: aws_ssm
+  ansible_aws_ssm_region: ap-northeast-1

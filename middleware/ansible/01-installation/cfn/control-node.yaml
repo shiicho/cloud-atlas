@@ -213,23 +213,6 @@ Resources:
             --overwrite \
             --region ${AWS::Region}
 
-          cat > /home/ansible/ansible.cfg << 'EOF'
-          [defaults]
-          inventory = ./inventory
-          remote_user = ansible
-          host_key_checking = False
-
-          [privilege_escalation]
-          become = True
-          become_method = sudo
-          become_user = root
-          become_ask_pass = False
-          EOF
-          chown ansible:ansible /home/ansible/ansible.cfg
-
-          mkdir -p /home/ansible/course
-          chown ansible:ansible /home/ansible/course
-
           echo "Control Node ready" > /home/ansible/setup-complete.txt
 
 Outputs:
