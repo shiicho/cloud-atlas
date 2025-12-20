@@ -1,0 +1,279 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - Zabbix + EDA Environment
+  Used by: Lesson 11 (Zabbix Integration & Event-Driven Ansible)
+  Purpose: Teaching monitoring integration and auto-remediation
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues: [t3.small, t3.medium]
+    Description: Zabbix server needs more resources
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  # IAM Role for Zabbix Nodes
+  ZabbixNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ansible-zabbix-node-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*'
+
+  ZabbixNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ZabbixNodeRole
+
+  # Security Group for Zabbix
+  ZabbixSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Zabbix Environment
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        # SSH from Control Node
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        # Zabbix Web UI
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        # Zabbix Server (agent communication)
+        - IpProtocol: tcp
+          FromPort: 10051
+          ToPort: 10051
+          CidrIp: 10.0.0.0/16
+        # Zabbix Agent
+        - IpProtocol: tcp
+          FromPort: 10050
+          ToPort: 10050
+          CidrIp: 10.0.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ansible-zabbix-sg
+
+  # Zabbix Server
+  ZabbixServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ZabbixSecurityGroup
+      IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: zabbix-server
+        - Key: Role
+          Value: monitoring
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname
+          hostnamectl set-hostname zabbix-server
+          echo "zabbix-server" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key from Control Node
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            sleep 10
+          done
+
+          # Setup SSH
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install dependencies
+          dnf install -y python3 python3-pip
+
+          echo "Zabbix Server ready - Install via Ansible playbook" > /home/ansible/setup-status.txt
+
+  # Target Node 1 (to be monitored)
+  TargetNode1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ZabbixSecurityGroup
+      IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: target1-web
+        - Key: Role
+          Value: webserver
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname
+          hostnamectl set-hostname target1-web
+          echo "target1-web" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            sleep 10
+          done
+
+          # Setup SSH
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          dnf install -y python3 httpd
+          systemctl enable httpd
+
+          echo "Target 1 (webserver) ready" > /home/ansible/setup-status.txt
+
+  # Target Node 2 (to be monitored)
+  TargetNode2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ZabbixSecurityGroup
+      IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: target2-app
+        - Key: Role
+          Value: appserver
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname
+          hostnamectl set-hostname target2-app
+          echo "target2-app" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            sleep 10
+          done
+
+          # Setup SSH
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          dnf install -y python3
+
+          echo "Target 2 (appserver) ready" > /home/ansible/setup-status.txt
+
+Outputs:
+  ZabbixServerInstanceId:
+    Description: Zabbix Server Instance ID
+    Value: !Ref ZabbixServer
+
+  Target1InstanceId:
+    Description: Target Node 1 Instance ID
+    Value: !Ref TargetNode1
+
+  Target2InstanceId:
+    Description: Target Node 2 Instance ID
+    Value: !Ref TargetNode2
+
+  ZabbixServerPrivateIp:
+    Description: Zabbix Server Private IP
+    Value: !GetAtt ZabbixServer.PrivateIp
+
+  Target1PrivateIp:
+    Description: Target 1 Private IP
+    Value: !GetAtt TargetNode1.PrivateIp
+
+  Target2PrivateIp:
+    Description: Target 2 Private IP
+    Value: !GetAtt TargetNode2.PrivateIp
+
+  ZabbixInfo:
+    Description: Zabbix environment info
+    Value: |
+      === Zabbix + EDA Environment ===
+
+      Zabbix Server: For monitoring (install via playbook)
+      Target 1: Web server to monitor
+      Target 2: App server to monitor
+
+      Teaching objectives:
+      - Install Zabbix via Ansible
+      - Configure Zabbix agents
+      - Create triggers
+      - Event-Driven Ansible auto-remediation

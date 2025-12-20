@@ -1,8 +1,8 @@
 # 09 · Vault 与机密管理（Vault & Secrets Management）
 
-> **目标**：掌握 Ansible Vault 加密和机密管理
-> **前置**：[08 · 错误处理](../08-error-handling/)
-> **时间**：30 分钟
+> **目标**：掌握 Ansible Vault 加密和机密管理  
+> **前置**：[08 · 错误处理](../08-error-handling/)  
+> **时间**：30 分钟  
 > **实战项目**：加密数据库密码
 
 ---
@@ -111,6 +111,11 @@ echo "my_vault_password" > ~/.vault_pass
 chmod 600 ~/.vault_pass
 ```
 
+> ⚠️ **安全警告**：
+> - 密码文件**绝对不能**提交到 Git
+> - 使用后应尽快删除（CI/CD 场景）
+> - 生产环境考虑使用密码管理器脚本（如 `pass`、`gopass`）
+
 ### 3.2 ansible.cfg 配置
 
 ```ini
@@ -149,13 +154,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create vault password file
-        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+        run: |
+          printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+          chmod 600 .vault_pass
 
       - name: Run Ansible
         run: |
           ansible-playbook -i inventory site.yaml \
             --vault-password-file .vault_pass
+
+      - name: Cleanup vault password
+        if: always()
+        run: rm -f .vault_pass
 ```
+
+> 💡 使用 `printf '%s'` 而非 `echo` 避免末尾换行符问题。`if: always()` 确保即使失败也会清理。
 
 ### 4.2 Jenkins
 
@@ -196,10 +209,25 @@ ansible-galaxy collection install amazon.aws
     db_secret: "{{ lookup('amazon.aws.aws_secret', 'myapp/database') }}"
 
   tasks:
-    - name: Display secret (debug only!)
-      ansible.builtin.debug:
-        msg: "Username: {{ (db_secret | from_json).username }}"
+    - name: Configure with secret
+      ansible.builtin.template:
+        src: db.conf.j2
+        dest: /etc/myapp/db.conf
+        mode: '0600'
+      vars:
+        db_user: "{{ (db_secret | from_json).username }}"
+        db_pass: "{{ (db_secret | from_json).password }}"
+      no_log: true   # 防止密码出现在日志中
 ```
+
+> ⚠️ **绝对禁止**：不要用 `debug` 模块打印密码！
+> ```yaml
+> # ❌ 永远不要这样做！
+> - debug:
+>     msg: "Password: {{ db_password }}"
+> ```
+>
+> 正确做法是使用 `no_log: true` 隐藏敏感任务输出。
 
 ### 5.3 动态获取密码
 
@@ -268,6 +296,41 @@ api_key: "{{ vault_api_key }}"
 2. 创建 Playbook 使用这些密码配置应用
 
 3. 配置 CI/CD 密码注入
+
+---
+
+## 动手前检查清单
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | Vault 文件可解密 | `ansible-vault view secrets.yaml` |
+| 2 | 密码文件权限正确 | `ls -la ~/.vault_pass` (应为 600) |
+| 3 | 密码文件已忽略 | `git check-ignore .vault_pass` |
+| 4 | AWS 凭证配置（如使用） | `aws sts get-caller-identity` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **机密管理的企业实践**
+
+| 要点 | 说明 |
+|------|------|
+| **密钥轮换** | 定期 rekey，记录轮换时间和操作人 |
+| **権限分離** | Vault 密码管理员 ≠ Playbook 执行者 |
+| **監査ログ** | 记录谁在何时解密/修改了什么 |
+| **変更管理** | Vault 文件变更需提交审批 |
+| **バックアップ** | 加密文件需备份，密码需安全存储 |
+
+```bash
+# 验证 vault 文件是否真的加密
+head -1 secrets.yaml
+# 应该看到: $ANSIBLE_VAULT;1.1;AES256
+```
+
+> 📋 **面试/入场时可能被问**：
+> - 「Vault パスワードの管理方法は？」→ 外部シークレットマネージャー or CI ツールの Secrets
+> - 「平文でパスワードを保存していませんか？」→ 絶対 NG、Vault 必須
 
 ---
 

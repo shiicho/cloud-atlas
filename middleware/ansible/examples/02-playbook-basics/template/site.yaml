@@ -1,0 +1,24 @@
+# =============================================================================
+# TEMPLATE: Basic Playbook Structure
+# =============================================================================
+#
+# YOUR TASK: Complete this playbook to ping all hosts
+#
+# Hints:
+# - A playbook starts with ---
+# - Contains a list of plays (each play is a dictionary)
+# - Each play needs: name, hosts, tasks
+# - Each task needs: name, module
+#
+# Run with:
+#   ansible-playbook site.yaml
+#
+# =============================================================================
+---
+- name: # Add a descriptive name for this play
+
+  hosts: # Which hosts to target (all, webservers, etc.)
+
+  tasks:
+    - name: # Add task name
+      # Add module here (e.g., ping:)

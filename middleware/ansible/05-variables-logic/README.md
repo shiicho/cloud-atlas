@@ -1,15 +1,15 @@
 # 05 · 变量・Facts・条件・循环（Variables, Facts, Conditionals, Loops）
 
-> **目标**：掌握变量、Facts、条件判断和循环
-> **前置**：[04 · Playbook 基础](../04-playbook-basics/)
-> **时间**：40 分钟
+> **目标**：掌握变量、Facts、条件判断和循环  
+> **前置**：[04 · Playbook 基础](../04-playbook-basics/)  
+> **时间**：40 分钟  
 > **实战项目**：多环境配置管理
 
 ---
 
 ## 将学到的内容
 
-1. 变量优先级（22 levels）
+1. 变量优先级
 2. Ansible Facts
 3. 条件判断（when）
 4. 循环（loop）
@@ -57,37 +57,39 @@ ansible-playbook site.yaml -e "@vars.json"
 
 ## Step 2 — 变量优先级
 
-从低到高（后者覆盖前者）：
+Ansible 变量优先级从低到高（后者覆盖前者）：
 
 ```
- 1. role defaults
+ 1. role defaults (roles/x/defaults/main.yaml)
  2. inventory file vars
  3. inventory group_vars/all
  4. inventory group_vars/<group>
- 5. inventory host_vars/<host>
- 6. playbook group_vars/all
- 7. playbook group_vars/<group>
+ 5. playbook group_vars/all
+ 6. playbook group_vars/<group>
+ 7. inventory host_vars/<host>
  8. playbook host_vars/<host>
- 9. host facts
+ 9. host facts / cached set_facts
 10. play vars
 11. play vars_prompt
 12. play vars_files
-13. role vars
+13. role vars (roles/x/vars/main.yaml)
 14. block vars
 15. task vars
-16. include_vars
-17. set_facts
-18. registered vars
-19. role parameters
-20. include parameters
-21. extra vars (-e)  ← 最高优先级
+16. include_vars / include_role params
+17. set_facts / registered vars
+18. extra vars (-e)  ← 最高优先级
 ```
+
+> ⚠️ **注意**：官方文档列出了更细粒度的约 22 层优先级，上表为简化版。核心记住：
+> - `role defaults` 最低（设计为可被覆盖的默认值）
+> - `extra vars (-e)` 最高（用于调试/紧急覆盖）
+> - `host_vars` > `group_vars`（更具体的优先）
 
 > 💡 **面试要点**
 >
 > **問題**：変数の優先順位で最も高いのは？
 >
-> **回答**：extra_vars (-e) が最優先。デバッグや緊急時に使用。
+> **回答**：extra_vars (-e) が最優先。デバッグや緊急時に使用。ただし、本番では -e の乱用を避け、group_vars/host_vars で管理すべき。
 
 ---
 
@@ -196,6 +198,7 @@ ansible node1 -m setup -a "filter=ansible_distribution*"
     - httpd
     - vim
     - htop
+  become: true   # dnf 需要 root 权限
 ```
 
 ### 5.2 字典循环
@@ -211,17 +214,21 @@ ansible node1 -m setup -a "filter=ansible_distribution*"
     - { name: 'user2', groups: 'users' }
 ```
 
-### 5.3 with_items（旧语法）
+### 5.3 with_items（旧语法，不推荐）
 
 ```yaml
-# 旧语法，仍然可用
+# ⚠️ 旧语法，Ansible 2.5+ 推荐使用 loop
 - name: Install packages
   ansible.builtin.dnf:
     name: "{{ item }}"
+    state: present
   with_items:
     - httpd
     - vim
+  become: true
 ```
+
+> 💡 `with_items` 仍然可用但已被标记为 **legacy**。新代码请使用 `loop`。
 
 ### 5.4 循环控制
 
@@ -247,8 +254,9 @@ ansible node1 -m setup -a "filter=ansible_distribution*"
   hosts: all
   tasks:
     - name: Check disk space
-      ansible.builtin.shell: df -h /
+      ansible.builtin.command: df -h /
       register: disk_result
+      changed_when: false   # 信息收集，不算变更
 
     - name: Display result
       ansible.builtin.debug:
@@ -258,6 +266,19 @@ ansible node1 -m setup -a "filter=ansible_distribution*"
       ansible.builtin.fail:
         msg: "Disk usage too high!"
       when: "'80%' in disk_result.stdout"
+```
+
+> ⚠️ **注意**：上面的 `'80%' in stdout` 检查比较脆弱（可能误匹配其他字段）。
+> 更可靠的做法是使用 `ansible_mounts` Fact：
+
+```yaml
+- name: Check disk using facts
+  ansible.builtin.fail:
+    msg: "Disk usage {{ item.size_available }} too low!"
+  loop: "{{ ansible_mounts }}"
+  when:
+    - item.mount == "/"
+    - item.size_available < 1073741824   # 小于 1GB
 ```
 
 ### Register 常用属性
@@ -329,15 +350,49 @@ instances: 3
 
 ---
 
+## 动手前检查清单
+
+运行 Playbook 前确认：
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | 语法正确 | `ansible-playbook site.yaml --syntax-check` |
+| 2 | 连接正常 | `ansible all -m ping` |
+| 3 | 干运行 | `ansible-playbook site.yaml --check --diff` |
+| 4 | 变量解析 | `ansible-inventory --list --yaml` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **变量管理的企业实践**
+
+| 要点 | 说明 |
+|------|------|
+| **避免 `-e` 滥用** | 生产环境应使用 `group_vars`/`host_vars`，`-e` 仅用于紧急调试 |
+| **敏感变量** | 使用 `ansible-vault` 加密，不要明文存储密码 |
+| **変更管理** | 变量变更需提交 Git + 审批，记录变更理由 |
+| **環境分離** | `group_vars/dev.yaml` 和 `group_vars/prod.yaml` 严格分开 |
+
+```bash
+# 验证变量来源
+ansible-inventory --host node1 --yaml
+
+# 查看 Playbook 会使用哪些变量
+ansible-playbook site.yaml --list-hosts --list-tasks
+```
+
+---
+
 ## 本课小结
 
 | 概念 | 要点 |
 |------|------|
-| 变量优先级 | extra_vars (-e) 最高 |
-| Facts | ansible_* 系统信息 |
-| when | 条件判断 |
-| loop | 循环执行 |
-| register | 保存任务输出 |
+| 变量优先级 | extra_vars (-e) 最高，role defaults 最低 |
+| Facts | ansible_* 系统信息，可禁用加速执行 |
+| when | 条件判断，支持 AND/OR/defined |
+| loop | 循环执行，优于旧版 with_items |
+| register | 保存任务输出，配合 changed_when 使用 |
 
 ---
 

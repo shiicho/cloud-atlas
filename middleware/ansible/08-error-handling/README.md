@@ -1,8 +1,8 @@
 # 08 · 错误处理与调试技巧（Error Handling & Debugging）
 
-> **目标**：掌握错误处理和调试技术
-> **前置**：[07 · Jinja2 模板](../07-jinja2-templates/)
-> **时间**：30 分钟
+> **目标**：掌握错误处理和调试技术  
+> **前置**：[07 · Jinja2 模板](../07-jinja2-templates/)  
+> **时间**：30 分钟  
 > **实战项目**：健壮的部署脚本
 
 ---
@@ -264,6 +264,63 @@ ansible-playbook site.yaml --list-tasks
             find /opt -name "myapp.bak.*" -mtime +7 -delete
           ignore_errors: true
 ```
+
+---
+
+## 动手前检查清单
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | 语法正确 | `ansible-playbook site.yaml --syntax-check` |
+| 2 | 连接正常 | `ansible all -m ping` |
+| 3 | 干运行 | `ansible-playbook site.yaml -C` |
+| 4 | 列出任务 | `ansible-playbook site.yaml --list-tasks` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **错误处理的企业实践**
+
+| 要点 | 说明 |
+|------|------|
+| **ignore_errors 慎用** | 生产环境禁止盲目忽略错误，必须有对应的补救措施 |
+| **block/rescue 必須** | 重要操作必须有 rescue 块处理失败场景 |
+| **ロールバック計画** | 部署前必须准备回滚方案并测试 |
+| **通知必須** | 失败时必须通过 Slack/邮件通知负责人 |
+| **ログ保存** | 配置 `ANSIBLE_LOG_PATH` 保存执行日志供事后分析 |
+| **冪等性確認** | 恢复操作也必须是幂等的 |
+
+```yaml
+# 企业级错误处理模板
+- name: Critical deployment
+  block:
+    - name: Deploy application
+      # ... 部署任务 ...
+
+  rescue:
+    - name: Rollback on failure
+      # ... 回滚操作 ...
+
+    - name: Notify team
+      ansible.builtin.uri:
+        url: "{{ slack_webhook_url }}"
+        method: POST
+        body_format: json
+        body:
+          text: "⚠️ Deployment failed on {{ inventory_hostname }}"
+
+  always:
+    - name: Record deployment result
+      ansible.builtin.lineinfile:
+        path: /var/log/ansible-deploys.log
+        line: "{{ ansible_date_time.iso8601 }} - {{ inventory_hostname }} - {{ 'FAILED' if ansible_failed_result is defined else 'SUCCESS' }}"
+      delegate_to: localhost
+```
+
+> 📋 **面试/入场时可能被问**：
+> - 「障害発生時の対応フローは？」→ rescue でロールバック → 通知 → ログ記録 → 原因調査
+> - 「ignore_errors はいつ使いますか？」→ 情報収集タスクのみ、本番変更操作では使わない
 
 ---
 

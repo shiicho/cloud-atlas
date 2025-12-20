@@ -1,0 +1,77 @@
+# =============================================================================
+# 03-facts-access.yaml - Accessing Ansible Facts
+# =============================================================================
+#
+# CONCEPT: Use automatically gathered system information (facts)
+#
+# Facts are gathered by default when a playbook runs.
+# They're stored in ansible_* variables.
+#
+# Common facts:
+#   ansible_distribution      - OS name (Amazon, Ubuntu, CentOS)
+#   ansible_distribution_version - OS version
+#   ansible_hostname          - Short hostname
+#   ansible_fqdn              - Full hostname
+#   ansible_default_ipv4      - Primary IP info
+#   ansible_memory_mb         - Memory info
+#   ansible_processor_vcpus   - CPU count
+#
+# View all facts:
+#   ansible localhost -m setup
+#
+# =============================================================================
+---
+- name: Accessing Ansible Facts
+  hosts: all
+
+  # Facts are gathered automatically (gather_facts: true is default)
+  # gather_facts: false  # Uncomment to skip (faster but no facts)
+
+  tasks:
+    - name: Show operating system
+      ansible.builtin.debug:
+        msg: "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    - name: Show hostname
+      ansible.builtin.debug:
+        msg: "Hostname: {{ ansible_hostname }} ({{ ansible_fqdn }})"
+
+    - name: Show primary IP address
+      ansible.builtin.debug:
+        msg: "IP: {{ ansible_default_ipv4.address }}"
+
+    - name: Show memory
+      ansible.builtin.debug:
+        msg: "Total RAM: {{ ansible_memory_mb.real.total }} MB"
+
+    - name: Show CPU count
+      ansible.builtin.debug:
+        msg: "vCPUs: {{ ansible_processor_vcpus }}"
+
+    - name: Show architecture
+      ansible.builtin.debug:
+        msg: "Arch: {{ ansible_architecture }}"
+
+    # Practical example: use facts for conditional logic
+    # 実用例：条件分岐にfactsを使用
+    - name: Amazon Linux specific message
+      ansible.builtin.debug:
+        msg: "This is Amazon Linux - using dnf package manager"
+      when: ansible_distribution == "Amazon"
+
+    - name: Ubuntu specific message
+      ansible.builtin.debug:
+        msg: "This is Ubuntu - using apt package manager"
+      when: ansible_distribution == "Ubuntu"
+
+    # Show all network interfaces
+    # 全ネットワークインターフェースを表示
+    - name: List network interfaces
+      ansible.builtin.debug:
+        msg: "Interfaces: {{ ansible_interfaces }}"
+
+    # Access nested fact data
+    # ネストされたfactデータにアクセス
+    - name: Show date/time facts
+      ansible.builtin.debug:
+        msg: "Current time: {{ ansible_date_time.iso8601 }}"

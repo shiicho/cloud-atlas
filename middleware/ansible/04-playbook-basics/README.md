@@ -1,8 +1,8 @@
 # 04 · Playbook 基础（YAML, Tasks, Handlers）
 
-> **目标**：掌握 Playbook 基础结构
-> **前置**：[03 · Ad-hoc 命令](../03-adhoc-modules/)
-> **时间**：40 分钟
+> **目标**：掌握 Playbook 基础结构  
+> **前置**：[03 · Ad-hoc 命令](../03-adhoc-modules/)  
+> **时间**：40 分钟  
 > **实战项目**：编写 Web 服务器部署 Playbook
 
 ---
@@ -297,6 +297,54 @@ webserver/
 
 2. 验证：
    - `curl http://<node_ip>/` 返回自定义页面
+
+---
+
+## 动手前检查清单
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | 语法正确 | `ansible-playbook site.yaml --syntax-check` |
+| 2 | 连接正常 | `ansible webservers -m ping` |
+| 3 | 干运行预览 | `ansible-playbook site.yaml -C -D` |
+| 4 | 列出任务 | `ansible-playbook site.yaml --list-tasks` |
+| 5 | 列出标签 | `ansible-playbook site.yaml --list-tags` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **Playbook 的企业实践**
+
+| 要点 | 说明 |
+|------|------|
+| **必须 --check** | 生产环境执行前必须先 `--check --diff` 预览变更 |
+| **必须 --limit** | 使用 `--limit` 限定目标主机，禁止直接对全量执行 |
+| **変更管理** | Playbook 执行需填写変更チケット号 |
+| **ログ記録** | 配置 `ANSIBLE_LOG_PATH` 记录执行日志 |
+| **コードレビュー** | Playbook 变更需要 Pull Request 审批 |
+| **冪等性確認** | 新 Playbook 需验证多次执行结果一致 |
+
+```bash
+# 生产环境执行流程
+export ANSIBLE_LOG_PATH=~/ansible-$(date +%Y%m%d-%H%M%S).log
+
+# 1. 语法检查
+ansible-playbook site.yaml --syntax-check
+
+# 2. 干运行（必须！）
+ansible-playbook site.yaml --check --diff --limit node1
+
+# 3. 限定范围执行
+ansible-playbook site.yaml --limit node1
+
+# 4. 确认成功后扩大范围
+ansible-playbook site.yaml --limit webservers
+```
+
+> 📋 **面试/入场时可能被问**：
+> - 「Playbook 実行前に何を確認しますか？」→ --syntax-check, --check --diff, --limit での限定実行
+> - 「Handler と普通の Task の違いは？」→ Handler は notify 時のみ実行、Play 終了時に1回だけ
 
 ---
 

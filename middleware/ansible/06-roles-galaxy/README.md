@@ -1,8 +1,8 @@
 # 06 · Roles 与 Ansible Galaxy（Roles & Project Structure）
 
-> **目标**：掌握 Role 结构和 Ansible Galaxy
-> **前置**：[05 · 变量与逻辑](../05-variables-logic/)
-> **时间**：40 分钟
+> **目标**：掌握 Role 结构和 Ansible Galaxy  
+> **前置**：[05 · 变量与逻辑](../05-variables-logic/)  
+> **时间**：40 分钟  
 > **实战项目**：创建标准化 Role 库
 
 ---
@@ -289,6 +289,47 @@ Web 服务器配置
     - webserver
     - monitoring-agent
 ```
+
+---
+
+## 动手前检查清单
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | roles 目录存在 | `ls roles/` |
+| 2 | Role 结构完整 | `tree roles/webserver` |
+| 3 | 依赖已安装 | `ansible-galaxy list` |
+| 4 | 语法检查 | `ansible-playbook site.yaml --syntax-check` |
+| 5 | requirements.yml 格式正确 | `ansible-galaxy install -r requirements.yml --dry-run` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **Role 开发的企业实践**
+
+| 要点 | 说明 |
+|------|------|
+| **命名規則** | Role 名使用统一前缀（如 `company_webserver`） |
+| **バージョン管理** | Role 变更需打 tag，requirements.yml 固定版本号 |
+| **テスト必須** | 使用 Molecule 测试 Role（`molecule test`） |
+| **ドキュメント** | 每个 Role 必须有 README.md 说明参数 |
+| **defaults 活用** | 所有可配置项放 `defaults/main.yaml`，便于覆盖 |
+| **社内 Galaxy** | 大型组织可搭建私有 Galaxy 服务器 |
+
+```yaml
+# requirements.yml - 生产环境务必固定版本
+roles:
+  - name: geerlingguy.nginx
+    version: "3.1.0"   # ← 必须指定版本！
+  - name: company.common
+    src: git@github.com:company/ansible-role-common.git
+    version: v2.3.1    # ← 使用 Git tag
+```
+
+> 📋 **面试/入场时可能被问**：
+> - 「Role を作るときに気をつけることは？」→ defaults で設定可能に、README 必須、バージョン管理
+> - 「既存の Role をどう評価しますか？」→ Galaxy の評価、GitHub Stars、メンテナンス頻度、ライセンス確認
 
 ---
 

@@ -1,0 +1,89 @@
+# =============================================================================
+# 04-when-basic.yaml - Basic Conditional Execution
+# =============================================================================
+#
+# CONCEPT: Use 'when' to conditionally run tasks
+#
+# when: syntax:
+#   - Uses raw Jinja2 expressions (no {{ }} needed!)
+#   - Returns true/false to determine if task runs
+#   - Can compare variables, facts, registered values
+#
+# Operators:
+#   ==, !=        Equal, not equal
+#   <, >, <=, >=  Comparisons
+#   in            Check membership
+#   is defined    Check if variable exists
+#   is not defined
+#
+# =============================================================================
+---
+- name: Basic conditional execution
+  hosts: all
+  become: true
+
+  vars:
+    env: production
+    enable_debug: false
+    supported_distros:
+      - Amazon
+      - Ubuntu
+      - CentOS
+
+  tasks:
+    # Simple equality check
+    # 単純な等価比較
+    - name: Production environment check
+      ansible.builtin.debug:
+        msg: "Running in PRODUCTION mode"
+      when: env == "production"
+
+    - name: Development environment check
+      ansible.builtin.debug:
+        msg: "Running in DEVELOPMENT mode"
+      when: env == "development"
+
+    # Boolean check (no comparison needed)
+    # 真偽値チェック（比較不要）
+    - name: Debug mode enabled
+      ansible.builtin.debug:
+        msg: "Debug mode is ON"
+      when: enable_debug
+
+    - name: Debug mode disabled
+      ansible.builtin.debug:
+        msg: "Debug mode is OFF"
+      when: not enable_debug
+
+    # Check if variable is defined
+    # 変数が定義されているかチェック
+    - name: Check optional variable
+      ansible.builtin.debug:
+        msg: "Optional var is defined: {{ optional_var }}"
+      when: optional_var is defined
+
+    - name: Handle undefined variable
+      ansible.builtin.debug:
+        msg: "Optional var is NOT defined, using default"
+      when: optional_var is not defined
+
+    # Check membership in list
+    # リストに含まれるかチェック
+    - name: Check if OS is supported
+      ansible.builtin.debug:
+        msg: "{{ ansible_distribution }} is a supported distro!"
+      when: ansible_distribution in supported_distros
+
+    # Numeric comparison
+    # 数値比較
+    - name: Check if enough memory (> 1GB)
+      ansible.builtin.debug:
+        msg: "Memory OK: {{ ansible_memory_mb.real.total }} MB"
+      when: ansible_memory_mb.real.total > 1024
+
+    # String contains check
+    # 文字列の部分一致チェック
+    - name: Check if hostname contains 'node'
+      ansible.builtin.debug:
+        msg: "This is a node server"
+      when: "'node' in ansible_hostname"

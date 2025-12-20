@@ -1,8 +1,8 @@
 # 07 · Jinja2 模板引擎详解（Template Engine Mastery）
 
-> **目标**：掌握 Jinja2 模板技术
-> **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)
-> **时间**：35 分钟
+> **目标**：掌握 Jinja2 模板技术  
+> **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)  
+> **时间**：35 分钟  
 > **实战项目**：模板化 Nginx 配置
 
 ---
@@ -265,6 +265,50 @@ http {
 2. 动态生成 upstream 列表
 3. 根据环境启用/禁用 SSL
 4. 验证：`nginx -t` 通过
+
+---
+
+## 动手前检查清单
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | 模板文件存在 | `ls templates/*.j2` |
+| 2 | 模板语法正确 | `ansible-playbook site.yaml --syntax-check` |
+| 3 | 变量已定义 | `ansible-inventory --host node1 --yaml` |
+| 4 | 干运行验证 | `ansible-playbook site.yaml -C -D` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **模板管理的企业实践**
+
+| 要点 | 说明 |
+|------|------|
+| **管理者コメント** | 模板开头添加 `# Managed by Ansible - DO NOT EDIT` |
+| **生成時刻記録** | 添加 `{{ ansible_date_time.iso8601 }}` 便于追踪 |
+| **validate 必須** | 配置文件必须使用 `validate` 参数验证语法 |
+| **backup 推奨** | 使用 `backup: yes` 保留变更前备份 |
+| **環境別変数** | 不同环境的配置值放 `group_vars/{env}.yaml` |
+| **機密情報** | 敏感变量使用 Vault 加密，不要硬编码 |
+
+```yaml
+# 生产环境模板部署标准做法
+- name: Deploy nginx config
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes              # ← 备份原文件
+    validate: nginx -t -c %s  # ← 语法验证
+  notify: Reload nginx
+```
+
+> 📋 **面试/入场时可能被问**：
+> - 「テンプレートで気をつけることは？」→ validate で構文チェック、backup で変更前保存
+> - 「Jinja2 フィルターで一番使うのは？」→ default（未定義変数対策）、join（リスト結合）
 
 ---
 

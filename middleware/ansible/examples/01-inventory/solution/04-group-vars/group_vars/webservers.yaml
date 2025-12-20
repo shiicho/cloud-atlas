@@ -1,0 +1,27 @@
+# =============================================================================
+# group_vars/webservers.yaml - Variables for webservers group
+# =============================================================================
+#
+# These variables apply only to hosts in [webservers] group.
+# Higher precedence than all.yaml, lower than host_vars.
+#
+# =============================================================================
+
+---
+# Web server configuration
+# Webサーバー設定
+http_port: 80
+https_port: 443
+
+# Nginx settings
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+
+# Application settings
+app_root: /var/www/html
+app_user: www-data
+
+# Packages specific to web servers
+web_packages:
+  - nginx
+  - certbot

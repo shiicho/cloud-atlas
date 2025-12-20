@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - AWX Container Node
+  Used by: Lesson 10 (AWX/Tower)
+  Purpose: Teaching AWX web interface and Job Templates
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues: [t3.small, t3.medium]
+    Description: AWX needs more resources (min t3.small)
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  # IAM Role for AWX Node
+  AWXNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ansible-awx-node-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*'
+
+  AWXNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref AWXNodeRole
+
+  # Security Group for AWX
+  AWXSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for AWX Node
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        # SSH from Control Node
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        # AWX Web UI from Control Node
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ansible-awx-sg
+
+  # AWX Node
+  AWXNode:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref AWXSecurityGroup
+      IamInstanceProfile: !Ref AWXNodeInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: awx-server
+        - Key: Role
+          Value: awx
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname
+          hostnamectl set-hostname awx-server
+          echo "awx-server" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key from Control Node
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            echo "Attempt $i: Waiting for public key..."
+            sleep 10
+          done
+
+          if [ -z "$PUBLIC_KEY" ]; then
+            echo "ERROR: Failed to get public key from SSM" > /home/ansible/setup-error.txt
+            exit 1
+          fi
+
+          # Setup SSH
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install dependencies
+          dnf install -y python3 python3-pip git docker
+
+          # Start Docker
+          systemctl enable docker
+          systemctl start docker
+
+          # Add ansible user to docker group
+          usermod -aG docker ansible
+
+          # Install docker-compose
+          pip3 install docker-compose
+
+          # Create AWX setup directory
+          mkdir -p /opt/awx
+          chown ansible:ansible /opt/awx
+
+          echo "AWX Node ready - Run AWX installation from lesson instructions" > /home/ansible/setup-status.txt
+
+  # Target Node for AWX to manage
+  TargetNode:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref AWXSecurityGroup
+      IamInstanceProfile: !Ref AWXNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: awx-target
+        - Key: Role
+          Value: target
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname
+          hostnamectl set-hostname awx-target
+          echo "awx-target" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key from Control Node
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            sleep 10
+          done
+
+          # Setup SSH
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install Python
+          dnf install -y python3
+
+          echo "AWX Target Node ready" > /home/ansible/setup-status.txt
+
+Outputs:
+  AWXInstanceId:
+    Description: AWX Server Instance ID
+    Value: !Ref AWXNode
+
+  TargetInstanceId:
+    Description: Target Node Instance ID
+    Value: !Ref TargetNode
+
+  AWXPrivateIp:
+    Description: AWX Server Private IP
+    Value: !GetAtt AWXNode.PrivateIp
+
+  TargetPrivateIp:
+    Description: Target Node Private IP
+    Value: !GetAtt TargetNode.PrivateIp
+
+  AWXWebUI:
+    Description: AWX Web UI access instructions
+    Value: |
+      === AWX Access ===
+
+      After AWX installation completes:
+      1. From Control Node, use SSH tunnel:
+         ssh -L 8080:AWX_IP:80 ansible@AWX_IP
+
+      2. Open browser on your local machine:
+         http://localhost:8080
+
+      Default credentials:
+         Username: admin
+         Password: (set during installation)

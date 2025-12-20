@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - Lesson 03 Managed Nodes
+  2 nodes (webserver + dbserver) with auto SSH configuration
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small]
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  ManagedNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ansible-managed-role-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: GetSSHKey
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*
+
+  ManagedNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ManagedNodeRole
+
+  ManagedNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Ansible Managed Nodes
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 10.0.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-sg
+
+  ManagedNode1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node1-webserver
+        - Key: Role
+          Value: webserver
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          hostnamectl set-hostname node1-webserver
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter --name "/ansible-course/control-node-pubkey" --query 'Parameter.Value' --output text --region ${AWS::Region} 2>/dev/null) && break
+            sleep 10
+          done
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+          dnf install -y python3
+
+  ManagedNode2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node2-dbserver
+        - Key: Role
+          Value: dbserver
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          hostnamectl set-hostname node2-dbserver
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter --name "/ansible-course/control-node-pubkey" --query 'Parameter.Value' --output text --region ${AWS::Region} 2>/dev/null) && break
+            sleep 10
+          done
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+          dnf install -y python3
+
+Outputs:
+  Node1PrivateIp:
+    Description: Node 1 Private IP
+    Value: !GetAtt ManagedNode1.PrivateIp
+  Node2PrivateIp:
+    Description: Node 2 Private IP
+    Value: !GetAtt ManagedNode2.PrivateIp

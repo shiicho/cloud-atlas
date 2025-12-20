@@ -1,8 +1,8 @@
 # 11 · Zabbix 连携与 Event-Driven Ansible（EDA Integration）
 
-> **目标**：掌握 Event-Driven Ansible 与 Zabbix 集成
-> **前置**：[10 · AWX/Tower](../10-awx-tower/)、[Zabbix 04 · 触发器与告警](../../zabbix/04-triggers-alerts/)
-> **时间**：45 分钟
+> **目标**：掌握 Event-Driven Ansible 与 Zabbix 集成  
+> **前置**：[10 · AWX/Tower](../10-awx-tower/)、[Zabbix 04 · 触发器与告警](../../zabbix/04-triggers-alerts/)  
+> **时间**：45 分钟  
 > **实战项目**：障害対応自動化 - 磁盘告警自动清理
 
 ---
@@ -91,8 +91,9 @@ ansible-galaxy collection install community.zabbix
   hosts: all
   sources:
     - ansible.eda.webhook:
-        host: 0.0.0.0
+        host: 127.0.0.1      # 仅本地访问，生产环境使用反向代理
         port: 5000
+        token: "{{ lookup('env', 'EDA_WEBHOOK_TOKEN') }}"  # 认证令牌
 
   rules:
     - name: Disk space low
@@ -103,6 +104,19 @@ ansible-galaxy collection install community.zabbix
           extra_vars:
             target_host: "{{ event.host.name }}"
 ```
+
+> ⚠️ **安全警告：Webhook 防护**
+>
+> 生产环境 **必须** 配置以下防护：
+>
+> | 措施 | 说明 |
+> |------|------|
+> | **TLS/HTTPS** | 使用 Nginx/HAProxy 反向代理，添加 SSL 证书 |
+> | **认证令牌** | 使用 `token` 参数验证请求来源 |
+> | **IP 白名单** | 仅允许 Zabbix 服务器 IP 访问 |
+> | **主机验证** | 验证 `target_host` 在 inventory 中存在 |
+>
+> 未防护的 webhook 会导致**任意主机被攻击者控制执行 Playbook**！
 
 ### 3.2 Rulebook 元素
 
@@ -218,30 +232,72 @@ return 'OK';
   hosts: "{{ target_host }}"
   become: true
 
+  pre_tasks:
+    - name: Validate target host exists in inventory
+      ansible.builtin.assert:
+        that:
+          - target_host is defined
+          - target_host in groups['all']
+        fail_msg: "Invalid target_host: {{ target_host | default('undefined') }}"
+      delegate_to: localhost
+      run_once: true
+
   tasks:
     - name: Log remediation start
       ansible.builtin.debug:
         msg: "Starting disk cleanup for alert: {{ alert_name }}"
 
-    - name: Clean package cache
-      ansible.builtin.shell: dnf clean all
-      ignore_errors: true
+    - name: Clean package cache (DNF)
+      ansible.builtin.dnf:
+        autoremove: true
+      when: ansible_pkg_mgr == "dnf"
 
-    - name: Clean old logs
-      ansible.builtin.shell: |
-        find /var/log -type f -name "*.log.*" -mtime +7 -delete
-        find /var/log -type f -name "*.gz" -mtime +7 -delete
-      ignore_errors: true
+    - name: Clean package cache (APT)
+      ansible.builtin.apt:
+        autoclean: true
+        autoremove: true
+      when: ansible_pkg_mgr == "apt"
 
-    - name: Clean tmp files
-      ansible.builtin.shell: |
-        find /tmp -type f -mtime +3 -delete
-        find /var/tmp -type f -mtime +3 -delete
-      ignore_errors: true
+    - name: Find old log files
+      ansible.builtin.find:
+        paths: /var/log
+        patterns:
+          - "*.log.*"
+          - "*.gz"
+        age: 7d
+        recurse: true
+      register: old_logs
+
+    - name: Remove old log files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_logs.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Find old tmp files
+      ansible.builtin.find:
+        paths:
+          - /tmp
+          - /var/tmp
+        age: 3d
+        recurse: true
+        file_type: file
+      register: old_tmp
+
+    - name: Remove old tmp files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_tmp.files }}"
+      loop_control:
+        label: "{{ item.path }}"
 
     - name: Check disk space after cleanup
-      ansible.builtin.shell: df -h /
+      ansible.builtin.command: df -h /
       register: disk_after
+      changed_when: false
 
     - name: Report cleanup result
       ansible.builtin.debug:
@@ -250,6 +306,12 @@ return 'OK';
           Current disk usage:
           {{ disk_after.stdout }}
 ```
+
+> 💡 **改善ポイント**：
+> - 使用 `find` 模块代替 shell 命令（更安全、跨平台）
+> - 使用 `dnf`/`apt` 模块代替 `shell: dnf clean all`
+> - 添加主机验证防止任意主机执行
+> - 移除 `ignore_errors`，让错误可见
 
 ### 5.3 测试流程
 
@@ -323,6 +385,53 @@ rules:
    - 填充磁盘触发告警
    - 确认自动清理执行
    - 确认磁盘空间恢复
+
+---
+
+## 动手前检查清单
+
+| # | 检查项 | 验证命令 |
+|---|--------|----------|
+| 1 | Python 3.9+ 已安装 | `python3 --version` |
+| 2 | ansible-rulebook 已安装 | `ansible-rulebook --version` |
+| 3 | EDA collection 已安装 | `ansible-galaxy collection list \| grep eda` |
+| 4 | Inventory 文件存在 | `ansible-inventory --list` |
+| 5 | Webhook 端口可用 | `ss -tlnp \| grep 5000` |
+| 6 | 防火墙规则配置（如需要） | `firewall-cmd --list-ports` |
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **EDA 的企业运维实践**
+
+| 要点 | 说明 |
+|------|------|
+| **Webhook 安全** | 必须使用 HTTPS + 认证令牌，禁止公网直接暴露 |
+| **IP 制限** | 仅允许 Zabbix Server IP 访问 EDA endpoint |
+| **監査ログ** | 记录所有 event 和执行的 action，保留 90 天以上 |
+| **変更管理** | Rulebook 变更需提交审批，测试环境验证后再上线 |
+| **エスカレーション** | 自动修复失败时，必须触发告警通知人工介入 |
+| **実行権限** | EDA 服务账户使用最小权限原则 |
+
+```yaml
+# 生产环境推荐配置
+rules:
+  - name: Disk space alert with audit
+    condition: event.alert.name is match(".*disk.*")
+    action:
+      run_playbook:
+        name: playbooks/cleanup_disk.yaml
+        extra_vars:
+          target_host: "{{ event.host.name }}"
+          # 审计用字段
+          event_id: "{{ event.id | default(now()) }}"
+          zabbix_trigger_id: "{{ event.trigger_id | default('unknown') }}"
+```
+
+> 📋 **面试/入场时可能被问**：
+> - 「EDA の Webhook はどうやって保護しますか？」→ HTTPS + 認証トークン + IP 制限 + ホスト検証
+> - 「自動復旧が失敗したらどうしますか？」→ エスカレーション Action で通知
 
 ---
 

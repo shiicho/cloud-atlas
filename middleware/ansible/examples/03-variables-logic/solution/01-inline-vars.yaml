@@ -1,0 +1,78 @@
+# =============================================================================
+# 01-inline-vars.yaml - Basic Variable Definition
+# =============================================================================
+#
+# CONCEPT: Define variables in the vars: section of a playbook
+#
+# Variable types:
+#   - string: name: "value"
+#   - number: port: 8080
+#   - boolean: enabled: true
+#   - list: items: [a, b, c]
+#   - dictionary: config: {key: value}
+#
+# Run with:
+#   ansible-playbook 01-inline-vars.yaml
+#
+# =============================================================================
+---
+- name: Demonstrate inline variable definition
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # String variable
+    # 文字列変数
+    app_name: "my-application"
+
+    # Number variable
+    # 数値変数
+    app_port: 8080
+
+    # Boolean variable
+    # 真偽値変数
+    debug_mode: true
+
+    # List variable
+    # リスト変数
+    allowed_hosts:
+      - 10.0.1.10
+      - 10.0.1.11
+      - 10.0.1.12
+
+    # Dictionary variable
+    # 辞書変数
+    database:
+      host: db.example.com
+      port: 3306
+      name: appdb
+
+  tasks:
+    - name: Show string variable
+      ansible.builtin.debug:
+        msg: "App name: {{ app_name }}"
+
+    - name: Show number variable
+      ansible.builtin.debug:
+        msg: "App port: {{ app_port }}"
+
+    - name: Show boolean variable
+      ansible.builtin.debug:
+        msg: "Debug mode: {{ debug_mode }}"
+
+    - name: Show list variable
+      ansible.builtin.debug:
+        msg: "Allowed hosts: {{ allowed_hosts }}"
+
+    - name: Show first item in list
+      ansible.builtin.debug:
+        msg: "First host: {{ allowed_hosts[0] }}"
+
+    - name: Show dictionary variable
+      ansible.builtin.debug:
+        msg: "Database host: {{ database.host }}"
+
+    - name: Show full database config
+      ansible.builtin.debug:
+        var: database

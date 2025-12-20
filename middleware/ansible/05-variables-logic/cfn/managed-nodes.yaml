@@ -1,0 +1,288 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - Multi-OS Managed Nodes
+  Used by: Lesson 05 (Variables, Facts, Conditionals)
+  Purpose: Teaching multi-OS handling with when conditionals
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small]
+    Description: Managed node instance type
+
+  AmazonLinuxAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+  UbuntuAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+
+Resources:
+  # IAM Role for Managed Nodes
+  ManagedNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ansible-managed-node-role-multios
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: SSMParameterAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*'
+
+  ManagedNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ManagedNodeRole
+
+  # Security Group
+  ManagedNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Ansible Managed Nodes (Multi-OS)
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ansible-managed-multios-sg
+
+  # Amazon Linux Node 1 - webserver
+  AmazonNode1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AmazonLinuxAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node1-amazon-web
+        - Key: Role
+          Value: webserver
+        - Key: OS
+          Value: amazon-linux
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname for easy identification
+          hostnamectl set-hostname node1-amazon-web
+          echo "node1-amazon-web" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key from Control Node (stored in SSM Parameter)
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            echo "Attempt $i: Waiting for public key..."
+            sleep 10
+          done
+
+          if [ -z "$PUBLIC_KEY" ]; then
+            echo "ERROR: Failed to get public key from SSM" > /home/ansible/setup-error.txt
+            exit 1
+          fi
+
+          # Setup SSH authorized_keys
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install Python
+          dnf install -y python3
+
+          echo "Amazon Linux Node 1 (webserver) ready" > /home/ansible/setup-status.txt
+
+  # Amazon Linux Node 2 - dbserver
+  AmazonNode2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AmazonLinuxAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node2-amazon-db
+        - Key: Role
+          Value: dbserver
+        - Key: OS
+          Value: amazon-linux
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname for easy identification
+          hostnamectl set-hostname node2-amazon-db
+          echo "node2-amazon-db" > /etc/hostname
+
+          # Create ansible user
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key from Control Node (stored in SSM Parameter)
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            echo "Attempt $i: Waiting for public key..."
+            sleep 10
+          done
+
+          if [ -z "$PUBLIC_KEY" ]; then
+            echo "ERROR: Failed to get public key from SSM" > /home/ansible/setup-error.txt
+            exit 1
+          fi
+
+          # Setup SSH authorized_keys
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install Python
+          dnf install -y python3
+
+          echo "Amazon Linux Node 2 (dbserver) ready" > /home/ansible/setup-status.txt
+
+  # Ubuntu Node 3 - appserver
+  UbuntuNode:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref UbuntuAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node3-ubuntu-app
+        - Key: Role
+          Value: appserver
+        - Key: OS
+          Value: ubuntu
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Set hostname for easy identification
+          hostnamectl set-hostname node3-ubuntu-app
+          echo "node3-ubuntu-app" > /etc/hostname
+
+          # Install AWS CLI (needed to fetch SSH key from SSM)
+          apt-get update
+          apt-get install -y awscli python3
+
+          # Create ansible user
+          useradd -m -s /bin/bash ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          # Get public key from Control Node (stored in SSM Parameter)
+          for i in {1..30}; do
+            PUBLIC_KEY=$(aws ssm get-parameter \
+              --name "/ansible-course/control-node-pubkey" \
+              --query 'Parameter.Value' \
+              --output text \
+              --region ${AWS::Region} 2>/dev/null) && break
+            echo "Attempt $i: Waiting for public key..."
+            sleep 10
+          done
+
+          if [ -z "$PUBLIC_KEY" ]; then
+            echo "ERROR: Failed to get public key from SSM" > /home/ansible/setup-error.txt
+            exit 1
+          fi
+
+          # Setup SSH authorized_keys
+          mkdir -p /home/ansible/.ssh
+          echo "$PUBLIC_KEY" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          echo "Ubuntu Node (appserver) ready" > /home/ansible/setup-status.txt
+
+Outputs:
+  Node1InstanceId:
+    Description: Amazon Linux Node 1 Instance ID
+    Value: !Ref AmazonNode1
+
+  Node2InstanceId:
+    Description: Amazon Linux Node 2 Instance ID
+    Value: !Ref AmazonNode2
+
+  Node3InstanceId:
+    Description: Ubuntu Node 3 Instance ID
+    Value: !Ref UbuntuNode
+
+  Node1PrivateIp:
+    Description: Amazon Linux Node 1 Private IP
+    Value: !GetAtt AmazonNode1.PrivateIp
+
+  Node2PrivateIp:
+    Description: Amazon Linux Node 2 Private IP
+    Value: !GetAtt AmazonNode2.PrivateIp
+
+  Node3PrivateIp:
+    Description: Ubuntu Node 3 Private IP
+    Value: !GetAtt UbuntuNode.PrivateIp
+
+  MultiOSInfo:
+    Description: Multi-OS teaching scenario
+    Value: |
+      === Multi-OS Environment ===
+
+      Node 1: Amazon Linux 2023 (webserver)
+      Node 2: Amazon Linux 2023 (dbserver)
+      Node 3: Ubuntu 22.04 (appserver)
+
+      Teaching objectives:
+      - ansible_distribution conditional
+      - ansible_os_family conditional
+      - dnf vs apt package managers
+      - Group variables for OS-specific config

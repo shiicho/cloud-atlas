@@ -1,0 +1,88 @@
+# =============================================================================
+# 04-with-tags.yaml - Playbook with Tags
+# =============================================================================
+#
+# CONCEPT: Use tags to run specific tasks selectively
+#
+# What's new from 03:
+#   + tags: on tasks for selective execution
+#
+# Tag usage:
+#   # Run only tasks tagged "config"
+#   ansible-playbook 04-with-tags.yaml --tags config
+#
+#   # Run everything EXCEPT "cleanup"
+#   ansible-playbook 04-with-tags.yaml --skip-tags cleanup
+#
+#   # List all available tags
+#   ansible-playbook 04-with-tags.yaml --list-tags
+#
+# Compare with previous:
+#   diff 03-with-handler.yaml 04-with-tags.yaml
+#
+# =============================================================================
+---
+- name: Web application deployment with tags
+  hosts: all
+  become: true
+
+  vars:
+    app_name: myapp
+    app_dir: /opt/{{ app_name }}
+
+  tasks:
+    # Setup tasks - run with --tags setup
+    # セットアップタスク
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+      tags:
+        - setup
+        - always  # 'always' tag runs even with --tags (unless --skip-tags always)
+
+    # Config tasks - run with --tags config
+    # 設定タスク
+    - name: Deploy configuration file
+      ansible.builtin.copy:
+        dest: "{{ app_dir }}/config.yaml"
+        content: |
+          app_name: {{ app_name }}
+          environment: production
+        mode: '0644'
+      tags:
+        - config
+        - deploy
+
+    # Deployment tasks - run with --tags deploy
+    # デプロイタスク
+    - name: Deploy application (simulated)
+      ansible.builtin.debug:
+        msg: "Deploying {{ app_name }} to {{ app_dir }}"
+      tags:
+        - deploy
+
+    # Verification tasks - run with --tags verify
+    # 検証タスク
+    - name: Verify deployment
+      ansible.builtin.stat:
+        path: "{{ app_dir }}/config.yaml"
+      register: config_stat
+      tags:
+        - verify
+
+    - name: Report verification result
+      ansible.builtin.debug:
+        msg: "Config exists: {{ config_stat.stat.exists }}"
+      tags:
+        - verify
+
+    # Cleanup tasks - usually skipped
+    # クリーンアップタスク（通常はスキップ）
+    - name: Cleanup old files (use with caution)
+      ansible.builtin.debug:
+        msg: "Would cleanup old files here"
+      tags:
+        - cleanup
+        - never  # 'never' tag means task won't run unless explicitly called

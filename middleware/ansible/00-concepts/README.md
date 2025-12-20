@@ -1,8 +1,8 @@
 # 00 · 概念与架构导入（Ansible Architecture & Agentless Philosophy）
 
-> **目标**：理解 Ansible 核心架构和 Agentless 设计哲学
-> **前置**：无（入门课程）
-> **时间**：30 分钟
+> **目标**：理解 Ansible 核心架构和 Agentless 设计哲学  
+> **前置**：无（入门课程）  
+> **时间**：30 分钟  
 > **实战项目**：调研一家日本 SIer 的 Ansible 导入案例
 
 ---
@@ -29,10 +29,10 @@ Ansible 是一个开源的 **IT 自动化工具**，用于：
 
 | 特点 | 说明 |
 |------|------|
-| **Agentless** | 无需在目标机器安装代理 |
+| **[Agentless](../../../glossary/devops/agent-agentless.md)** | 无需在目标机器安装代理 |
 | **SSH-based** | 通过 SSH 连接目标机器 |
 | **YAML** | 使用 YAML 编写 Playbook |
-| **Idempotent** | 多次执行结果一致（幂等性） |
+| **Idempotent** | 多次执行结果一致（[幂等性](../../../glossary/devops/idempotency.md)） |
 | **Push Model** | 从控制节点推送配置 |
 
 ---
@@ -247,6 +247,25 @@ Ansible 是一个开源的 **IT 自动化工具**，用于：
 - 試験内容: Ansible Playbook の作成・管理
 - 日本語試験あり
 - 本コースは EX294 の主要トピックをカバー
+
+---
+
+## 日本企業現場ノート
+
+> 💼 **Ansible 導入時の現場感**
+
+| 要点 | 説明 |
+|------|------|
+| **セキュリティ審査** | Agentless だから「追加ソフト不要」で審査通過しやすい |
+| **SSH 管理** | 既存の SSH 鍵基盤を活用可能（新規インフラ不要） |
+| **変更管理** | Playbook は Git 管理、変更履歴が残る（監査対応） |
+| **承認フロー** | AWX/AAP なら実行前に承認を挟める |
+| **引き継ぎ** | YAML だから引き継ぎが容易（属人化防止） |
+
+> 📋 **面接/入場時によく聞かれる質問**：
+> - 「なぜ Ansible を選んだのですか？」→ Agentless で導入障壁が低い、既存 SSH 基盤を活用
+> - 「Puppet/Chef との違いは？」→ Agent 不要、YAML で学習コストが低い、Push 型で即時反映
+> - 「Terraform との使い分けは？」→ Terraform はインフラ作成、Ansible は設定管理
 
 ---
 

@@ -1,0 +1,262 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - Control Node
+  Deploy once via Console, use for all lessons.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues: [t3.micro, t3.small, t3.medium]
+    Description: Control Node instance type
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Instance Configuration
+        Parameters:
+          - InstanceType
+
+Resources:
+  # VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: ansible-course-vpc
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: ansible-course-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Public Subnet
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: ansible-course-public
+
+  # Route Table
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: ansible-course-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # Security Group for Control Node
+  ControlNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Ansible Control Node
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ansible-control-sg
+
+  # IAM Role for Control Node
+  ControlNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess
+      Policies:
+        - PolicyName: AnsibleCoursePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ansible-lesson-*/*
+              - Effect: Allow
+                Action:
+                  - ec2:RunInstances
+                  - ec2:TerminateInstances
+                  - ec2:CreateSecurityGroup
+                  - ec2:DeleteSecurityGroup
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:AuthorizeSecurityGroupEgress
+                  - ec2:RevokeSecurityGroupIngress
+                  - ec2:RevokeSecurityGroupEgress
+                  - ec2:CreateTags
+                  - ec2:DescribeInstances
+                  - ec2:DescribeImages
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeVpcs
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                  - ssm:GetParameter
+                  - ssm:DeleteParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ansible-course/*
+              - Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:CreateInstanceProfile
+                  - iam:DeleteInstanceProfile
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:PassRole
+                  - iam:GetRole
+                  - iam:GetInstanceProfile
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/ansible-managed-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/ansible-managed-*
+      Tags:
+        - Key: Name
+          Value: ansible-control-role
+
+  ControlNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ControlNodeRole
+
+  # Control Node Instance
+  ControlNode:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref ControlNodeSecurityGroup
+      IamInstanceProfile: !Ref ControlNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: ansible-control
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          hostnamectl set-hostname ansible-control
+          echo "ansible-control" > /etc/hostname
+
+          dnf install -y ansible-core git jq python3-pip
+          ansible-galaxy collection install amazon.aws community.general
+
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          sudo -u ansible ssh-keygen -t ed25519 -f /home/ansible/.ssh/id_ed25519 -N ""
+
+          PUBLIC_KEY=$(cat /home/ansible/.ssh/id_ed25519.pub)
+          aws ssm put-parameter \
+            --name "/ansible-course/control-node-pubkey" \
+            --value "$PUBLIC_KEY" \
+            --type String \
+            --overwrite \
+            --region ${AWS::Region}
+
+          cat > /home/ansible/ansible.cfg << 'EOF'
+          [defaults]
+          inventory = ./inventory
+          remote_user = ansible
+          host_key_checking = False
+
+          [privilege_escalation]
+          become = True
+          become_method = sudo
+          become_user = root
+          become_ask_pass = False
+          EOF
+          chown ansible:ansible /home/ansible/ansible.cfg
+
+          mkdir -p /home/ansible/course
+          chown ansible:ansible /home/ansible/course
+
+          echo "Control Node ready" > /home/ansible/setup-complete.txt
+
+Outputs:
+  ControlNodeId:
+    Description: Control Node Instance ID
+    Value: !Ref ControlNode
+    Export:
+      Name: ansible-course-control-node-id
+
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VPC
+    Export:
+      Name: ansible-course-vpc-id
+
+  SubnetId:
+    Description: Subnet ID
+    Value: !Ref PublicSubnet
+    Export:
+      Name: ansible-course-subnet-id
+
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref ControlNodeSecurityGroup
+    Export:
+      Name: ansible-course-sg-id
+
+  SSMConnectCommand:
+    Description: Connect via SSM
+    Value: !Sub aws ssm start-session --target ${ControlNode}

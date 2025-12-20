@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - Lesson 01 Managed Nodes
+  NO auto SSH - for teaching manual SSH key setup
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small]
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  ManagedNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ansible-managed-role-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  ManagedNodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ManagedNodeRole
+
+  ManagedNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lesson 01 Managed Nodes
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-sg
+
+  # Node 1 - NO auto SSH key
+  ManagedNode1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node1-webserver
+        - Key: Role
+          Value: webserver
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -e
+
+          hostnamectl set-hostname node1-webserver
+          echo "node1-webserver" > /etc/hostname
+
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          mkdir -p /home/ansible/.ssh
+          chmod 700 /home/ansible/.ssh
+          touch /home/ansible/.ssh/authorized_keys
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          dnf install -y python3
+
+          echo "Node ready - SSH key NOT configured (manual setup required)" > /home/ansible/setup-status.txt
+
+  # Node 2 - NO auto SSH key
+  ManagedNode2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !ImportValue ansible-course-subnet-id
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref ManagedNodeInstanceProfile
+      Tags:
+        - Key: Name
+          Value: node2-dbserver
+        - Key: Role
+          Value: dbserver
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -e
+
+          hostnamectl set-hostname node2-dbserver
+          echo "node2-dbserver" > /etc/hostname
+
+          useradd -m ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+
+          mkdir -p /home/ansible/.ssh
+          chmod 700 /home/ansible/.ssh
+          touch /home/ansible/.ssh/authorized_keys
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          dnf install -y python3
+
+          echo "Node ready - SSH key NOT configured (manual setup required)" > /home/ansible/setup-status.txt
+
+Outputs:
+  Node1InstanceId:
+    Description: Node 1 Instance ID (for SSM)
+    Value: !Ref ManagedNode1
+
+  Node2InstanceId:
+    Description: Node 2 Instance ID (for SSM)
+    Value: !Ref ManagedNode2
+
+  Node1PrivateIp:
+    Description: Node 1 Private IP
+    Value: !GetAtt ManagedNode1.PrivateIp
+
+  Node2PrivateIp:
+    Description: Node 2 Private IP
+    Value: !GetAtt ManagedNode2.PrivateIp

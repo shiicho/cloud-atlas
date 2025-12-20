@@ -1,0 +1,40 @@
+# =============================================================================
+# 02-with-vars.yaml - Playbook with Variables
+# =============================================================================
+#
+# CONCEPT: Define and use variables in playbooks
+#
+# What's new from 01:
+#   + vars: section to define variables
+#   + {{ variable }} syntax to use them
+#
+# Compare with previous:
+#   diff 01-minimal-play.yaml 02-with-vars.yaml
+#
+# Run with:
+#   ansible-playbook 02-with-vars.yaml
+#
+#   # Override variable from command line
+#   ansible-playbook 02-with-vars.yaml -e "greeting=Konnichiwa"
+#
+# =============================================================================
+---
+- name: Demonstrate variable usage
+  hosts: all
+
+  # Variables defined here apply to this play
+  # ここで定義した変数はこのプレイに適用される
+  vars:
+    greeting: "Hello"
+    target: "World"
+    # You can use variables inside other variables
+    message: "{{ greeting }}, {{ target }}!"
+
+  tasks:
+    - name: Print greeting message
+      ansible.builtin.debug:
+        msg: "{{ message }}"
+
+    - name: Print system info using facts
+      ansible.builtin.debug:
+        msg: "Running on {{ ansible_distribution }} {{ ansible_distribution_version }}"

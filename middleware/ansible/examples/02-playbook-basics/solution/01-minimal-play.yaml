@@ -1,0 +1,28 @@
+# =============================================================================
+# 01-minimal-play.yaml - Simplest Possible Playbook
+# =============================================================================
+#
+# CONCEPT: The absolute minimum required for a working playbook
+#
+# Structure:
+#   --- (YAML document start)
+#   - (list item = one play)
+#     name: (descriptive name)
+#     hosts: (target hosts)
+#     tasks: (list of tasks)
+#       - name: (task name)
+#         module: (module to run)
+#
+# Run with:
+#   ansible-playbook 01-minimal-play.yaml
+#
+# =============================================================================
+---
+# A playbook is a list of plays (note the leading dash)
+- name: Test connectivity to all hosts
+  hosts: all
+
+  # Tasks are executed in order
+  tasks:
+    - name: Ping all hosts
+      ansible.builtin.ping:

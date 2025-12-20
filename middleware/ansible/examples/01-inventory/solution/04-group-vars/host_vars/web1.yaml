@@ -1,0 +1,27 @@
+# =============================================================================
+# host_vars/web1.yaml - Variables specific to web1 host
+# =============================================================================
+#
+# These variables apply ONLY to the host named "web1".
+# HIGHEST precedence (overrides all.yaml and group_vars).
+#
+# Use case: This server has special configuration
+# 用途：特別な設定が必要なホスト
+#
+# =============================================================================
+
+---
+# Override http_port from group_vars/webservers.yaml
+# web1 uses non-standard port (load balancer backend)
+http_port: 8080
+
+# This host is the primary/master
+is_primary: true
+
+# Custom nginx config for this host
+nginx_worker_processes: 4  # Override auto (this server has 4 cores)
+
+# Host-specific tags
+host_tags:
+  role: primary-web
+  team: platform
