@@ -1,0 +1,244 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: |
+  AWX Lab Environment - Single node for AWX deployment
+
+  Resources:
+  - 1x EC2 Instance (t3.medium) - Docker pre-installed for AWX
+  - VPC with public subnet
+  - SSM access enabled
+
+  Cost: ~$0.05/hour
+
+  CLEANUP: Delete stack when done to avoid charges
+  aws cloudformation delete-stack --stack-name ansible-awx-lab
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: ansible-awx-lab
+    Description: Environment name prefix for resources
+
+  AllowedCIDR:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR block for HTTP/HTTPS access to AWX UI
+
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.medium
+      - t3.large
+    Description: Instance type (t3.medium minimum for AWX)
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Latest Amazon Linux 2023 AMI
+
+Resources:
+  # =============================================================================
+  # VPC and Networking
+  # =============================================================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.1.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-igw
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.1.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-public-subnet
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-public-rt
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  # =============================================================================
+  # IAM Role for SSM
+  # =============================================================================
+  SSMInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${EnvironmentName}-ssm-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-ssm-role
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${EnvironmentName}-ssm-profile
+      Roles:
+        - !Ref SSMInstanceRole
+
+  # =============================================================================
+  # Security Group
+  # =============================================================================
+  AWXSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${EnvironmentName}-awx-sg
+      GroupDescription: Security group for AWX host
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCIDR
+          Description: HTTP access to AWX
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref AllowedCIDR
+          Description: HTTPS access to AWX
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: !Ref AllowedCIDR
+          Description: EDA webhook endpoint
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-awx-sg
+
+  # =============================================================================
+  # EC2 Instance
+  # =============================================================================
+  AWXInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref AWXSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-awx
+        - Key: Role
+          Value: awx
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -e
+
+          # Update system
+          dnf update -y
+
+          # Install Docker
+          dnf install -y docker
+          systemctl enable docker
+          systemctl start docker
+
+          # Install docker-compose
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+
+          # Install git and other tools
+          dnf install -y git python3-pip
+
+          # Install Ansible and EDA
+          pip3 install ansible ansible-rulebook ansible-runner
+
+          # Add ec2-user to docker group
+          usermod -aG docker ec2-user
+
+          # Create working directory
+          mkdir -p /opt/awx
+          chown ec2-user:ec2-user /opt/awx
+
+          echo "AWX host setup complete" > /tmp/setup_complete
+          echo "To install AWX, follow the official documentation"
+          echo "https://github.com/ansible/awx-operator"
+
+Outputs:
+  AWXInstanceId:
+    Description: AWX Instance ID (use SSM to connect)
+    Value: !Ref AWXInstance
+
+  AWXPublicIP:
+    Description: AWX Public IP
+    Value: !GetAtt AWXInstance.PublicIp
+
+  AWXPrivateIP:
+    Description: AWX Private IP
+    Value: !GetAtt AWXInstance.PrivateIp
+
+  AWXURL:
+    Description: AWX Web UI URL (after installation)
+    Value: !Sub http://${AWXInstance.PublicIp}/
+
+  EDAWebhookURL:
+    Description: EDA Webhook endpoint URL
+    Value: !Sub http://${AWXInstance.PublicIp}:5000/endpoint
+
+  SSMConnectCommand:
+    Description: SSM command to connect to AWX host
+    Value: !Sub aws ssm start-session --target ${AWXInstance}
+
+  CleanupCommand:
+    Description: Run this to delete the stack and avoid charges
+    Value: !Sub aws cloudformation delete-stack --stack-name ${AWS::StackName}

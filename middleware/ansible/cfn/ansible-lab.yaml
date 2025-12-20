@@ -1,0 +1,367 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: |
+  Ansible Lab Environment - 3-node setup for learning
+
+  Resources:
+  - 1x Control Node (t3.small) - Ansible installed
+  - 2x Managed Nodes (t3.micro) - Target hosts
+  - VPC with public subnet
+  - SSM access enabled (no SSH keys from outside needed)
+
+  Cost: ~$0.05/hour (all instances running)
+
+  CLEANUP: Delete stack when done to avoid charges
+  aws cloudformation delete-stack --stack-name ansible-lab
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: ansible-lab
+    Description: Environment name prefix for resources
+
+  AllowedCIDR:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR block for HTTP access (SSM used for shell access)
+
+  ControlNodeInstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Description: Control node instance type (t3.small recommended for Ansible)
+
+  ManagedNodeInstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+    Description: Managed node instance type
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Latest Amazon Linux 2023 AMI
+
+Resources:
+  # =============================================================================
+  # VPC and Networking
+  # =============================================================================
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-igw
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-public-subnet
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-public-rt
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  # =============================================================================
+  # IAM Role for SSM
+  # =============================================================================
+  SSMInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${EnvironmentName}-ssm-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-ssm-role
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${EnvironmentName}-ssm-profile
+      Roles:
+        - !Ref SSMInstanceRole
+
+  # =============================================================================
+  # Security Groups
+  # =============================================================================
+  ControlNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${EnvironmentName}-control-sg
+      GroupDescription: Security group for Ansible control node
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCIDR
+          Description: HTTP access
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-control-sg
+
+  ManagedNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${EnvironmentName}-managed-sg
+      GroupDescription: Security group for Ansible managed nodes
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref ControlNodeSecurityGroup
+          Description: SSH from control node
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCIDR
+          Description: HTTP access
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-managed-sg
+
+  # =============================================================================
+  # EC2 Instances
+  # =============================================================================
+  ControlNode:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref ControlNodeInstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref ControlNodeSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-control
+        - Key: Role
+          Value: ansible-control
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+
+          # Update system
+          dnf update -y
+
+          # Install Ansible
+          dnf install -y ansible-core python3-pip
+          pip3 install boto3 botocore
+
+          # Install additional Ansible collections
+          ansible-galaxy collection install amazon.aws community.general
+
+          # Generate SSH key pair for ansible user
+          useradd -m ansible
+          mkdir -p /home/ansible/.ssh
+          ssh-keygen -t ed25519 -f /home/ansible/.ssh/id_ed25519 -N ""
+          chown -R ansible:ansible /home/ansible/.ssh
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/id_ed25519
+
+          # Create basic ansible.cfg
+          cat > /home/ansible/ansible.cfg << 'EOF'
+          [defaults]
+          inventory = ./inventory
+          remote_user = ansible
+          host_key_checking = False
+
+          [privilege_escalation]
+          become = True
+          become_method = sudo
+          become_user = root
+          become_ask_pass = False
+          EOF
+          chown ansible:ansible /home/ansible/ansible.cfg
+
+          # Create sample inventory
+          cat > /home/ansible/inventory << 'EOF'
+          [webservers]
+          node1 ansible_host=${ManagedNode1.PrivateIp}
+
+          [dbservers]
+          node2 ansible_host=${ManagedNode2.PrivateIp}
+
+          [all:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
+          chown ansible:ansible /home/ansible/inventory
+
+          # Store public key for distribution
+          cat /home/ansible/.ssh/id_ed25519.pub > /tmp/ansible_public_key
+
+          # Signal completion
+          echo "Control node setup complete" > /tmp/setup_complete
+
+  ManagedNode1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref ManagedNodeInstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-node1
+        - Key: Role
+          Value: webserver
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -e
+
+          # Update system
+          dnf update -y
+
+          # Create ansible user with sudo
+          useradd -m ansible
+          echo "ansible ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ansible
+          mkdir -p /home/ansible/.ssh
+          chmod 700 /home/ansible/.ssh
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install Python for Ansible
+          dnf install -y python3
+
+          echo "Managed node 1 setup complete" > /tmp/setup_complete
+
+  ManagedNode2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref ManagedNodeInstanceType
+      ImageId: !Ref LatestAmiId
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref ManagedNodeSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-node2
+        - Key: Role
+          Value: dbserver
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -e
+
+          # Update system
+          dnf update -y
+
+          # Create ansible user with sudo
+          useradd -m ansible
+          echo "ansible ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ansible
+          mkdir -p /home/ansible/.ssh
+          chmod 700 /home/ansible/.ssh
+          chown -R ansible:ansible /home/ansible/.ssh
+
+          # Install Python for Ansible
+          dnf install -y python3
+
+          echo "Managed node 2 setup complete" > /tmp/setup_complete
+
+Outputs:
+  ControlNodeInstanceId:
+    Description: Control Node Instance ID (use SSM to connect)
+    Value: !Ref ControlNode
+
+  ControlNodePrivateIP:
+    Description: Control Node Private IP
+    Value: !GetAtt ControlNode.PrivateIp
+
+  ManagedNode1PrivateIP:
+    Description: Managed Node 1 (webserver) Private IP
+    Value: !GetAtt ManagedNode1.PrivateIp
+
+  ManagedNode2PrivateIP:
+    Description: Managed Node 2 (dbserver) Private IP
+    Value: !GetAtt ManagedNode2.PrivateIp
+
+  SSMConnectControl:
+    Description: SSM command to connect to Control Node
+    Value: !Sub aws ssm start-session --target ${ControlNode}
+
+  SSMConnectNode1:
+    Description: SSM command to connect to Managed Node 1
+    Value: !Sub aws ssm start-session --target ${ManagedNode1}
+
+  SSMConnectNode2:
+    Description: SSM command to connect to Managed Node 2
+    Value: !Sub aws ssm start-session --target ${ManagedNode2}
+
+  SetupSSHKeyCommand:
+    Description: After stack creation, run this on Control Node to distribute SSH key
+    Value: |
+      # On Control Node, copy public key to managed nodes:
+      # 1. Get the public key
+      cat /home/ansible/.ssh/id_ed25519.pub
+      # 2. On each managed node, add to authorized_keys:
+      # echo "<public_key>" >> /home/ansible/.ssh/authorized_keys
+
+  CleanupCommand:
+    Description: Run this to delete the stack and avoid charges
+    Value: !Sub aws cloudformation delete-stack --stack-name ${AWS::StackName}
