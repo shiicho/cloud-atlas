@@ -73,9 +73,9 @@ Ansible 是一个开源的 **IT 自动化工具**，用于：
 | **控制节点** | Control Node | 运行 Ansible 的机器，执行 playbook |
 | **被管节点** | Managed Node | 被 Ansible 管理的目标机器 |
 | **Inventory** | Inventory | 定义被管节点的清单文件 |
-| **Playbook** | Playbook | YAML 格式的任务定义文件 |
-| **Module** | Module | 执行具体任务的代码单元 |
-| **Task** | Task | Playbook 中的单个操作步骤 |
+| **Module** | Module | 执行具体任务的代码单元（最小执行单位） |
+| **Task** | Task | 调用一个 Module 的单个操作步骤 |
+| **Playbook** | Playbook | 包含多个 Task 的 YAML 任务定义文件 |
 
 ---
 
@@ -124,48 +124,73 @@ Ansible 是一个开源的 **IT 自动化工具**，用于：
 
 ---
 
-## Step 4 — Ansible vs Terraform
+## Step 4 — Ansible vs Terraform vs CloudFormation
 
-这是面试常见问题：两者有什么区别？
+这是面试常见问题：三者有什么区别？
 
-| 维度 | Ansible | Terraform |
-|------|---------|-----------|
-| **主要用途** | Configuration Management | Infrastructure Provisioning |
-| **关注点** | 服务器内部配置 | 云资源创建/销毁 |
-| **语言** | YAML (Playbook) | HCL (HashiCorp Configuration Language) |
-| **状态管理** | 无状态 | 有状态 (terraform.tfstate) |
-| **幂等性** | 通过模块实现 | 原生支持 |
-| **典型任务** | 安装软件、配置服务 | 创建 VPC、EC2、RDS |
+| 维度 | Ansible | Terraform | CloudFormation |
+|------|---------|-----------|----------------|
+| **主要用途** | Configuration Management | Infrastructure Provisioning | Infrastructure Provisioning |
+| **关注点** | 服务器内部配置 | 多云资源创建/销毁 | AWS 资源创建/销毁 |
+| **语言** | YAML (Playbook) | HCL | YAML / JSON |
+| **状态管理** | 无状态 | 有状态 (terraform.tfstate) | 有状态 (Stack) |
+| **幂等性** | 通过模块实现 | 原生支持 | 原生支持 |
+| **云平台** | 任意（通过模块） | 多云支持 | 仅 AWS |
+| **典型任务** | 安装软件、配置服务 | 创建 VPC、EC2、RDS | 创建 VPC、EC2、RDS |
 
-### 互补关系
+### 定位区别
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       Infrastructure                         │
-│                                                              │
-│   ┌──────────────────┐      ┌──────────────────┐            │
-│   │    Terraform     │      │     Ansible      │            │
-│   │                  │      │                  │            │
-│   │  创建 EC2 实例    │ ───► │  配置 EC2 内部    │            │
-│   │  创建 RDS 数据库  │      │  安装软件包       │            │
-│   │  创建 VPC 网络    │      │  部署应用程序     │            │
-│   │                  │      │                  │            │
-│   │  (基础设施层)     │      │  (配置管理层)     │            │
-│   └──────────────────┘      └──────────────────┘            │
-│                                                              │
-│   Terraform 负责 "创建什么"                                   │
-│   Ansible 负责 "如何配置"                                     │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         工具定位对比                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   CloudFormation / Terraform          Ansible                       │
+│   ┌──────────────────────┐           ┌──────────────────────┐       │
+│   │  Infrastructure as   │           │  Configuration       │       │
+│   │  Code (IaC)          │    ───►   │  Management          │       │
+│   │                      │           │                      │       │
+│   │  • 创建 EC2 实例      │           │  • 安装软件包         │       │
+│   │  • 创建 VPC 网络      │           │  • 配置系统服务       │       │
+│   │  • 创建 RDS 数据库    │           │  • 部署应用程序       │       │
+│   │                      │           │                      │       │
+│   │  "创建什么资源"       │           │  "如何配置资源"       │       │
+│   └──────────────────────┘           └──────────────────────┘       │
+│                                                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│   CloudFormation vs Terraform                                        │
+│   ┌─────────────────────┐           ┌─────────────────────┐         │
+│   │   CloudFormation    │           │     Terraform       │         │
+│   │                     │           │                     │         │
+│   │  • AWS 原生          │           │  • 多云支持          │         │
+│   │  • 无需安装          │           │  • 需要安装 CLI      │         │
+│   │  • 状态由 AWS 管理    │           │  • 状态需自行管理    │         │
+│   │  • 与 AWS 服务深度集成│           │  • 社区模块丰富      │         │
+│   └─────────────────────┘           └─────────────────────┘         │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 本课程的选择
+
+本课程使用 **CloudFormation** 创建实验环境（EC2、VPC、Route 53），然后用 **Ansible** 配置服务器。
+
+```bash
+# Step 1: CloudFormation 创建基础设施
+aws cloudformation create-stack --stack-name ansible-lab ...
+
+# Step 2: Ansible 配置服务器
+ansible-playbook -i inventory/hosts.ini site.yaml
 ```
 
 > 💡 **面试要点**
 >
-> **問題**：Ansible と Terraform の違いは何ですか？
+> **問題**：Ansible と Terraform/CloudFormation の違いは何ですか？
 >
 > **期望回答**：
-> - Terraform は Infrastructure as Code、主にクラウドリソースの作成・管理
+> - Terraform/CloudFormation は Infrastructure as Code、クラウドリソースの作成・管理
 > - Ansible は Configuration Management、サーバー内部の設定・アプリデプロイ
-> - 両者は補完関係、Terraform でインフラ作成 → Ansible で設定という流れが一般的
+> - 両者は補完関係、IaC でインフラ作成 → Ansible で設定という流れが一般的
+> - CloudFormation は AWS 専用、Terraform はマルチクラウド対応
 
 ---
 

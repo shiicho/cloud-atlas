@@ -19,36 +19,48 @@
 # 进入课程目录
 cd ~/02-inventory
 
+# 获取 SSH 公钥（在 Control Node 上生成的）
+PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
+
 # 部署 Managed Nodes
 aws cloudformation create-stack \
   --stack-name ansible-lesson-02 \
   --template-body file://cfn/managed-nodes.yaml \
+  --parameters ParameterKey=PublicKey,ParameterValue="$PUBLIC_KEY" \
   --capabilities CAPABILITY_NAMED_IAM
 
 # 等待完成（约 3 分钟）
 aws cloudformation wait stack-create-complete --stack-name ansible-lesson-02
 ```
 
-### 配置 Inventory
+### 验证 DNS 解析
+
+CloudFormation 已自动创建 Route 53 DNS 记录，无需手动配置 IP 地址：
 
 ```bash
-# 获取节点 IP
-NODE1_IP=$(aws cloudformation describe-stacks --stack-name ansible-lesson-02 \
-  --query 'Stacks[0].Outputs[?OutputKey==`Node1PrivateIp`].OutputValue' --output text)
-NODE2_IP=$(aws cloudformation describe-stacks --stack-name ansible-lesson-02 \
-  --query 'Stacks[0].Outputs[?OutputKey==`Node2PrivateIp`].OutputValue' --output text)
+# 验证 DNS 解析
+nslookup al2023-1.ans.local
+nslookup al2023-2.ans.local
+```
 
-# 生成 inventory 文件
-cat > inventory/hosts.ini << EOF
+### Inventory（已预配置）
+
+Inventory 文件已使用 DNS 名称预配置：
+
+```bash
+cat inventory/hosts.ini
+```
+
+输出：
+```ini
 [webservers]
-node1 ansible_host=$NODE1_IP
+al2023-1.ans.local
 
 [dbservers]
-node2 ansible_host=$NODE2_IP
+al2023-2.ans.local
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
-EOF
 ```
 
 ### 验证连接
@@ -59,8 +71,8 @@ ansible -i inventory/hosts.ini all -m ping
 
 **预期输出**：
 ```
-node1 | SUCCESS => { "ping": "pong" }
-node2 | SUCCESS => { "ping": "pong" }
+al2023-1.ans.local | SUCCESS => { "ping": "pong" }
+al2023-2.ans.local | SUCCESS => { "ping": "pong" }
 ```
 
 ---
@@ -74,6 +86,33 @@ node2 | SUCCESS => { "ping": "pong" }
 
 ---
 
+## 渐进式示例 (Progressive Examples)
+
+> 本课提供 7 个渐进式 inventory 示例，从最简单到较复杂，每个示例引入新概念。
+
+**目录**: `inventory/examples/`
+
+| 示例 | 新概念 | 测试命令 |
+|------|--------|----------|
+| `01-basic-hosts` | 主机列表 | `ansible -i 01-basic-hosts all --list-hosts` |
+| `02-with-groups` | 功能分组 | `ansible -i 02-with-groups webservers -m ping` |
+| `03-host-ranges` | 范围表示法 `[1:N]` | `ansible -i 03-host-ranges amazon_linux --list-hosts` |
+| `04-group-vars` | 组变量 `:vars` | `ansible -i 04-group-vars all -m debug -a "var=http_port"` |
+| `05-children-groups` | 层级分组 `:children` | `ansible -i 05-children-groups production --list-hosts` |
+| `06-yaml-format/` | YAML 格式 | `ansible -i hosts.yaml all --list-hosts` |
+| `07-control-local` | 本地连接 | `ansible -i 07-control-local control -m ping` |
+
+```bash
+# 快速体验
+cd ~/02-inventory/inventory/examples
+ansible -i 05-children-groups production --list-hosts
+ansible-inventory -i 05-children-groups --graph
+```
+
+详细说明请参阅 [`inventory/examples/README.md`](inventory/examples/README.md)。
+
+---
+
 ## Step 1 — 静态 Inventory 基础
 
 ### 1.1 INI 格式
@@ -81,97 +120,78 @@ node2 | SUCCESS => { "ping": "pong" }
 ```ini
 # inventory.ini
 
-# 单独主机
-web1.example.com
-
-# 带别名的主机
-node1 ansible_host=10.0.1.10
-
-# 主机组
+# 使用 DNS 名称（推荐 - 本课程使用 Route 53 Private Hosted Zone）
 [webservers]
-web1.example.com
-web2.example.com
+al2023-1.ans.local
 
 [dbservers]
-db1.example.com
-db2.example.com
+al2023-2.ans.local
 
 # 组变量
 [webservers:vars]
 http_port=80
-ansible_user=deploy
+ansible_user=ansible
 
 # 嵌套组
 [production:children]
 webservers
 dbservers
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
 ```
+
+> 💡 **DNS vs IP**：使用 DNS 名称比 IP 地址更稳定。当 EC2 实例重启时 IP 可能变化，但 DNS 记录会自动更新。
 
 ### 1.2 YAML 格式
 
 ```yaml
 # inventory.yaml
+---
 all:
-  hosts:
-    node1:
-      ansible_host: 10.0.1.10
   children:
     webservers:
       hosts:
-        web1.example.com:
-        web2.example.com:
+        al2023-1.ans.local:
       vars:
         http_port: 80
     dbservers:
       hosts:
-        db1.example.com:
+        al2023-2.ans.local:
     production:
       children:
         webservers:
         dbservers:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+...
 ```
 
-### 1.3 动手练习：创建你的第一个 Inventory
+### 1.3 动手练习：探索 Inventory 结构
 
-现在用你的 Lab 节点来练习！
+使用课程预置的渐进式示例：
 
 ```bash
-# 1. 查看当前 inventory（预置的）
-cat ~/inventory
+# 1. 查看课程预置的 inventory
+cat ~/02-inventory/inventory/hosts.ini
 
-# 2. 创建一个新的 inventory 目录
-mkdir -p ~/my-inventory
+# 2. 进入示例目录
+cd ~/02-inventory/inventory/examples
 
-# 3. 创建 INI 格式的 inventory
-cat > ~/my-inventory/hosts.ini << 'EOF'
-# 我的第一个 Inventory
+# 3. 比较不同复杂度的 inventory
+cat 01-basic-hosts       # 最简单
+cat 05-children-groups   # 带层级分组
 
-# 使用实际节点 IP（从 ~/inventory 获取）
-[webservers]
-node1 ansible_host=10.0.1.53  # 替换为你的实际 IP
+# 4. 用 ansible-inventory 可视化
+ansible-inventory -i 05-children-groups --graph
 
-[dbservers]
-node2 ansible_host=10.0.1.26  # 替换为你的实际 IP
-
-[all:vars]
-ansible_python_interpreter=/usr/bin/python3
-EOF
-
-# 4. 测试新 inventory
-ansible -i ~/my-inventory/hosts.ini all -m ping
-
-# 5. 只测试 webservers 组
-ansible -i ~/my-inventory/hosts.ini webservers -m ping
+# 5. 测试连接
+ansible -i 02-with-groups webservers -m ping
 ```
 
 **验证问题**：
-- `ansible -i ~/my-inventory/hosts.ini webservers -m ping` 应该只返回 node1
-- `ansible -i ~/my-inventory/hosts.ini dbservers -m ping` 应该只返回 node2
-
-> 💡 **提示**：获取节点 IP 的命令：
-> ```bash
-> cat ~/inventory | grep ansible_host
-> ```
+- `ansible -i 02-with-groups webservers -m ping` 应该只返回 al2023-1.ans.local
+- `ansible -i 02-with-groups dbservers -m ping` 应该只返回 al2023-2.ans.local
 
 ### 1.4 比较 INI 和 YAML 格式
 

@@ -330,8 +330,8 @@ curl -X POST http://localhost:5000/endpoint \
       "status": "PROBLEM"
     },
     "host": {
-      "name": "node1",
-      "ip": "10.0.1.10"
+      "name": "target-1",
+      "dns": "target-1.ans.local"
     }
   }'
 ```

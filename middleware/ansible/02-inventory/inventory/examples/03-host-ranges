@@ -1,0 +1,32 @@
+# 03-host-ranges
+# ===============
+# Using range notation for scalability.
+# Instead of listing hosts one by one, use [START:END] notation.
+#
+# Syntax:
+#   hostname-[1:10].domain.com  →  hostname-1 through hostname-10
+#   server-[a:z].example.com    →  server-a through server-z
+#
+# Benefits:
+#   - Scales easily from 2 to 200 hosts
+#   - Reduces repetitive typing
+#   - Perfect for uniformly named infrastructure
+#
+# Usage:
+#   ansible -i 03-host-ranges amazon_linux --list-hosts
+#
+# Real-world example:
+#   If you had 10 nodes: al2023-[1:10].ans.local
+
+[amazon_linux]
+al2023-[1:2].ans.local
+
+# For demonstration, if you scale up:
+# [amazon_linux]
+# al2023-[1:10].ans.local
+#
+# [webservers]
+# al2023-[1:5].ans.local
+#
+# [dbservers]
+# al2023-[6:10].ans.local

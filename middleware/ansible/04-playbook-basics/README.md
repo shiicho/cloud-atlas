@@ -36,8 +36,8 @@ packages: [httpd, vim, htop]
 
 # 嵌套结构
 server:
-  name: web1
-  ip: 10.0.1.10
+  name: al2023-1
+  host: al2023-1.ans.local
   ports:
     - 80
     - 443

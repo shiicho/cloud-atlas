@@ -16,6 +16,37 @@
 
 ---
 
+## 实战练习 (Hands-on Exercises)
+
+> 本课提供 6 个实战脚本，帮助你掌握核心模块和幂等性概念。
+
+**目录**: `exercises/`
+
+| 脚本 | 学习目标 | 关键模块 |
+|------|----------|----------|
+| `01-setup-facts.sh` | 收集系统信息 | setup (filter) |
+| `02-file-module.sh` | 文件操作与幂等性 | file (touch, mode, absent) |
+| `03-copy-module.sh` | 文件复制 | copy (content, backup) |
+| `04-command-idempotent.sh` | 让 command 模块幂等 | command (creates, removes) |
+| `05-fetch-module.sh` | 从远程下载文件 | fetch (flat) |
+| `06-ansible-doc.sh` | 查看模块文档 | ansible-doc |
+
+```bash
+# 快速开始
+cd ~/03-adhoc-modules/exercises
+bash 01-setup-facts.sh
+```
+
+**输出颜色说明**:
+- **GREEN** = 成功，无变化（幂等性生效）
+- **YELLOW** = 成功，有变化
+- **RED** = 执行失败
+- **PURPLE** = 条件不满足，跳过
+
+详细说明请参阅 [`exercises/README.md`](exercises/README.md)。
+
+---
+
 ## Step 1 — Ad-hoc 命令语法
 
 ```bash

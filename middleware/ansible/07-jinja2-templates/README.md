@@ -177,10 +177,10 @@ upstream backend {
 nginx_worker_processes: auto
 nginx_worker_connections: 1024
 upstream_servers:
-  - host: 10.0.1.10
+  - host: al2023-1.ans.local
     port: 8080
     weight: 3
-  - host: 10.0.1.11
+  - host: al2023-2.ans.local
     port: 8080
     weight: 2
 server_name: example.com

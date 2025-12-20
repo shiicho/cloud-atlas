@@ -72,12 +72,14 @@
 | Stack name | `ansible-control` |
 | InstanceType | `t3.small`（默认） |
 
-点击 **Next** → **Next**
+点击 **下一步 / 次へ** → **下一步 / 次へ**
 
 **⑤ 确认并创建**
 
-1. 勾选 **I acknowledge that AWS CloudFormation might create IAM resources**
-2. 点击 **Submit**
+1. 勾选 IAM 资源确认框：
+   - 中文：**我确认，AWS CloudFormation 可能创建 IAM 资源。**
+   - 日本語：**AWS CloudFormation によって IAM リソースが作成される場合があることを承認します。**
+2. 点击 **下一步 / 次へ** 或 **提交 / 送信**
 3. 等待状态变为 **CREATE_COMPLETE**（约 5 分钟）
 
 ### 1.3 连接到 Control Node
@@ -401,38 +403,38 @@ chown -R ansible:ansible ~/.ssh
 回到 Control Node，测试能否 SSH 到 Managed Nodes：
 
 ```bash
-# 1. 先查看 inventory 文件，获取节点 IP
-cat ~/inventory
+# 1. 先查看 inventory 文件（使用 DNS 名称）
+cat ~/01-installation/inventory/hosts.ini
 ```
 
-输出示例：
+输出：
 ```ini
 [webservers]
-node1 ansible_host=10.0.1.53
+al2023-1.ans.local
 
 [dbservers]
-node2 ansible_host=10.0.1.26
+al2023-2.ans.local
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
 ```
 
 ```bash
-# 2. 用 inventory 中的 IP 测试 SSH（替换为你的实际 IP）
-ssh ansible@10.0.1.53 "hostname"
-ssh ansible@10.0.1.26 "hostname"
+# 2. 使用 DNS 名称测试 SSH
+ssh ansible@al2023-1.ans.local "hostname"
+ssh ansible@al2023-2.ans.local "hostname"
 ```
 
 首次连接会提示确认主机指纹，输入 `yes`：
 ```
-The authenticity of host '10.0.1.53' can't be established.
+The authenticity of host 'al2023-1.ans.local' can't be established.
 ED25519 key fingerprint is SHA256:xxxxx...
 Are you sure you want to continue connecting (yes/no)? yes
 ```
 
 成功后会输出目标机器的 hostname：
 ```
-ip-10-0-1-53.ap-northeast-1.compute.internal
+al2023-1
 ```
 
 ---

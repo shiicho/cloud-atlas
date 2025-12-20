@@ -1,0 +1,13 @@
+# 01-basic-hosts
+# ==============
+# The simplest possible inventory file.
+# Lists hosts without any organization or grouping.
+#
+# Usage:
+#   ansible -i 01-basic-hosts all --list-hosts
+#
+# Note: All hosts automatically belong to the implicit "all" group.
+
+[all]
+al2023-1.ans.local
+al2023-2.ans.local
