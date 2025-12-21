@@ -212,6 +212,14 @@ ansible-playbook exercises/05-deployment-rollback.yaml
 
 ---
 
+## 清理资源
+
+> **保留 Managed Nodes** - 后续课程都需要使用。
+>
+> 学完所有课程后，请参考 [课程首页的清理资源](../#清理资源) 删除所有节点。
+
+---
+
 ## 系列导航
 
 ← [07 · Jinja2](../07-jinja2-templates/) | [Home](../) | [Next →](../09-vault-secrets/)

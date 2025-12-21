@@ -290,6 +290,14 @@ ansible-playbook site.yaml --limit webservers
 
 ---
 
+## 清理资源
+
+> **保留 Managed Nodes** - 后续课程都需要使用。
+>
+> 学完所有课程后，请参考 [课程首页的清理资源](../#清理资源) 删除所有节点。
+
+---
+
 ## 系列导航
 
 ← [03 · Ad-hoc](../03-adhoc-modules/) | [Home](../) | [Next →](../05-variables-logic/)

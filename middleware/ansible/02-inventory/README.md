@@ -80,15 +80,23 @@ cd ~/02-inventory
 # 获取 SSH 公钥
 PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
 
-# 部署 Managed Nodes（SSH 密钥自动注入）
-aws cloudformation create-stack \
-  --stack-name ansible-lesson-02 \
-  --template-body file://cfn/managed-nodes.yaml \
-  --parameters ParameterKey=PublicKey,ParameterValue="$PUBLIC_KEY" \
-  --capabilities CAPABILITY_NAMED_IAM
+# 部署共享资源 + 节点（智能部署：不存在则创建，已存在则跳过）
+aws cloudformation deploy \
+  --stack-name ansible-managed-common \
+  --template-file cfn/common.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset
 
-# 等待完成（约 3 分钟）
-aws cloudformation wait stack-create-complete --stack-name ansible-lesson-02
+for node in web-1 db-1; do
+  aws cloudformation deploy \
+    --stack-name ansible-${node} \
+    --template-file cfn/${node}.yaml \
+    --parameter-overrides PublicKey="$PUBLIC_KEY" \
+    --no-fail-on-empty-changeset
+done
+
+# 验证部署状态
+aws cloudformation describe-stacks --query "Stacks[?starts_with(StackName,'ansible-')].{Name:StackName,Status:StackStatus}" --output table
 ```
 
 ### 1.4 验证 DNS 解析
@@ -406,10 +414,7 @@ ansible-playbook -i inventory/prd  site.yaml   # 生产环境
 
 > **保留 Managed Nodes** - 后续课程（03-adhoc, 04-playbook 等）都需要使用。
 >
-> 学完所有课程后删除：
-> ```bash
-> aws cloudformation delete-stack --stack-name ansible-lesson-02
-> ```
+> 学完所有课程后，请参考 [课程首页的清理资源](../#清理资源) 删除所有节点。
 
 ---
 

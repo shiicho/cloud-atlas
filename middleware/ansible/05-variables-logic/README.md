@@ -272,6 +272,14 @@ ansible-playbook exercises/07-multi-os.yaml
 
 ---
 
+## 清理资源
+
+> **保留 Managed Nodes** - 后续课程都需要使用。
+>
+> 学完所有课程后，请参考 [课程首页的清理资源](../#清理资源) 删除所有节点。
+
+---
+
 ## 系列导航
 
 ← [04 · Playbook](../04-playbook-basics/) | [Home](../) | [Next →](../06-roles-galaxy/)

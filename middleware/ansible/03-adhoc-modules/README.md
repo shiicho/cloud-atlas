@@ -325,6 +325,14 @@ ansible webservers --limit web-1.ans.local -m shell -a "uptime"
 
 ---
 
+## 清理资源
+
+> **保留 Managed Nodes** - 后续课程都需要使用。
+>
+> 学完所有课程后，请参考 [课程首页的清理资源](../#清理资源) 删除所有节点。
+
+---
+
 ## 系列导航
 
 ← [02 · Inventory](../02-inventory/) | [Home](../) | [Next →](../04-playbook-basics/)

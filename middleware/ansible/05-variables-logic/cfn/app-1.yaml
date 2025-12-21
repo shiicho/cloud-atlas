@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Ansible Course - app-1 (Ubuntu 22.04 - appserver)
+  Used for multi-OS lessons
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small]
+
+  PublicKey:
+    Type: String
+    Description: SSH public key for ansible user
+
+  UbuntuAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+
+Resources:
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref UbuntuAmiId
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !ImportValue ansible-managed-sg-id
+          AssociatePublicIpAddress: true
+      IamInstanceProfile: !ImportValue ansible-managed-profile
+      Tags:
+        - Key: Name
+          Value: app-1
+        - Key: Role
+          Value: appserver
+        - Key: OS
+          Value: ubuntu
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          hostnamectl set-hostname app-1
+          apt-get update
+          apt-get install -y python3
+          useradd -m -s /bin/bash ansible
+          echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
+          chmod 440 /etc/sudoers.d/ansible
+          mkdir -p /home/ansible/.ssh
+          echo "${PublicKey}" > /home/ansible/.ssh/authorized_keys
+          chmod 700 /home/ansible/.ssh
+          chmod 600 /home/ansible/.ssh/authorized_keys
+          chown -R ansible:ansible /home/ansible/.ssh
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !ImportValue ansible-course-hosted-zone-id
+      Name: app-1.ans.local
+      Type: A
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt Instance.PrivateIp
+
+Outputs:
+  DnsName:
+    Description: DNS Name
+    Value: app-1.ans.local
+
+  PublicIp:
+    Description: Public IP (for HTTP access)
+    Value: !GetAtt Instance.PublicIp
+
+  PrivateIp:
+    Description: Private IP
+    Value: !GetAtt Instance.PrivateIp

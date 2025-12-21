@@ -151,28 +151,36 @@ cat README.md
 
 ### 课程间切换
 
+每课 cfn/ 目录包含独立的节点模板，使用 `aws cloudformation deploy` 智能部署：
+- 节点不存在 → 自动创建
+- 节点已存在且相同 → 跳过
+- 节点已存在但需更新 → 自动更新
+
 ```bash
-# 如果下一课使用相同基础设施 → 保留 stack
-# 如果下一课需要不同基础设施 → 删除并重新部署
-
-# 删除旧 stack
-aws cloudformation delete-stack --stack-name ansible-lesson-02
-
 # 进入新课程目录，按 README.md 部署
 cd ~/05-variables-logic
+
+# 部署命令会自动处理（无需手动删除旧 stack）
 ```
 
 ### 每课 CFN 模板
 
-每个课程目录包含 `cfn/managed-nodes.yaml`：
+每课目录包含 `cfn/` 文件夹，采用 **1 stack per node** 模式：
 
-| 课程 | 模板类型 | 节点数 |
-|------|----------|--------|
-| 01 | 手动 SSH（教学用） | 2 |
-| 02-04, 06-09 | 自动 SSH | 2 |
-| 05 | Multi-OS (Amazon + Ubuntu) | 3 |
-| 10 | AWX 容器 | 2 |
-| 11 | Zabbix + EDA | 3 |
+```
+cfn/
+├── common.yaml     # 共享资源 (IAM Role, SG) - Stack: ansible-managed-common
+├── web-1.yaml      # Web 节点 - Stack: ansible-web-1
+├── db-1.yaml       # DB 节点 - Stack: ansible-db-1
+└── app-1.yaml      # App 节点 (仅 Lesson 05) - Stack: ansible-app-1
+```
+
+| 课程 | 需要的节点 |
+|------|------------|
+| 02-04, 06-09 | common + web-1 + db-1 |
+| 05 | common + web-1 + db-1 + app-1 |
+| 10 | AWX 专用模板 |
+| 11 | Zabbix 专用模板 |
 
 ---
 
@@ -208,6 +216,28 @@ cd ~/05-variables-logic
 ## 开始学习
 
 从 [00 · 概念与架构导入](./00-concepts/) 开始。
+
+---
+
+## 清理资源
+
+学完课程后，删除所有 AWS 资源以避免产生费用：
+
+```bash
+# 删除 Managed Nodes (按需)
+aws cloudformation delete-stack --stack-name ansible-app-1
+aws cloudformation delete-stack --stack-name ansible-db-1
+aws cloudformation delete-stack --stack-name ansible-web-1
+aws cloudformation delete-stack --stack-name ansible-managed-common
+
+# 等待节点删除完成
+aws cloudformation wait stack-delete-complete --stack-name ansible-web-1
+
+# 删除 Control Node 和基础设施
+aws cloudformation delete-stack --stack-name ansible-control
+```
+
+> **费用说明**: t3.micro 约 $0.01/小时。3 节点运行 8 小时 ≈ $0.24/天。
 
 ---
 
