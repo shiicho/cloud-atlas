@@ -238,6 +238,24 @@ become_user = root
 become_ask_pass = False
 ```
 
+<details>
+<summary>📖 配置项详解（点击展开）</summary>
+
+| Section | 配置项 | 值 | 说明 |
+|---------|--------|-----|------|
+| `[defaults]` | `remote_user` | `ansible` | SSH 连接时使用的用户名 |
+| | `host_key_checking` | `False` | 跳过 SSH 首次连接的指纹确认（Lab 环境适用） |
+| `[privilege_escalation]` | `become` | `True` | 默认启用权限提升（sudo） |
+| | `become_method` | `sudo` | 使用 sudo 进行权限提升 |
+| | `become_user` | `root` | 提升后的目标用户 |
+| | `become_ask_pass` | `False` | 不询问 sudo 密码（需要 NOPASSWD 配置） |
+
+> ⚠️ **生产环境注意**：
+> - `host_key_checking = False` 仅适用于 Lab/测试环境
+> - 生产环境应保持默认值 `True` 以防止中间人攻击
+
+</details>
+
 ---
 
 ## 本课完成
