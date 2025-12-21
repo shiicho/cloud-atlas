@@ -80,6 +80,26 @@ ansible all -m setup -a "filter=ansible_distribution*"
 | `ansible_os_family` | 系统族 (RedHat, Debian) |
 | `ansible_default_ipv4.address` | 默认 IP |
 
+**Magic Variables（特殊变量）**：
+
+Ansible 内置的变量，无需定义即可使用：
+
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `inventory_hostname` | Inventory 中定义的主机名 | `al2023-1.ans.local` |
+| `inventory_hostname_short` | 短主机名（不含域名） | `al2023-1` |
+| `group_names` | 当前主机所属的组列表 | `['webservers', 'production']` |
+| `groups` | 所有组及其成员 | `{'webservers': ['node1', 'node2']}` |
+| `hostvars` | 访问其他主机的变量 | `hostvars['node2'].ansible_host` |
+
+```bash
+# 查看 magic variables
+ansible all -m debug -a "var=inventory_hostname"
+ansible all -m debug -a "var=group_names"
+```
+
+> 💡 `inventory_hostname` vs `ansible_hostname`：前者来自 Inventory 文件，后者来自系统 `hostname` 命令。
+
 ```bash
 # 查看 Facts 使用示例
 cat exercises/01-facts-explore.yaml

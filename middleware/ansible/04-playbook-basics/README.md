@@ -95,9 +95,42 @@ ansible-playbook exercises/01-motd-basic.yaml
 # 预期输出: CHANGED (首次), SUCCESS (重复执行)
 ```
 
+> 💡 `{{ inventory_hostname }}` 是 Ansible 内置变量，自动取 Inventory 中的主机名。详见 [05 · 变量](../05-variables-logic/)。
+
 ---
 
 ## Step 3 — Handlers
+
+### 什么是 Handler？（新手必读）
+
+**简单理解**：Handler 就像餐厅的"下单后才做菜"机制。
+
+```
+普通任务: 不管有没有客人点，每次都做一份菜（浪费）
+Handler:  有人点单(notify)才做菜，而且同样的菜只做一次
+```
+
+**为什么需要 Handler？**
+
+想象这个场景：你修改了 Nginx 配置文件。
+- ❌ **没有 Handler**：每次运行 Playbook 都重启 Nginx（即使配置没变）→ 服务中断
+- ✅ **有 Handler**：只有配置真的改变时才重启 → 最小化影响
+
+**现实世界用法**：
+
+| 触发条件 (notify) | 动作 (handler) | 为什么这样做 |
+|-------------------|----------------|--------------|
+| Nginx 配置文件改变 | 重启 Nginx | 让新配置生效 |
+| SSL 证书更新 | Reload Nginx | 加载新证书 |
+| 防火墙规则改变 | Reload firewalld | 应用新规则 |
+| 应用代码部署 | 重启应用服务 | 运行新代码 |
+| Cron 任务添加 | Restart crond | 加载新定时任务 |
+
+> 💡 **核心价值**：避免不必要的服务重启，减少对生产环境的影响。
+
+---
+
+### Handler 语法
 
 Handler 只在被 notify 时执行，且 Play 结束时只执行一次。
 

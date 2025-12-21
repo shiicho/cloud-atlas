@@ -11,7 +11,7 @@
       ========================================
        Ansible Managed Server
        Host: {{ inventory_hostname }}
-       Updated: {{ ansible_date_time.iso8601 }}
+       Managed by Ansible
       ========================================
 
   tasks:
