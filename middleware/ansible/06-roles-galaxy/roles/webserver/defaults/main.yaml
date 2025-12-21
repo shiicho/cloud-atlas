@@ -1,0 +1,23 @@
+---
+# defaults/main.yaml - Webserver role 默认变量
+
+# 基本配置
+webserver_package: httpd
+webserver_service: httpd
+webserver_port: 80
+webserver_document_root: /var/www/html
+webserver_server_name: "{{ ansible_hostname }}"
+
+# 是否启用 SSL (默认关闭)
+webserver_ssl_enabled: false
+webserver_ssl_port: 443
+
+# 是否配置防火墙
+webserver_firewall_enabled: true
+
+# 是否部署默认页面
+webserver_deploy_default_page: true
+
+# 默认页面内容
+webserver_page_title: "{{ ansible_hostname }}"
+webserver_page_heading: "Welcome to {{ ansible_hostname }}"

@@ -1,0 +1,81 @@
+---
+# 03-conditionals.yaml - 条件判断 (when)
+# 学习目标: 掌握各种条件判断模式
+
+- name: Conditional Execution Demo
+  hosts: all
+  become: true
+
+  vars:
+    install_httpd: true
+    environment: development
+    min_memory_mb: 512
+
+  tasks:
+    # 基本条件
+    - name: Install httpd (if install_httpd is true)
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+      when: install_httpd | bool
+
+    # 基于 Facts 的条件
+    - name: Show message for Amazon Linux
+      ansible.builtin.debug:
+        msg: "This is Amazon Linux!"
+      when: ansible_distribution == "Amazon"
+
+    - name: Show message for RedHat family
+      ansible.builtin.debug:
+        msg: "This is a RedHat-based system ({{ ansible_distribution }})"
+      when: ansible_os_family == "RedHat"
+
+    # 多条件 (AND - 列表形式)
+    - name: Check memory is sufficient
+      ansible.builtin.debug:
+        msg: "Memory OK: {{ ansible_memtotal_mb }} MB >= {{ min_memory_mb }} MB"
+      when:
+        - ansible_memtotal_mb >= min_memory_mb
+        - ansible_os_family == "RedHat"
+
+    # 多条件 (OR)
+    - name: Run on dev or staging
+      ansible.builtin.debug:
+        msg: "Running in {{ environment }} environment"
+      when: environment == "development" or environment == "staging"
+
+    # 变量存在检查
+    - name: Check if optional_var is defined
+      ansible.builtin.debug:
+        msg: "optional_var is defined: {{ optional_var }}"
+      when: optional_var is defined
+
+    - name: Check if optional_var is not defined
+      ansible.builtin.debug:
+        msg: "optional_var is NOT defined, using default"
+      when: optional_var is not defined
+
+    # 基于 register 的条件
+    - name: Check if httpd is installed
+      ansible.builtin.command: rpm -q httpd
+      register: httpd_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Show httpd status
+      ansible.builtin.debug:
+        msg: "httpd is {{ 'installed' if httpd_check.rc == 0 else 'not installed' }}"
+
+    # 文件存在条件
+    - name: Check for config file
+      ansible.builtin.stat:
+        path: /etc/httpd/conf/httpd.conf
+      register: httpd_conf
+
+    - name: Backup httpd.conf if exists
+      ansible.builtin.copy:
+        src: /etc/httpd/conf/httpd.conf
+        dest: /etc/httpd/conf/httpd.conf.bak
+        remote_src: true
+      when: httpd_conf.stat.exists
+...

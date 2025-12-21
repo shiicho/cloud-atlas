@@ -1,0 +1,38 @@
+---
+# 03-motd-with-handlers.yaml - 添加 Handlers
+# 学习目标: 理解 notify 和 handlers 机制
+
+- name: Configure MOTD with Handlers
+  hosts: all
+  become: true
+
+  vars:
+    motd_content: |
+      ========================================
+       Ansible Managed Server
+       Host: {{ inventory_hostname }}
+       Updated: {{ ansible_date_time.iso8601 }}
+      ========================================
+
+  tasks:
+    - name: Deploy MOTD
+      ansible.builtin.copy:
+        content: "{{ motd_content }}"
+        dest: /etc/motd
+        mode: '0644'
+      notify: Log MOTD change
+
+    - name: Ensure /var/log/ansible exists
+      ansible.builtin.file:
+        path: /var/log/ansible
+        state: directory
+        mode: '0755'
+
+  handlers:
+    - name: Log MOTD change
+      ansible.builtin.lineinfile:
+        path: /var/log/ansible/motd_changes.log
+        line: "{{ ansible_date_time.iso8601 }} - MOTD updated on {{ inventory_hostname }}"
+        create: true
+        mode: '0644'
+...

@@ -1,0 +1,75 @@
+---
+# 04-webserver-deploy.yaml - 完整的 Web 服务器部署
+# 学习目标: 综合运用 vars, tasks, handlers, tags
+
+- name: Deploy Web Server
+  hosts: webservers
+  become: true
+
+  vars:
+    http_port: 80
+    document_root: /var/www/html
+    server_name: "{{ ansible_hostname }}"
+
+  tasks:
+    - name: Install httpd
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+      tags:
+        - install
+        - packages
+
+    - name: Create document root
+      ansible.builtin.file:
+        path: "{{ document_root }}"
+        state: directory
+        mode: '0755'
+      tags:
+        - configure
+
+    - name: Deploy index.html
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>{{ server_name }}</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+              h1 { color: #333; }
+              .info { background: #f0f0f0; padding: 20px; border-radius: 5px; display: inline-block; }
+            </style>
+          </head>
+          <body>
+            <h1>Welcome to {{ server_name }}</h1>
+            <div class="info">
+              <p><strong>Hostname:</strong> {{ ansible_hostname }}</p>
+              <p><strong>IP Address:</strong> {{ ansible_default_ipv4.address | default('N/A') }}</p>
+              <p><strong>OS:</strong> {{ ansible_distribution }} {{ ansible_distribution_version }}</p>
+              <p><strong>Deployed by:</strong> Ansible</p>
+            </div>
+          </body>
+          </html>
+        dest: "{{ document_root }}/index.html"
+        mode: '0644'
+      notify: Restart httpd
+      tags:
+        - deploy
+        - content
+
+    - name: Ensure httpd is started and enabled
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+      tags:
+        - service
+        - always
+
+  handlers:
+    - name: Restart httpd
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+...

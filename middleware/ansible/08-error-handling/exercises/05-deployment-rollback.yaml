@@ -1,0 +1,156 @@
+---
+# 05-deployment-rollback.yaml - 完整的部署回滚示例
+# 学习目标: 实现带回滚机制的生产级部署
+
+- name: Robust Deployment with Rollback
+  hosts: webservers
+  become: true
+  serial: 1  # 滚动部署，一次一台
+
+  vars:
+    app_name: myapp
+    app_version: "1.0.0"
+    app_dir: /opt/myapp
+    backup_dir: /opt/myapp-backups
+    health_check_url: http://localhost/health
+    health_check_retries: 5
+    health_check_delay: 2
+
+  tasks:
+    - name: Pre-deployment validation
+      ansible.builtin.assert:
+        that:
+          - app_name is defined
+          - app_version is defined
+        fail_msg: "app_name and app_version must be defined"
+
+    - name: Deployment Block
+      block:
+        # Step 1: 创建备份
+        - name: Ensure backup directory exists
+          ansible.builtin.file:
+            path: "{{ backup_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Check if current deployment exists
+          ansible.builtin.stat:
+            path: "{{ app_dir }}"
+          register: current_app
+
+        - name: Backup current deployment
+          ansible.builtin.copy:
+            src: "{{ app_dir }}/"
+            dest: "{{ backup_dir }}/{{ app_name }}-backup-{{ ansible_date_time.epoch }}"
+            remote_src: true
+          when: current_app.stat.exists
+
+        # Step 2: 部署新版本
+        - name: Stop application (if running)
+          ansible.builtin.service:
+            name: httpd
+            state: stopped
+          ignore_errors: true
+
+        - name: Create application directory
+          ansible.builtin.file:
+            path: "{{ app_dir }}"
+            state: directory
+            mode: '0755'
+
+        - name: Deploy new version
+          ansible.builtin.copy:
+            content: |
+              App: {{ app_name }}
+              Version: {{ app_version }}
+              Deployed: {{ ansible_date_time.iso8601 }}
+              Host: {{ inventory_hostname }}
+            dest: "{{ app_dir }}/version.txt"
+            mode: '0644'
+
+        - name: Deploy health check endpoint
+          ansible.builtin.copy:
+            content: "OK"
+            dest: /var/www/html/health
+            mode: '0644'
+
+        # Step 3: 启动服务
+        - name: Start application
+          ansible.builtin.service:
+            name: httpd
+            state: started
+
+        # Step 4: 健康检查
+        - name: Wait for application to be healthy
+          ansible.builtin.uri:
+            url: "{{ health_check_url }}"
+            return_content: true
+          register: health_result
+          until: health_result.status == 200 and 'OK' in health_result.content
+          retries: "{{ health_check_retries }}"
+          delay: "{{ health_check_delay }}"
+
+        - name: Deployment successful
+          ansible.builtin.debug:
+            msg: |
+              Deployment successful!
+              App: {{ app_name }}
+              Version: {{ app_version }}
+              Host: {{ inventory_hostname }}
+
+      rescue:
+        - name: ROLLBACK - Deployment failed
+          ansible.builtin.debug:
+            msg: "Deployment failed! Starting rollback..."
+
+        - name: ROLLBACK - Stop failed deployment
+          ansible.builtin.service:
+            name: httpd
+            state: stopped
+          ignore_errors: true
+
+        - name: ROLLBACK - Find latest backup
+          ansible.builtin.find:
+            paths: "{{ backup_dir }}"
+            patterns: "{{ app_name }}-backup-*"
+            file_type: directory
+          register: backups
+
+        - name: ROLLBACK - Restore from backup
+          ansible.builtin.copy:
+            src: "{{ (backups.files | sort(attribute='mtime') | last).path }}/"
+            dest: "{{ app_dir }}/"
+            remote_src: true
+          when: backups.files | length > 0
+
+        - name: ROLLBACK - Restart service
+          ansible.builtin.service:
+            name: httpd
+            state: started
+          ignore_errors: true
+
+        - name: ROLLBACK - Notify failure
+          ansible.builtin.debug:
+            msg: |
+              ROLLBACK COMPLETED
+              Host: {{ inventory_hostname }}
+              Action Required: Manual investigation needed
+
+        - name: ROLLBACK - Fail the play
+          ansible.builtin.fail:
+            msg: "Deployment failed and was rolled back"
+
+      always:
+        - name: Record deployment result
+          ansible.builtin.lineinfile:
+            path: /var/log/deployments.log
+            line: "{{ ansible_date_time.iso8601 }} | {{ inventory_hostname }} | {{ app_name }} | {{ app_version }} | {{ 'FAILED' if ansible_failed_task is defined else 'SUCCESS' }}"
+            create: true
+            mode: '0644'
+
+        - name: Cleanup old backups (keep last 5)
+          ansible.builtin.shell: |
+            cd {{ backup_dir }} && ls -t | tail -n +6 | xargs -r rm -rf
+          changed_when: false
+          ignore_errors: true
+...

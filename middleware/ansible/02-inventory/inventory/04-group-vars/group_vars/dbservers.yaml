@@ -1,4 +1,0 @@
----
-# group_vars/dbservers.yaml - Applied to dbservers group
-db_port: 3306
-db_name: appdb

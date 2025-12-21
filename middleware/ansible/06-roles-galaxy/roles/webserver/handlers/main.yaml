@@ -1,0 +1,12 @@
+---
+# handlers/main.yaml - Webserver role handlers
+
+- name: Restart httpd
+  ansible.builtin.service:
+    name: "{{ webserver_service }}"
+    state: restarted
+
+- name: Reload httpd
+  ansible.builtin.service:
+    name: "{{ webserver_service }}"
+    state: reloaded

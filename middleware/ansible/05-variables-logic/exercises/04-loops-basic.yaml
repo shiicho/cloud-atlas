@@ -1,0 +1,73 @@
+---
+# 04-loops-basic.yaml - 基本循环
+# 学习目标: 掌握 loop 和 with_items 的使用
+
+- name: Basic Loop Demo
+  hosts: all
+  become: true
+
+  vars:
+    packages:
+      - vim
+      - htop
+      - tree
+
+    users:
+      - name: alice
+        groups: wheel
+        comment: "Alice Admin"
+      - name: bob
+        groups: users
+        comment: "Bob User"
+      - name: charlie
+        groups: users
+        comment: "Charlie User"
+
+  tasks:
+    # 简单列表循环
+    - name: Install multiple packages
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+
+    # 使用变量列表（推荐方式）
+    - name: Install packages from variable
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present
+
+    # 字典循环
+    - name: Create users
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        groups: "{{ item.groups }}"
+        comment: "{{ item.comment }}"
+        state: present
+      loop: "{{ users }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    # 带索引的循环
+    - name: Show items with index
+      ansible.builtin.debug:
+        msg: "Item {{ my_idx }}: {{ item }}"
+      loop:
+        - apple
+        - banana
+        - orange
+      loop_control:
+        index_var: my_idx
+
+    # 条件循环
+    - name: Install optional packages
+      ansible.builtin.debug:
+        msg: "Would install: {{ item.name }}"
+      loop:
+        - { name: 'nginx', install: true }
+        - { name: 'mysql', install: false }
+        - { name: 'redis', install: true }
+      when: item.install | bool
+      loop_control:
+        label: "{{ item.name }}"
+...

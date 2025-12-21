@@ -1,0 +1,81 @@
+---
+# 07-multi-os.yaml - 多操作系统支持
+# 学习目标: 使用 Facts + When 实现跨平台 Playbook
+
+- name: Multi-OS Web Server Deployment
+  hosts: all
+  become: true
+
+  vars:
+    # 根据 OS 定义不同的包名和服务名
+    webserver_packages:
+      RedHat: httpd
+      Debian: apache2
+
+    webserver_services:
+      RedHat: httpd
+      Debian: apache2
+
+    document_root:
+      RedHat: /var/www/html
+      Debian: /var/www/html
+
+  tasks:
+    - name: Display detected OS
+      ansible.builtin.debug:
+        msg: |
+          OS Family: {{ ansible_os_family }}
+          Distribution: {{ ansible_distribution }}
+          Version: {{ ansible_distribution_version }}
+
+    # 使用 set_fact 根据 OS 设置变量
+    - name: Set package name based on OS
+      ansible.builtin.set_fact:
+        web_package: "{{ webserver_packages[ansible_os_family] | default('httpd') }}"
+        web_service: "{{ webserver_services[ansible_os_family] | default('httpd') }}"
+        web_root: "{{ document_root[ansible_os_family] | default('/var/www/html') }}"
+
+    - name: Show selected configuration
+      ansible.builtin.debug:
+        msg: |
+          Package: {{ web_package }}
+          Service: {{ web_service }}
+          Document Root: {{ web_root }}
+
+    # RedHat 系 (Amazon Linux, CentOS, RHEL)
+    - name: Install web server (RedHat)
+      ansible.builtin.dnf:
+        name: "{{ web_package }}"
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    # Debian 系 (Ubuntu, Debian)
+    - name: Install web server (Debian)
+      ansible.builtin.apt:
+        name: "{{ web_package }}"
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    # 通用任务 - 使用 package 模块
+    - name: Ensure web server is started
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: started
+        enabled: true
+
+    - name: Deploy index.html
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head><title>{{ ansible_hostname }}</title></head>
+          <body>
+            <h1>Hello from {{ ansible_hostname }}</h1>
+            <p>OS: {{ ansible_distribution }} {{ ansible_distribution_version }}</p>
+            <p>Web Server: {{ web_package }}</p>
+          </body>
+          </html>
+        dest: "{{ web_root }}/index.html"
+        mode: '0644'
+...

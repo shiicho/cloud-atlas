@@ -1,0 +1,40 @@
+---
+# 01-template-basics.yaml - Jinja2 基础
+# 学习目标: 理解 template 模块和 Jinja2 变量
+
+- name: Jinja2 Template Basics
+  hosts: all
+  become: true
+
+  vars:
+    app_name: "MyApp"
+    app_version: "1.0.0"
+    app_port: 8080
+    app_env: "development"
+    admin_emails:
+      - admin@example.com
+      - ops@example.com
+
+  tasks:
+    - name: Create config directory
+      ansible.builtin.file:
+        path: /etc/myapp
+        state: directory
+        mode: '0755'
+
+    - name: Deploy basic config file
+      ansible.builtin.template:
+        src: ../templates/app.conf.j2
+        dest: /etc/myapp/app.conf
+        mode: '0644'
+        backup: true
+
+    - name: Show generated config
+      ansible.builtin.command: cat /etc/myapp/app.conf
+      register: config_content
+      changed_when: false
+
+    - name: Display config
+      ansible.builtin.debug:
+        msg: "{{ config_content.stdout }}"
+...

@@ -1,0 +1,29 @@
+---
+# 06-vars-files.yaml - 外部变量文件
+# 学习目标: 使用 vars_files 加载外部变量
+
+- name: External Variables Demo
+  hosts: all
+
+  vars_files:
+    - ../group_vars/common.yaml
+
+  tasks:
+    - name: Show loaded variables
+      ansible.builtin.debug:
+        msg: |
+          === Loaded from vars_files ===
+          Company: {{ company_name }}
+          Environment: {{ environment }}
+          Admin Email: {{ admin_email }}
+
+    - name: Show all packages to install
+      ansible.builtin.debug:
+        msg: "Package: {{ item }}"
+      loop: "{{ common_packages }}"
+
+    - name: Show NTP servers
+      ansible.builtin.debug:
+        msg: "NTP Server: {{ item }}"
+      loop: "{{ ntp_servers }}"
+...

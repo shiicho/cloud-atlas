@@ -1,0 +1,49 @@
+---
+# 05-multi-play.yaml - 多个 Play 的 Playbook
+# 学习目标: 理解一个 Playbook 可以包含多个 Play
+
+# Play 1: 所有主机的基础配置
+- name: Common configuration for all hosts
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure common packages are installed
+      ansible.builtin.dnf:
+        name:
+          - vim
+          - htop
+          - tree
+        state: present
+
+    - name: Set timezone to Asia/Tokyo
+      ansible.builtin.timezone:
+        name: Asia/Tokyo
+
+# Play 2: 仅 webservers 组
+- name: Configure web servers
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Install httpd
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+
+    - name: Start httpd
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+
+# Play 3: 仅 dbservers 组（如果存在）
+- name: Configure database servers
+  hosts: dbservers
+  become: true
+
+  tasks:
+    - name: Display DB server info
+      ansible.builtin.debug:
+        msg: "This is a database server: {{ inventory_hostname }}"
+...

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ webserver_page_title }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .info p {
+            margin: 10px 0;
+            color: #555;
+        }
+        .info strong {
+            color: #333;
+        }
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ webserver_page_heading }}</h1>
+        <span class="badge">Managed by Ansible</span>
+
+        <div class="info">
+            <p><strong>Hostname:</strong> {{ ansible_hostname }}</p>
+            <p><strong>IP Address:</strong> {{ ansible_default_ipv4.address | default('N/A') }}</p>
+            <p><strong>OS:</strong> {{ ansible_distribution }} {{ ansible_distribution_version }}</p>
+            <p><strong>Kernel:</strong> {{ ansible_kernel }}</p>
+            <p><strong>Web Server:</strong> {{ webserver_package }}</p>
+            <p><strong>Port:</strong> {{ webserver_port }}</p>
+        </div>
+
+        <p style="color: #888; font-size: 12px;">
+            Generated: {{ ansible_date_time.iso8601 }}
+        </p>
+    </div>
+</body>
+</html>

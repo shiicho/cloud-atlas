@@ -1,0 +1,25 @@
+---
+# meta/main.yaml - Role metadata
+
+galaxy_info:
+  author: Cloud Atlas Lab
+  description: Common server configuration role
+  license: MIT
+  min_ansible_version: "2.10"
+
+  platforms:
+    - name: Amazon
+      versions:
+        - "2023"
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - system
+    - common
+    - ntp
+    - motd
+
+dependencies: []

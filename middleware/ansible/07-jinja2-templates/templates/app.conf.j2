@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# Application Configuration File
+# Generated: {{ ansible_date_time.iso8601 }}
+# Host: {{ ansible_hostname }}
+
+[application]
+name = {{ app_name }}
+version = {{ app_version }}
+port = {{ app_port }}
+environment = {{ app_env }}
+
+[server]
+hostname = {{ ansible_hostname }}
+ip_address = {{ ansible_default_ipv4.address | default('127.0.0.1') }}
+os = {{ ansible_distribution }} {{ ansible_distribution_version }}
+
+[notifications]
+{% for email in admin_emails %}
+admin_email_{{ loop.index }} = {{ email }}
+{% endfor %}

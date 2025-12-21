@@ -1,0 +1,12 @@
+# 06 - Control Local: Local connection for control node
+[control]
+control.ans.local ansible_connection=local
+
+[webservers]
+al2023-1.ans.local
+
+[dbservers]
+al2023-2.ans.local
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

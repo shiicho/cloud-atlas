@@ -1,0 +1,35 @@
+---
+# 04-template-filters.yaml - Jinja2 过滤器
+# 学习目标: 掌握常用 Jinja2 过滤器
+
+- name: Jinja2 Filters Demo
+  hosts: all
+  become: true
+
+  vars:
+    user_name: "john doe"
+    password: "supersecret123"
+    items: ["apple", "banana", "orange"]
+    config_dict:
+      key1: value1
+      key2: value2
+      key3: value3
+    optional_value: null
+    json_string: '{"name": "test", "count": 42}'
+
+  tasks:
+    - name: Deploy filters demo file
+      ansible.builtin.template:
+        src: ../templates/filters-demo.txt.j2
+        dest: /tmp/filters-demo.txt
+        mode: '0644'
+
+    - name: Show filters demo
+      ansible.builtin.command: cat /tmp/filters-demo.txt
+      register: filters_output
+      changed_when: false
+
+    - name: Display output
+      ansible.builtin.debug:
+        var: filters_output.stdout_lines
+...

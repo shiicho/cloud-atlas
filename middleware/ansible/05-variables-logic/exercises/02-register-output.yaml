@@ -1,0 +1,50 @@
+---
+# 02-register-output.yaml - Register 捕获输出
+# 学习目标: 理解如何使用 register 捕获命令输出
+
+- name: Register and Output Demo
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Get hostname
+      ansible.builtin.command: hostname
+      register: hostname_result
+      changed_when: false
+
+    - name: Show full register output
+      ansible.builtin.debug:
+        var: hostname_result
+
+    - name: Show just stdout
+      ansible.builtin.debug:
+        msg: "Hostname is: {{ hostname_result.stdout }}"
+
+    - name: Get disk usage
+      ansible.builtin.command: df -h /
+      register: disk_result
+      changed_when: false
+
+    - name: Show disk usage lines
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: "{{ disk_result.stdout_lines }}"
+
+    - name: Check if a file exists
+      ansible.builtin.stat:
+        path: /etc/motd
+      register: motd_stat
+
+    - name: Show file exists result
+      ansible.builtin.debug:
+        msg: "/etc/motd exists: {{ motd_stat.stat.exists }}"
+
+    - name: Get running services
+      ansible.builtin.shell: systemctl list-units --type=service --state=running --no-pager | head -10
+      register: services_result
+      changed_when: false
+
+    - name: Show running services
+      ansible.builtin.debug:
+        msg: "{{ services_result.stdout }}"
+...

@@ -16,6 +16,21 @@
 
 ---
 
+## 准备环境
+
+```bash
+# 1. 切换到 ansible 用户（如果刚登录 Control Node）
+sudo su - ansible
+
+# 2. 更新课程仓库（获取最新内容）
+cd ~/repo && git pull
+
+# 3. 进入本课目录
+cd ~/02-inventory
+```
+
+---
+
 ## Step 1 — 部署 Managed Nodes
 
 ### 1.1 架构概览
@@ -112,10 +127,25 @@ ansible_python_interpreter=/usr/bin/python3
 ansible all -m ping
 ```
 
-**预期输出**：
+**默认输出**（多行格式）：
 ```
-al2023-1.ans.local | SUCCESS => { "ping": "pong" }
-al2023-2.ans.local | SUCCESS => { "ping": "pong" }
+al2023-1.ans.local | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+al2023-2.ans.local | SUCCESS => {
+    "changed": false,
+    "ping": "pong"
+}
+```
+
+**使用 `-o` 选项**（单行格式，主机多时更易阅读）：
+```bash
+ansible all -m ping -o
+```
+```
+al2023-1.ans.local | SUCCESS => {"changed": false,"ping": "pong"}
+al2023-2.ans.local | SUCCESS => {"changed": false,"ping": "pong"}
 ```
 
 如果成功，你已完成 Ansible 的第一次远程连接！
@@ -158,30 +188,9 @@ dbservers
 ansible_python_interpreter=/usr/bin/python3
 ```
 
-### 3.2 YAML 格式
+### 3.2 渐进式示例
 
-```yaml
-all:
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-  children:
-    webservers:
-      hosts:
-        al2023-1.ans.local:
-      vars:
-        http_port: 80
-    dbservers:
-      hosts:
-        al2023-2.ans.local:
-    production:
-      children:
-        webservers:
-        dbservers:
-```
-
-### 3.3 渐进式示例
-
-本课提供 7 个渐进式示例，位于 `inventory/examples/`：
+本课提供 6 个渐进式示例，位于 `inventory/examples/`：
 
 | 示例 | 新概念 | 测试命令 |
 |------|--------|----------|
@@ -190,8 +199,7 @@ all:
 | `03-host-ranges` | 范围表示法 | `ansible -i 03-host-ranges amazon_linux --list-hosts` |
 | `04-group-vars` | 组变量 | `ansible -i 04-group-vars all -m debug -a "var=http_port"` |
 | `05-children-groups` | 层级分组 | `ansible -i 05-children-groups production --list-hosts` |
-| `06-yaml-format/` | YAML 格式 | `ansible -i hosts.yaml all --list-hosts` |
-| `07-control-local` | 本地连接 | `ansible -i 07-control-local control -m ping` |
+| `06-control-local` | 本地连接 | `ansible -i 06-control-local control -m ping` |
 
 ```bash
 # 动手试试
@@ -203,52 +211,89 @@ ansible-inventory -i 05-children-groups --graph
 
 ## Step 4 — host_vars 和 group_vars
 
-### 4.1 目录结构
+### 为什么需要变量？
+
+变量就像编程中的 **配置文件** 或 **环境变量**：
+
+```python
+# 硬编码（不好）
+port = 80
+db_host = "192.168.1.100"
+
+# 使用变量（好）
+port = config["http_port"]        # 从配置读取
+db_host = config["db_host"]       # 不同环境不同值
+```
+
+**Ansible 变量的作用**：把「服务器特定的配置」和「通用的操作逻辑」分离。
+
+| 变量类型 | 作用 | 例子 |
+|----------|------|------|
+| `group_vars/all` | 所有服务器共用 | Python 路径、管理员邮箱 |
+| `group_vars/webservers` | Web 服务器专用 | HTTP 端口、网站根目录 |
+| `host_vars/server1` | 单台服务器专用 | 该服务器的特殊端口 |
+
+> 💡 现在只需理解「变量 = 可复用的配置值」。后续课程会实际使用。
+
+### 4.1 定义变量的两种方式
+
+**方式 1：直接写在 INI 文件中**（简单场景推荐）
+
+```ini
+[webservers]
+al2023-1.ans.local
+
+[dbservers]
+al2023-2.ans.local
+
+[webservers:vars]
+http_port=80
+
+[dbservers:vars]
+db_port=3306
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+```
+
+**方式 2：独立的变量目录**（变量多时更清晰）
 
 ```
 inventory/
-├── hosts.ini           # 主机清单
-├── group_vars/         # 组变量
-│   ├── all.yaml        # 所有主机
-│   ├── webservers.yaml # webservers 组
-│   └── dbservers.yaml  # dbservers 组
-└── host_vars/          # 主机变量
-    └── al2023-1.ans.local.yaml
+├── hosts.ini           # 只放主机列表
+├── group_vars/         # 组变量（独立文件）
+│   ├── all             # 所有主机
+│   ├── webservers      # webservers 组
+│   └── dbservers       # dbservers 组
+└── host_vars/          # 主机变量（独立文件）
+    └── al2023-1.ans.local
 ```
+
+> 💡 变量文件可以是 YAML 格式（`.yaml`）或无扩展名的 key=value 格式。
 
 ### 4.2 变量优先级（低→高）
 
 ```
-group_vars/all.yaml
+[all:vars]  或  group_vars/all
     ↓
-group_vars/<group>.yaml
+[group:vars]  或  group_vars/<group>
     ↓
-host_vars/<host>.yaml
+host_vars/<host>
     ↓
 命令行 -e "var=value"
 ```
 
-### 4.3 查看示例
+### 4.3 动手试试
 
 ```bash
-# 查看预配置的 group_vars
-cat inventory/04-group-vars/group_vars/all.yaml
-cat inventory/04-group-vars/group_vars/webservers.yaml
+cd ~/02-inventory/inventory/examples
 
-# 查看 host_vars
-cat inventory/04-group-vars/host_vars/al2023-1.ans.local.yaml
-```
-
-### 4.4 验证变量
-
-```bash
-cd ~/02-inventory/inventory/04-group-vars
-
-# 查看主机的所有变量
-ansible-inventory -i hosts.ini --host al2023-1.ans.local
+# 查看带变量的 inventory 示例
+cat 04-group-vars
 
 # 测试变量值
-ansible -i hosts.ini all -m debug -a "var=http_port"
+ansible -i 04-group-vars webservers -m debug -a "var=http_port"
+ansible -i 04-group-vars dbservers -m debug -a "var=db_port"
 ```
 
 ---
@@ -293,6 +338,67 @@ ansible -i inventory/hosts.ini all -m ping
 | **命名規則** | 主机名使用统一命名规则 |
 | **変更管理** | Inventory 文件纳入 Git |
 | **機密情報** | 敏感信息使用 Vault 加密 |
+
+### 实战：环境分离的两种模式
+
+**模式 1：主机名包含环境标识**
+
+```ini
+# 日本企业常见命名规则：{env}-{role}{number}.{domain}
+[webservers]
+dev-web01.company.local
+stg-web01.company.local
+prd-web01.company.local
+prd-web02.company.local
+
+[dbservers]
+dev-db01.company.local
+stg-db01.company.local
+prd-db01.company.local
+
+# 按环境分组
+[dev:children]
+dev_all
+
+[stg:children]
+stg_all
+
+[prd:children]
+prd_all
+
+[dev_all]
+dev-web01.company.local
+dev-db01.company.local
+
+[prd_all]
+prd-web01.company.local
+prd-web02.company.local
+prd-db01.company.local
+```
+
+**模式 2：独立 Inventory 文件（推荐 ✓）**
+
+```
+inventory/
+├── dev/
+│   ├── hosts.ini
+│   └── group_vars/
+├── stg/
+│   ├── hosts.ini
+│   └── group_vars/
+└── prd/
+    ├── hosts.ini
+    └── group_vars/
+```
+
+使用方式：
+```bash
+# 明确指定环境，防止误操作
+ansible-playbook -i inventory/dev  site.yaml   # 开发环境
+ansible-playbook -i inventory/prd  site.yaml   # 生产环境
+```
+
+> ⚠️ **模式 2 更安全**：必须显式指定环境，不会误操作生产环境。
 
 ---
 

@@ -1,4 +1,0 @@
----
-# host_vars/al2023-1.ans.local.yaml - Host-specific variables
-http_port: 8080  # Override group_vars value
-server_id: 1

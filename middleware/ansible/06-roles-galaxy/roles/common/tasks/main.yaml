@@ -1,0 +1,49 @@
+---
+# tasks/main.yaml - Common role 主任务
+
+- name: Set timezone
+  ansible.builtin.timezone:
+    name: "{{ common_timezone }}"
+  tags:
+    - common
+    - timezone
+
+- name: Install common packages
+  ansible.builtin.dnf:
+    name: "{{ common_packages }}"
+    state: present
+  tags:
+    - common
+    - packages
+
+- name: Configure MOTD
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    mode: '0644'
+  when: common_motd_enabled
+  tags:
+    - common
+    - motd
+
+- name: Configure chrony (NTP)
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    mode: '0644'
+    backup: true
+  when: common_ntp_enabled
+  notify: Restart chronyd
+  tags:
+    - common
+    - ntp
+
+- name: Ensure chronyd is running
+  ansible.builtin.service:
+    name: chronyd
+    state: started
+    enabled: true
+  when: common_ntp_enabled
+  tags:
+    - common
+    - ntp

@@ -1,0 +1,49 @@
+---
+# 03-template-loops.yaml - 模板中的循环
+# 学习目标: 在 Jinja2 中使用 for 循环
+
+- name: Template with Loops
+  hosts: all
+  become: true
+
+  vars:
+    upstream_servers:
+      - host: app1.ans.local
+        port: 8080
+        weight: 3
+      - host: app2.ans.local
+        port: 8080
+        weight: 2
+      - host: app3.ans.local
+        port: 8081
+        weight: 1
+
+    allowed_ips:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+
+    virtual_hosts:
+      - name: site1.example.com
+        root: /var/www/site1
+        ssl: true
+      - name: site2.example.com
+        root: /var/www/site2
+        ssl: false
+
+  tasks:
+    - name: Deploy nginx-like config
+      ansible.builtin.template:
+        src: ../templates/nginx.conf.j2
+        dest: /etc/myapp/nginx-like.conf
+        mode: '0644'
+
+    - name: Show generated config
+      ansible.builtin.command: cat /etc/myapp/nginx-like.conf
+      register: nginx_config
+      changed_when: false
+
+    - name: Display config
+      ansible.builtin.debug:
+        var: nginx_config.stdout_lines
+...

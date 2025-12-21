@@ -1,0 +1,38 @@
+# {{ ansible_managed }}
+# Nginx-like Configuration Example
+
+# Upstream Servers
+upstream backend {
+{% for server in upstream_servers %}
+    server {{ server.host }}:{{ server.port | default(8080) }} weight={{ server.weight | default(1) }};
+{% endfor %}
+}
+
+# Access Control
+{% if allowed_ips is defined and allowed_ips | length > 0 %}
+# Allowed IP ranges
+{% for ip in allowed_ips %}
+allow {{ ip }};
+{% endfor %}
+deny all;
+{% endif %}
+
+# Virtual Hosts
+{% for vhost in virtual_hosts %}
+server {
+    server_name {{ vhost.name }};
+    root {{ vhost.root }};
+{% if vhost.ssl %}
+    listen 443 ssl;
+    ssl_certificate /etc/ssl/{{ vhost.name }}.crt;
+    ssl_certificate_key /etc/ssl/{{ vhost.name }}.key;
+{% else %}
+    listen 80;
+{% endif %}
+
+    location / {
+        proxy_pass http://backend;
+    }
+}
+
+{% endfor %}

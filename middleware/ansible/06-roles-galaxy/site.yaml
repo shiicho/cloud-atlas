@@ -1,0 +1,19 @@
+---
+# site.yaml - メインPlaybook (Roles使用)
+# 使用方法: ansible-playbook site.yaml
+
+# Play 1: 全主机共通設定
+- name: Apply common configuration to all hosts
+  hosts: all
+  become: true
+  roles:
+    - common
+
+# Play 2: Webサーバー設定
+- name: Configure web servers
+  hosts: webservers
+  become: true
+  roles:
+    - role: webserver
+      vars:
+        webserver_page_heading: "Cloud Atlas Web Server"

@@ -15,20 +15,36 @@
 
 ---
 
-## 前置确认
-
-确保已完成 Lesson 02，Managed Nodes 正在运行：
+## 准备环境
 
 ```bash
+# 1. 切换到 ansible 用户（如果刚登录 Control Node）
+sudo su - ansible
+
+# 2. 更新课程仓库（获取最新内容）
+cd ~/repo && git pull
+
+# 3. 进入本课目录
 cd ~/03-adhoc-modules
+
+# 4. 确认 Managed Nodes 可连接（需完成 Lesson 02）
 ansible all -m ping
 ```
 
-如果失败，请先完成 [02 · Inventory 管理](../02-inventory/)。
+> 如果 ping 失败，请先完成 [02 · Inventory 管理](../02-inventory/)。
 
 ---
 
 ## Step 1 — Ad-hoc 命令语法
+
+**什么是 Ad-hoc？**
+
+"Ad-hoc" = 临时的、一次性的。就像直接在终端敲命令 vs 写成脚本：
+
+| 方式 | 类比 | 适用场景 |
+|------|------|----------|
+| **Ad-hoc** | 直接敲 `ls -la` | 快速查看、临时操作 |
+| **Playbook** | 写成 `.sh` 脚本 | 重复执行、复杂流程 |
 
 ```
 ansible <目标> -m <模块> -a "<参数>" [选项]
@@ -51,9 +67,8 @@ ansible <目标> -m <模块> -a "<参数>" [选项]
 ### 2.1 setup - 收集系统信息
 
 ```bash
-# 查看所有 Facts
-ansible all -m setup | head -50
-
+# 查看所有 Facts（输出很长，建议用 filter）
+ansible all -m setup
 # 过滤特定信息
 ansible all -m setup -a "filter=ansible_distribution*"
 ansible all -m setup -a "filter=ansible_memory_mb"
@@ -64,9 +79,8 @@ ansible all -m setup -a "filter=ansible_memory_mb"
 ### 2.2 command - 执行命令（默认模块）
 
 ```bash
-# 执行简单命令
+# 执行简单命令（-o 单行输出）
 ansible all -m command -a "uptime"
-
 # command 是默认模块，可省略 -m
 ansible all -a "hostname"
 ansible all -a "df -h /"
@@ -77,33 +91,55 @@ ansible all -a "df -h /"
 ```bash
 # 使用管道
 ansible all -m shell -a "cat /etc/passwd | wc -l"
-
 # 使用环境变量
 ansible all -m shell -a "echo $HOME"
-
 # 重定向
 ansible all -m shell -a "date > /tmp/date.txt"
 ```
 
-**command vs shell**：
+**command vs shell 底层区别**：
 
-| 模块 | 特点 | 使用场景 |
-|------|------|----------|
-| `command` | 不经过 shell，更安全 | 简单命令（推荐） |
-| `shell` | 经过 /bin/sh | 需要管道/重定向时 |
+想象你要让别人帮你执行 `cat file.txt | grep error`：
+
+```
+command 模块（直接执行）：
+  你 → 直接告诉工人："运行 cat，参数是 file.txt"
+       工人不认识 "|" 符号，会报错
+
+shell 模块（经过 shell 解析）：
+  你 → 告诉 shell："帮我解析并执行这段命令"
+       shell 认识 "|"，会拆成两个命令并用管道连接
+```
+
+用 Python 类比：
+```python
+# command 模块 = 直接调用程序
+subprocess.run(["cat", "file.txt"])      # ✅ 正常
+subprocess.run(["cat file.txt | grep error"])  # ❌ 找不到这个程序
+
+# shell 模块 = 让 shell 解析
+os.system("cat file.txt | grep error")   # ✅ shell 会处理 |
+```
+
+| 特性 | `command` | `shell` |
+|------|-----------|---------|
+| 管道 `\|` | ❌ 不支持 | ✅ 支持 |
+| 重定向 `>` `<` | ❌ 不支持 | ✅ 支持 |
+| 环境变量 `$HOME` | ❌ 不解析 | ✅ 解析 |
+| 通配符 `*.txt` | ❌ 不展开 | ✅ 展开 |
+| 安全性 | ✅ 更安全（无注入风险） | ⚠️ 需注意输入 |
+
+> 💡 **原则**：优先用 `command`，只有需要 shell 特性时才用 `shell`。
 
 ### 2.4 file - 文件/目录管理
 
 ```bash
 # 创建目录
 ansible all -m file -a "path=/tmp/testdir state=directory mode=0755"
-
 # 创建空文件
 ansible all -m file -a "path=/tmp/testfile state=touch"
-
 # 删除文件
 ansible all -m file -a "path=/tmp/testfile state=absent"
-
 # 创建符号链接
 ansible all -m file -a "src=/tmp/testdir dest=/tmp/link state=link"
 ```
@@ -113,11 +149,9 @@ ansible all -m file -a "src=/tmp/testdir dest=/tmp/link state=link"
 ```bash
 # 直接写入内容
 ansible all -m copy -a "content='Hello Ansible' dest=/tmp/hello.txt"
-
 # 复制本地文件到远程
 echo "Local file" > /tmp/local.txt
 ansible all -m copy -a "src=/tmp/local.txt dest=/tmp/remote.txt"
-
 # 带备份
 ansible all -m copy -a "content='Updated' dest=/tmp/hello.txt backup=yes"
 ```
@@ -127,13 +161,10 @@ ansible all -m copy -a "content='Updated' dest=/tmp/hello.txt backup=yes"
 ```bash
 # 安装软件包
 ansible all -m dnf -a "name=htop state=present"
-
 # 安装多个包
 ansible all -m dnf -a "name=htop,vim,tree state=present"
-
 # 卸载软件包
 ansible all -m dnf -a "name=htop state=absent"
-
 # 更新到最新版
 ansible all -m dnf -a "name=htop state=latest"
 ```
@@ -141,15 +172,14 @@ ansible all -m dnf -a "name=htop state=latest"
 ### 2.7 service - 服务管理
 
 ```bash
+# 先安装 httpd
+ansible webservers -m dnf -a "name=httpd state=present"
 # 启动服务
 ansible webservers -m service -a "name=httpd state=started"
-
 # 停止服务
 ansible webservers -m service -a "name=httpd state=stopped"
-
 # 重启服务
 ansible webservers -m service -a "name=httpd state=restarted"
-
 # 设置开机启动
 ansible webservers -m service -a "name=httpd enabled=yes"
 ```
@@ -159,10 +189,8 @@ ansible webservers -m service -a "name=httpd enabled=yes"
 ```bash
 # 创建用户
 ansible all -m user -a "name=testuser state=present"
-
 # 创建用户并加入组
 ansible all -m user -a "name=testuser groups=wheel append=yes"
-
 # 删除用户
 ansible all -m user -a "name=testuser state=absent remove=yes"
 ```
@@ -201,7 +229,6 @@ ansible all -m dnf -a "name=htop state=present"
 ```bash
 # 只有当 /tmp/marker 不存在时才执行
 ansible all -m command -a "touch /tmp/created creates=/tmp/marker"
-
 # 只有当 /tmp/marker 存在时才执行
 ansible all -m command -a "rm /tmp/marker removes=/tmp/marker"
 ```

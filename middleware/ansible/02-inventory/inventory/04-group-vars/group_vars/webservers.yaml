@@ -1,4 +1,0 @@
----
-# group_vars/webservers.yaml - Applied to webservers group
-http_port: 80
-document_root: /var/www/html

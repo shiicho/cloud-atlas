@@ -1,0 +1,32 @@
+---
+# 02-template-conditionals.yaml - 模板中的条件语句
+# 学习目标: 在 Jinja2 中使用 if/else/elif
+
+- name: Template with Conditionals
+  hosts: all
+  become: true
+
+  vars:
+    environment: "production"  # development, staging, production
+    debug_enabled: false
+    features:
+      logging: true
+      monitoring: true
+      profiling: false
+
+  tasks:
+    - name: Deploy environment-aware config
+      ansible.builtin.template:
+        src: ../templates/env.conf.j2
+        dest: /etc/myapp/env.conf
+        mode: '0644'
+
+    - name: Show generated config
+      ansible.builtin.command: cat /etc/myapp/env.conf
+      register: env_config
+      changed_when: false
+
+    - name: Display config
+      ansible.builtin.debug:
+        var: env_config.stdout_lines
+...

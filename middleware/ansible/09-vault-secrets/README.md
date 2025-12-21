@@ -16,6 +16,24 @@
 
 ---
 
+## 准备环境
+
+```bash
+# 1. 切换到 ansible 用户（如果刚登录 Control Node）
+sudo su - ansible
+
+# 2. 更新课程仓库（获取最新内容）
+cd ~/repo && git pull
+
+# 3. 进入本课目录
+cd ~/09-vault-secrets
+
+# 4. 确认 Managed Nodes 可连接
+ansible all -m ping
+```
+
+---
+
 ## Step 1 — Ansible Vault 基础
 
 ### 1.1 加密文件

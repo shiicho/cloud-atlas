@@ -16,6 +16,26 @@
 
 ---
 
+## 准备环境
+
+```bash
+# 1. 切换到 ansible 用户（如果刚登录 Control Node）
+sudo su - ansible
+
+# 2. 更新课程仓库（获取最新内容）
+cd ~/repo && git pull
+
+# 3. 进入本课目录
+cd ~/11-zabbix-eda
+
+# 4. 确认 Managed Nodes 可连接
+ansible all -m ping
+```
+
+> 本课需要 Zabbix 环境。如未完成 [Zabbix 04 · 触发器与告警](../../zabbix/04-triggers-alerts/)，请先学习该课程。
+
+---
+
 ## Step 1 — Event-Driven Ansible 概述
 
 ### 1.1 架构

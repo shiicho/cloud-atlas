@@ -1,0 +1,27 @@
+---
+# group_vars/common.yaml - 共通变量定义
+# 这些变量可以被所有主机使用
+
+company_name: "Cloud Atlas Lab"
+environment: "development"
+admin_email: "admin@ans.local"
+
+# 通用软件包
+common_packages:
+  - vim
+  - htop
+  - tree
+  - curl
+  - wget
+
+# NTP 设置
+ntp_servers:
+  - ntp.nict.jp
+  - time.google.com
+
+# 时区
+timezone: "Asia/Tokyo"
+
+# 日志保留天数
+log_retention_days: 30
+...

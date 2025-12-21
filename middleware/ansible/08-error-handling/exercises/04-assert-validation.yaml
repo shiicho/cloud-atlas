@@ -1,0 +1,66 @@
+---
+# 04-assert-validation.yaml - 前置条件验证
+# 学习目标: 使用 assert 模块验证条件
+
+- name: Pre-condition Validation Demo
+  hosts: all
+  become: true
+
+  vars:
+    required_memory_mb: 512
+    required_disk_gb: 5
+    allowed_distributions:
+      - Amazon
+      - CentOS
+      - RedHat
+      - Rocky
+    http_port: 80
+
+  tasks:
+    - name: Validate required variables are defined
+      ansible.builtin.assert:
+        that:
+          - http_port is defined
+          - http_port > 0
+          - http_port < 65536
+        fail_msg: "http_port must be defined and be a valid port number (1-65535)"
+        success_msg: "http_port={{ http_port }} is valid"
+
+    - name: Validate operating system
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution in allowed_distributions
+        fail_msg: |
+          Unsupported OS: {{ ansible_distribution }}
+          Supported: {{ allowed_distributions | join(', ') }}
+        success_msg: "OS {{ ansible_distribution }} is supported"
+
+    - name: Validate minimum memory
+      ansible.builtin.assert:
+        that:
+          - ansible_memtotal_mb >= required_memory_mb
+        fail_msg: |
+          Insufficient memory!
+          Required: {{ required_memory_mb }} MB
+          Available: {{ ansible_memtotal_mb }} MB
+        success_msg: "Memory OK: {{ ansible_memtotal_mb }} MB >= {{ required_memory_mb }} MB"
+
+    - name: Get root partition free space
+      ansible.builtin.shell: df -BG / | tail -1 | awk '{print $4}' | tr -d 'G'
+      register: root_free_gb
+      changed_when: false
+
+    - name: Validate minimum disk space
+      ansible.builtin.assert:
+        that:
+          - root_free_gb.stdout | int >= required_disk_gb
+        fail_msg: |
+          Insufficient disk space!
+          Required: {{ required_disk_gb }} GB
+          Available: {{ root_free_gb.stdout }} GB
+        success_msg: "Disk OK: {{ root_free_gb.stdout }} GB >= {{ required_disk_gb }} GB"
+
+    - name: All validations passed
+      ansible.builtin.debug:
+        msg: "All pre-conditions validated successfully on {{ inventory_hostname }}"
+...

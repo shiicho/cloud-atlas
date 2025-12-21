@@ -1,0 +1,60 @@
+---
+# 02-ignore-errors.yaml - ignore_errors と failed_when
+# 学习目标: 控制任务失败行为
+
+- name: Error Control Demo
+  hosts: all
+  become: true
+
+  tasks:
+    # ignore_errors - 忽略错误继续执行
+    - name: Try to remove non-existent file (will fail but continue)
+      ansible.builtin.file:
+        path: /tmp/this-file-does-not-exist-12345
+        state: absent
+      register: remove_result
+      # 这个任务不会失败，因为 state=absent 是幂等的
+      # 但下面的例子会展示 ignore_errors
+
+    - name: Run a command that might fail
+      ansible.builtin.command: cat /tmp/nonexistent-file
+      register: cat_result
+      ignore_errors: true
+
+    - name: Show what happened
+      ansible.builtin.debug:
+        msg: "Command {{ 'failed' if cat_result.failed else 'succeeded' }} with rc={{ cat_result.rc }}"
+
+    # failed_when - 自定义失败条件
+    - name: Check disk usage (fail if > 90%)
+      ansible.builtin.shell: df -h / | tail -1 | awk '{print $5}' | tr -d '%'
+      register: disk_usage
+      changed_when: false
+      failed_when: disk_usage.stdout | int > 90
+
+    - name: Show disk usage
+      ansible.builtin.debug:
+        msg: "Disk usage is {{ disk_usage.stdout }}%"
+
+    # failed_when with grep (grep returns 1 if not found)
+    - name: Check if error exists in log (don't fail if not found)
+      ansible.builtin.shell: grep "CRITICAL" /var/log/messages || true
+      register: critical_errors
+      changed_when: false
+      failed_when: critical_errors.stdout | length > 0
+
+    - name: Show critical error check result
+      ansible.builtin.debug:
+        msg: "{{ 'Found critical errors!' if critical_errors.stdout else 'No critical errors found' }}"
+
+    # changed_when - 控制 changed 状态
+    - name: Get current date (informational, not a change)
+      ansible.builtin.command: date
+      register: date_result
+      changed_when: false
+
+    - name: Run update script (only mark changed if output says so)
+      ansible.builtin.shell: echo "Nothing to update"
+      register: update_result
+      changed_when: "'Updated' in update_result.stdout"
+...

@@ -1,0 +1,15 @@
+---
+# 01-motd-basic.yaml - 最基础的 Playbook 结构
+# 学习目标: 理解 Play 的基本结构 (hosts, tasks)
+
+- name: Configure MOTD
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set simple MOTD
+      ansible.builtin.copy:
+        content: "Welcome to {{ inventory_hostname }}\nManaged by Ansible\n"
+        dest: /etc/motd
+        mode: '0644'
+...

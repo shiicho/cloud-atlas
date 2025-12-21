@@ -1,0 +1,25 @@
+---
+# meta/main.yaml - Webserver role metadata
+
+galaxy_info:
+  author: Cloud Atlas Lab
+  description: Apache HTTP Server deployment role
+  license: MIT
+  min_ansible_version: "2.10"
+
+  platforms:
+    - name: Amazon
+      versions:
+        - "2023"
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - web
+    - httpd
+    - apache
+
+dependencies:
+  - role: common

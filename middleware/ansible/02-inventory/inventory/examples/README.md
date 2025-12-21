@@ -1,9 +1,9 @@
 # Ansible Inventory 渐进式示例
 # Progressive Ansible Inventory Examples
 
-本目录包含 7 个渐进式 Ansible Inventory 示例，从最简单到较复杂，每个示例都引入新概念。
+本目录包含 6 个渐进式 Ansible Inventory 示例，从最简单到较复杂，每个示例都引入新概念。
 
-This directory contains 7 progressive Ansible inventory examples, from simplest to more complex, with each example introducing new concepts.
+This directory contains 6 progressive Ansible inventory examples, from simplest to more complex, with each example introducing new concepts.
 
 ---
 
@@ -103,30 +103,7 @@ production
 
 ---
 
-### 06-yaml-format - YAML 格式
-**新概念**: YAML inventory 格式 (与 INI 等效)
-
-- 更结构化的 inventory 格式
-- 原生数据类型 (列表、字典、布尔值)
-- 适合复杂层级和版本控制
-
-**测试命令**:
-```bash
-ansible -i 06-yaml-format/hosts.yaml all --list-hosts
-ansible -i 06-yaml-format/hosts.yaml webservers -m debug -a "var=http_port"
-```
-
-**INI vs YAML 对比**:
-| INI 格式 | YAML 格式 |
-|---------|----------|
-| `[webservers]` | `webservers:` |
-| `[webservers:vars]` | `webservers: vars:` |
-| `[production:children]` | `production: children:` |
-| `http_port=80` | `http_port: 80` |
-
----
-
-### 07-control-local - 包含控制节点
+### 06-control-local - 包含控制节点
 **新概念**: `ansible_connection=local` 本地连接
 
 - 将控制节点本身加入 inventory
@@ -135,9 +112,9 @@ ansible -i 06-yaml-format/hosts.yaml webservers -m debug -a "var=http_port"
 
 **测试命令**:
 ```bash
-ansible -i 07-control-local control -m ping
-ansible -i 07-control-local webservers --list-hosts
-ansible -i 07-control-local all --list-hosts
+ansible -i 06-control-local control -m ping
+ansible -i 06-control-local webservers --list-hosts
+ansible -i 06-control-local all --list-hosts
 ```
 
 **使用场景**:
@@ -151,7 +128,7 @@ ansible -i 07-control-local all --list-hosts
 
 1. **基础** (01-02): 了解 inventory 基本概念
 2. **扩展** (03-04): 学习规模化和变量管理
-3. **进阶** (05-07): 掌握层级结构和特殊连接方式
+3. **进阶** (05-06): 掌握层级结构和特殊连接方式
 
 ## 实验环境 / Lab Environment
 

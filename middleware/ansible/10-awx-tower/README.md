@@ -17,6 +17,23 @@
 
 ---
 
+## 准备环境
+
+```bash
+# 1. 切换到 ansible 用户（如果刚登录 Control Node）
+sudo su - ansible
+
+# 2. 更新课程仓库（获取最新内容）
+cd ~/repo && git pull
+
+# 3. 进入本课目录
+cd ~/10-awx-tower
+```
+
+> 本课将部署独立的 AWX Lab，后续步骤会使用 CFN 创建新实例。
+
+---
+
 ## Step 1 — AWX 概述
 
 ### 1.1 产品关系

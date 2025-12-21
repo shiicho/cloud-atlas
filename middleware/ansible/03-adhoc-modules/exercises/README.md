@@ -144,7 +144,6 @@ bash 06-ansible-doc.sh
 ```bash
 # 清理远程主机临时文件
 ansible all -m shell -a "rm -rf /tmp/ansible_* /tmp/hello.txt /tmp/marker /tmp/remote_info.txt"
-
 # 清理本地目录
 rm -rf ./fetched
 ```

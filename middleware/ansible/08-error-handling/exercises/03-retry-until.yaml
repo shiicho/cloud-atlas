@@ -1,0 +1,76 @@
+---
+# 03-retry-until.yaml - 重试机制
+# 学习目标: 使用 retries 和 until 实现重试
+
+- name: Retry Mechanism Demo
+  hosts: all
+  become: true
+
+  tasks:
+    # 基本重试 - 等待服务启动
+    - name: Ensure httpd is installed
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+
+    - name: Start httpd
+      ansible.builtin.service:
+        name: httpd
+        state: started
+
+    - name: Wait for httpd to be ready
+      ansible.builtin.uri:
+        url: http://localhost/
+        status_code: 200
+      register: http_result
+      until: http_result.status == 200
+      retries: 5
+      delay: 2
+
+    - name: Show HTTP check result
+      ansible.builtin.debug:
+        msg: "HTTP service is ready after {{ http_result.attempts }} attempt(s)"
+
+    # 等待文件出现
+    - name: Create marker file after delay (simulated async)
+      ansible.builtin.shell: |
+        (sleep 3 && touch /tmp/marker-file) &
+      changed_when: false
+
+    - name: Wait for marker file
+      ansible.builtin.stat:
+        path: /tmp/marker-file
+      register: marker_stat
+      until: marker_stat.stat.exists
+      retries: 10
+      delay: 1
+
+    - name: Show marker file result
+      ansible.builtin.debug:
+        msg: "Marker file appeared after {{ marker_stat.attempts }} attempt(s)"
+
+    # 等待进程结束
+    - name: Start background process
+      ansible.builtin.shell: |
+        (sleep 5 && echo "done" > /tmp/process-done) &
+        echo $!
+      register: bg_process
+      changed_when: false
+
+    - name: Wait for process to complete
+      ansible.builtin.stat:
+        path: /tmp/process-done
+      register: process_done
+      until: process_done.stat.exists
+      retries: 10
+      delay: 1
+
+    # Cleanup
+    - name: Remove marker files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/marker-file
+        - /tmp/process-done
+...

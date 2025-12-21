@@ -1,0 +1,32 @@
+---
+# 05-hosts-template.yaml - /etc/hosts 模板化
+# 学习目标: 使用 hostvars 和 groups 动态生成配置
+
+- name: Generate /etc/hosts from Inventory
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Backup original hosts file
+      ansible.builtin.copy:
+        src: /etc/hosts
+        dest: /etc/hosts.bak
+        remote_src: true
+        mode: '0644'
+
+    - name: Deploy dynamic hosts file
+      ansible.builtin.template:
+        src: ../templates/hosts.j2
+        dest: /etc/hosts
+        mode: '0644'
+        backup: true
+
+    - name: Show generated hosts file
+      ansible.builtin.command: cat /etc/hosts
+      register: hosts_content
+      changed_when: false
+
+    - name: Display hosts file
+      ansible.builtin.debug:
+        var: hosts_content.stdout_lines
+...

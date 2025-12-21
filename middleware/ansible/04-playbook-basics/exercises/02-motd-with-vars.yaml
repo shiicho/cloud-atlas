@@ -1,0 +1,25 @@
+---
+# 02-motd-with-vars.yaml - 添加变量
+# 学习目标: 理解 vars 区块和变量引用
+
+- name: Configure MOTD with Variables
+  hosts: all
+  become: true
+
+  vars:
+    company_name: "Cloud Atlas Lab"
+    admin_email: "admin@ans.local"
+    motd_banner: |
+      ========================================
+       Welcome to {{ company_name }}
+       Host: {{ inventory_hostname }}
+       Contact: {{ admin_email }}
+      ========================================
+
+  tasks:
+    - name: Deploy custom MOTD
+      ansible.builtin.copy:
+        content: "{{ motd_banner }}"
+        dest: /etc/motd
+        mode: '0644'
+...

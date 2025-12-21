@@ -1,0 +1,27 @@
+---
+# defaults/main.yaml - 默认变量（可被覆盖）
+
+# 时区设置
+common_timezone: "Asia/Tokyo"
+
+# 要安装的基础软件包
+common_packages:
+  - vim
+  - htop
+  - tree
+  - curl
+  - wget
+  - jq
+
+# MOTD 设置
+common_motd_enabled: true
+common_motd_company: "Cloud Atlas Lab"
+
+# 日志保留天数
+common_log_retention_days: 30
+
+# 是否配置 NTP
+common_ntp_enabled: true
+common_ntp_servers:
+  - ntp.nict.jp
+  - time.google.com

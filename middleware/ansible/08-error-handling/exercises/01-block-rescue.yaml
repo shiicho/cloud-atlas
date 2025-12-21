@@ -1,0 +1,46 @@
+---
+# 01-block-rescue.yaml - Block/Rescue/Always 基础
+# 学习目标: 理解 block/rescue/always 结构 (类似 try/catch/finally)
+
+- name: Block Rescue Always Demo
+  hosts: all
+  become: true
+
+  vars:
+    force_failure: false
+
+  tasks:
+    - name: Demonstrate block/rescue/always
+      block:
+        - name: Block Task 1 - This will succeed
+          ansible.builtin.debug:
+            msg: "Block Task 1 - Running..."
+
+        - name: Block Task 2 - Might fail
+          ansible.builtin.command: "{{ 'false' if force_failure else 'true' }}"
+
+        - name: Block Task 3 - Only runs if Task 2 succeeds
+          ansible.builtin.debug:
+            msg: "Block Task 3 - Task 2 succeeded!"
+
+      rescue:
+        - name: Rescue Task 1 - Handle the failure
+          ansible.builtin.debug:
+            msg: "RESCUE: An error occurred, running recovery..."
+
+        - name: Rescue Task 2 - Log the failure
+          ansible.builtin.lineinfile:
+            path: /var/log/ansible-errors.log
+            line: "{{ ansible_date_time.iso8601 }} - Error on {{ inventory_hostname }}"
+            create: true
+            mode: '0644'
+
+      always:
+        - name: Always Task 1 - Cleanup
+          ansible.builtin.debug:
+            msg: "ALWAYS: This runs regardless of success/failure"
+
+        - name: Always Task 2 - Report status
+          ansible.builtin.debug:
+            msg: "ALWAYS: Execution completed on {{ inventory_hostname }}"
+...

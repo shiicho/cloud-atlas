@@ -1,0 +1,57 @@
+===== Jinja2 Filters Demo =====
+Generated: {{ ansible_date_time.iso8601 }}
+
+--- String Filters ---
+Original: {{ user_name }}
+upper: {{ user_name | upper }}
+lower: {{ user_name | lower }}
+title: {{ user_name | title }}
+capitalize: {{ user_name | capitalize }}
+replace: {{ user_name | replace(' ', '_') }}
+length: {{ user_name | length }}
+
+--- Password/Hash Filters ---
+Password hash (sha512): {{ password | password_hash('sha512') | truncate(40, true, '...') }}
+MD5 hash: {{ password | hash('md5') }}
+
+--- List Filters ---
+Original list: {{ items }}
+join with comma: {{ items | join(', ') }}
+first: {{ items | first }}
+last: {{ items | last }}
+length: {{ items | length }}
+sorted: {{ items | sort }}
+random: {{ items | random }}
+
+--- Dict Filters ---
+Original dict: {{ config_dict }}
+keys: {{ config_dict.keys() | list }}
+values: {{ config_dict.values() | list }}
+to_yaml:
+{{ config_dict | to_nice_yaml }}
+
+--- Default Filter ---
+optional_value (null): {{ optional_value | default('DEFAULT_VALUE') }}
+undefined_var: {{ undefined_var | default('NOT_DEFINED') }}
+
+--- Type Conversion ---
+String "42" to int: {{ "42" | int }}
+Number 3.14 to int: {{ 3.14 | int }}
+Bool to string: {{ true | string }}
+
+--- JSON Filters ---
+JSON string: {{ json_string }}
+Parsed JSON name: {{ (json_string | from_json).name }}
+Parsed JSON count: {{ (json_string | from_json).count }}
+
+--- Filesystem Filters ---
+Path basename: {{ "/etc/httpd/conf/httpd.conf" | basename }}
+Path dirname: {{ "/etc/httpd/conf/httpd.conf" | dirname }}
+
+--- Math Filters ---
+Memory MB: {{ ansible_memtotal_mb }}
+Memory human readable: {{ ansible_memtotal_mb * 1024 * 1024 | human_readable }}
+
+--- Regex Filters ---
+IP from string: {{ "Server IP is 192.168.1.100 and port 8080" | regex_search('\\d+\\.\\d+\\.\\d+\\.\\d+') }}
+Replace with regex: {{ "error-2024-01-15.log" | regex_replace('\\d{4}-\\d{2}-\\d{2}', 'DATE') }}

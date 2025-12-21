@@ -1,0 +1,48 @@
+---
+# 01-facts-explore.yaml - 探索 Ansible Facts
+# 学习目标: 理解 Facts 的结构和使用方法
+
+- name: Explore Ansible Facts
+  hosts: all
+  gather_facts: true
+
+  tasks:
+    - name: Show all facts (use with caution - lots of output!)
+      ansible.builtin.debug:
+        var: ansible_facts
+      when: show_all_facts | default(false) | bool
+
+    - name: Display basic system info
+      ansible.builtin.debug:
+        msg: |
+          === System Information ===
+          Hostname: {{ ansible_hostname }}
+          FQDN: {{ ansible_fqdn }}
+          Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          OS Family: {{ ansible_os_family }}
+          Kernel: {{ ansible_kernel }}
+
+    - name: Display hardware info
+      ansible.builtin.debug:
+        msg: |
+          === Hardware Information ===
+          Architecture: {{ ansible_architecture }}
+          CPU Cores: {{ ansible_processor_vcpus }}
+          Memory Total: {{ ansible_memtotal_mb }} MB
+          Memory Free: {{ ansible_memfree_mb }} MB
+
+    - name: Display network info
+      ansible.builtin.debug:
+        msg: |
+          === Network Information ===
+          Default IPv4: {{ ansible_default_ipv4.address | default('N/A') }}
+          Default Gateway: {{ ansible_default_ipv4.gateway | default('N/A') }}
+          Interface: {{ ansible_default_ipv4.interface | default('N/A') }}
+
+    - name: Display mount points
+      ansible.builtin.debug:
+        msg: "Mount: {{ item.mount }} - Size: {{ item.size_total | human_readable }} - Available: {{ item.size_available | human_readable }}"
+      loop: "{{ ansible_mounts }}"
+      loop_control:
+        label: "{{ item.mount }}"
+...
