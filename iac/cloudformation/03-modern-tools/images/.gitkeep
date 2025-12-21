@@ -1,0 +1,21 @@
+# Images Directory
+# This directory will contain screenshots for Lesson 03 - Modern Tools
+#
+# Expected screenshots (to be captured):
+#
+# Infrastructure Composer:
+# - infrastructure-composer-menu.png
+# - infrastructure-composer-blank-canvas.png
+# - infrastructure-composer-drag-drop.png
+# - infrastructure-composer-template-view.png
+# - infrastructure-composer-ai-assistant.png
+#
+# IaC Generator:
+# - iac-generator-start-scan.png
+# - iac-generator-scan-results.png
+# - iac-generator-select-resources.png
+#
+# Timeline View:
+# - deployment-timeline-tab.png
+#
+# Capture these screenshots while following the lesson steps.

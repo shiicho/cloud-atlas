@@ -1,0 +1,197 @@
+# =============================================================================
+# Application Stack - Application Layer Template
+# =============================================================================
+#
+# 应用层模板 - 引用 Network Stack 的导出值创建应用资源
+#
+# 前置条件:
+#   必须先部署 network-stack.yaml 并确保 Exports 可用
+#
+# 使用方式:
+#   1. 确保 {Environment}-network-stack 已部署
+#   2. 通过 Console 上传此模板
+#   3. Stack 名称建议: {environment}-app-stack
+#   4. Environment 参数必须与 network-stack 一致！
+#
+# 引用的 Imports:
+#   - {Environment}-VpcId
+#   - {Environment}-PublicSubnet1Id
+#   - {Environment}-PublicSubnet2Id
+#   - {Environment}-PrivateSubnetIds
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Application Layer Stack - Security Groups and Resources
+  Imports values from network-stack via cross-stack references.
+  Deploy AFTER network-stack is complete.
+
+# -----------------------------------------------------------------------------
+# Parameters - 输入参数
+# -----------------------------------------------------------------------------
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: |
+      环境名称 - 必须与 network-stack 的 Environment 参数一致！
+      用于找到正确的 Export 名称。
+
+  AllowedCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: 允许访问 ALB 的 CIDR（生产环境建议限制）
+
+  AppPort:
+    Type: Number
+    Default: 8080
+    Description: 应用程序监听端口
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义
+# -----------------------------------------------------------------------------
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # ALB Security Group - 负载均衡器安全组
+  # ---------------------------------------------------------------------------
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Application Load Balancer
+      # 跨栈引用：从 network-stack 导入 VpcId
+      VpcId: !ImportValue
+        Fn::Sub: '${Environment}-VpcId'
+      SecurityGroupIngress:
+        # HTTP
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref AllowedCidr
+        # HTTPS
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref AllowedCidr
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-alb-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ---------------------------------------------------------------------------
+  # Application Security Group - 应用程序安全组
+  # ---------------------------------------------------------------------------
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Application instances
+      VpcId: !ImportValue
+        Fn::Sub: '${Environment}-VpcId'
+      SecurityGroupIngress:
+        # 只允许来自 ALB 的流量
+        - IpProtocol: tcp
+          FromPort: !Ref AppPort
+          ToPort: !Ref AppPort
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-app-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ---------------------------------------------------------------------------
+  # Database Security Group - 数据库安全组
+  # ---------------------------------------------------------------------------
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Database (RDS)
+      VpcId: !ImportValue
+        Fn::Sub: '${Environment}-VpcId'
+      SecurityGroupIngress:
+        # 只允许来自 App 的流量
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref AppSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-db-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ---------------------------------------------------------------------------
+  # Application Load Balancer (示例)
+  # ---------------------------------------------------------------------------
+  # 注意：这只是示例，实际使用需要配置 Target Group 和 Listener
+
+  # ApplicationLoadBalancer:
+  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  #   Properties:
+  #     Name: !Sub '${Environment}-alb'
+  #     Scheme: internet-facing
+  #     SecurityGroups:
+  #       - !Ref ALBSecurityGroup
+  #     Subnets:
+  #       # 使用 Split 分割逗号分隔的子网列表
+  #       - !ImportValue
+  #           Fn::Sub: '${Environment}-PublicSubnet1Id'
+  #       - !ImportValue
+  #           Fn::Sub: '${Environment}-PublicSubnet2Id'
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Sub '${Environment}-alb'
+
+# -----------------------------------------------------------------------------
+# Outputs - 输出值
+# -----------------------------------------------------------------------------
+Outputs:
+
+  # ALB Security Group ID
+  ALBSecurityGroupId:
+    Description: ALB Security Group ID
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: !Sub '${Environment}-ALBSecurityGroupId'
+
+  # App Security Group ID
+  AppSecurityGroupId:
+    Description: Application Security Group ID
+    Value: !Ref AppSecurityGroup
+    Export:
+      Name: !Sub '${Environment}-AppSecurityGroupId'
+
+  # Database Security Group ID
+  DatabaseSecurityGroupId:
+    Description: Database Security Group ID
+    Value: !Ref DatabaseSecurityGroup
+    Export:
+      Name: !Sub '${Environment}-DatabaseSecurityGroupId'
+
+  # 显示引用的 VPC（用于验证跨栈引用正常工作）
+  ImportedVpcId:
+    Description: VPC ID imported from network-stack
+    Value: !ImportValue
+      Fn::Sub: '${Environment}-VpcId'

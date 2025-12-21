@@ -1,0 +1,253 @@
+# =============================================================================
+# 多环境 EC2 模板 - Mini Project
+# =============================================================================
+#
+# 本模板演示 CloudFormation 的核心功能:
+#   - Parameters: 接受用户输入 (Environment, KeyPairName)
+#   - Mappings: 区域 AMI 映射 + 环境配置映射
+#   - Conditions: 条件创建 EIP (只在 prod 环境)
+#   - 内置函数: !Ref, !GetAtt, !Sub, !FindInMap, !If
+#   - Outputs: 导出资源信息
+#
+# 使用方法:
+#   1. 打开 CloudFormation Console
+#   2. Create Stack > Upload a template file
+#   3. 填写 Parameters (选择 dev 或 prod)
+#   4. 观察 Resources 差异
+#
+# 注意事项:
+#   - 需要先创建 EC2 Key Pair
+#   - 使用默认 VPC 和 Subnet
+#   - 完成后记得删除 Stack!
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  Multi-environment EC2 template demonstrating Parameters, Mappings, and Conditions.
+  Creates t3.micro for dev, t3.small + EIP for prod.
+
+# -----------------------------------------------------------------------------
+# Metadata - Console UI 美化
+# -----------------------------------------------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "環境設定"
+        Parameters:
+          - Environment
+      - Label:
+          default: "EC2 設定"
+        Parameters:
+          - KeyPairName
+    ParameterLabels:
+      Environment:
+        default: "環境を選択 (dev/prod)"
+      KeyPairName:
+        default: "SSH キーペア"
+
+# -----------------------------------------------------------------------------
+# Parameters - 用户输入
+# -----------------------------------------------------------------------------
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: |
+      環境種別を選択:
+      - dev: t3.micro, EIP なし, 8GB ディスク
+      - prod: t3.small, EIP あり, 20GB ディスク
+    ConstraintDescription: dev または prod を選択してください
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: SSH 接続用のキーペアを選択
+
+# -----------------------------------------------------------------------------
+# Mappings - 静态查找表
+# -----------------------------------------------------------------------------
+Mappings:
+  # 区域 AMI 映射
+  # 使用 Amazon Linux 2023 (2024-12 时点的 AMI ID)
+  # 注意: AMI ID 会随时间变化，生产环境建议使用 SSM Parameter
+  RegionAMI:
+    ap-northeast-1:    # 东京
+      AmazonLinux2023: ami-0d52744d6551d851e
+    ap-northeast-3:    # 大阪
+      AmazonLinux2023: ami-0599b6e53ca798bb2
+    us-east-1:         # 弗吉尼亚
+      AmazonLinux2023: ami-0c02fb55956c7d316
+    us-west-2:         # 俄勒冈
+      AmazonLinux2023: ami-0b8c6b923777519db
+
+  # 环境配置映射
+  EnvironmentConfig:
+    dev:
+      InstanceType: t3.micro
+      VolumeSize: 8
+      NameSuffix: development
+    prod:
+      InstanceType: t3.small
+      VolumeSize: 20
+      NameSuffix: production
+
+# -----------------------------------------------------------------------------
+# Conditions - 条件判断
+# -----------------------------------------------------------------------------
+Conditions:
+  # prod 环境创建 EIP
+  IsProd: !Equals
+    - !Ref Environment
+    - prod
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义
+# -----------------------------------------------------------------------------
+Resources:
+  # Security Group - 允许 SSH 访问
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Security group for ${Environment} EC2 instance'
+      SecurityGroupIngress:
+        # SSH 访问
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH access from anywhere
+        # HTTP 访问 (可选)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-web-server-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      # 使用 !FindInMap 从 Mappings 获取 AMI ID
+      ImageId: !FindInMap
+        - RegionAMI
+        - !Ref 'AWS::Region'
+        - AmazonLinux2023
+
+      # 使用 !FindInMap 根据环境获取 Instance Type
+      InstanceType: !FindInMap
+        - EnvironmentConfig
+        - !Ref Environment
+        - InstanceType
+
+      # 引用 Parameter
+      KeyName: !Ref KeyPairName
+
+      # 引用 Security Group (使用 !Ref)
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+
+      # 根盘配置
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !FindInMap
+              - EnvironmentConfig
+              - !Ref Environment
+              - VolumeSize
+            VolumeType: gp3
+            DeleteOnTermination: true
+            Encrypted: true
+
+      # Tags - 展示 !Sub 和 !Ref 的使用
+      Tags:
+        - Key: Name
+          # !Sub 替换变量
+          Value: !Sub '${Environment}-web-server'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+        # 使用 Pseudo Parameters
+        - Key: StackName
+          Value: !Ref AWS::StackName
+        - Key: AccountId
+          Value: !Ref AWS::AccountId
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  # Elastic IP - 只在 prod 环境创建
+  ElasticIP:
+    Type: AWS::EC2::EIP
+    Condition: IsProd    # 条件创建！
+    Properties:
+      InstanceId: !Ref EC2Instance
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-web-server-eip'
+        - Key: Environment
+          Value: !Ref Environment
+
+# -----------------------------------------------------------------------------
+# Outputs - 输出信息
+# -----------------------------------------------------------------------------
+Outputs:
+  # Instance ID - 使用 !Ref 获取主标识符
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref EC2Instance
+
+  # Private IP - 使用 !GetAtt 获取属性
+  PrivateIP:
+    Description: Private IP Address
+    Value: !GetAtt EC2Instance.PrivateIp
+
+  # Availability Zone - !GetAtt 获取其他属性
+  AvailabilityZone:
+    Description: Availability Zone
+    Value: !GetAtt EC2Instance.AvailabilityZone
+
+  # Public IP - 使用 !If 条件输出
+  PublicIP:
+    Description: Public IP Address (EIP for prod, dynamic for dev)
+    Value: !If
+      - IsProd                              # Condition 名称
+      - !Ref ElasticIP                      # true: 返回 EIP
+      - !GetAtt EC2Instance.PublicIp        # false: 返回动态 Public IP
+
+  # Security Group ID
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref InstanceSecurityGroup
+
+  # Instance ARN - 使用 !Sub 和 Pseudo Parameters 构建
+  InstanceArn:
+    Description: EC2 Instance ARN
+    Value: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${EC2Instance}'
+
+  # SSH 连接命令 - 方便用户复制
+  SSHCommand:
+    Description: SSH connection command
+    Value: !If
+      - IsProd
+      - !Sub 'ssh -i ${KeyPairName}.pem ec2-user@${ElasticIP}'
+      - !Sub 'ssh -i ${KeyPairName}.pem ec2-user@${EC2Instance.PublicIp}'
+
+  # 环境配置摘要
+  ConfigSummary:
+    Description: Environment configuration summary
+    Value: !Sub |
+      Environment: ${Environment}
+      Instance Type: ${!FindInMap [EnvironmentConfig, ${Environment}, InstanceType]}
+      Volume Size: ${!FindInMap [EnvironmentConfig, ${Environment}, VolumeSize]} GB
+      Has EIP: ${!If [IsProd, Yes, No]}

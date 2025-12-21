@@ -1,0 +1,135 @@
+# =============================================================================
+# failure-demo.yaml
+# Failure Lab - 故意触发回滚演示
+# =============================================================================
+#
+# 本模板故意包含一个会失败的资源，用于演示：
+#   1. CloudFormation 自动回滚机制
+#   2. Stack Events 的错误信息
+#   3. ROLLBACK_COMPLETE 状态
+#
+# 【教学目的】
+#   - 观察 CloudFormation 如何处理失败
+#   - 理解自动回滚的价值（对比 Terraform）
+#   - 学会阅读 Stack Events 调试信息
+#
+# 日本企业场景：
+#   - 自動ロールバックは CloudFormation の大きな利点
+#   - 本番環境でのデプロイ失敗時も安全
+#   - 障害対応時の手動操作不要
+#
+# 使用方法：
+#   1. 创建 Stack: failure-lab
+#   2. 观察 Events: CREATE_IN_PROGRESS -> CREATE_FAILED -> ROLLBACK
+#   3. 最终状态: ROLLBACK_COMPLETE
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: |
+  Failure Lab - 演示 CloudFormation 自动回滚机制
+  このテンプレートは意図的に失敗し、自動ロールバックを体験するためのものです
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义
+# -----------------------------------------------------------------------------
+
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # DemoBucket - 这个会成功创建
+  # ---------------------------------------------------------------------------
+  #
+  # S3 Bucket 创建很快，会先成功
+  # 但当后面的 EC2 失败时，这个 Bucket 也会被回滚删除
+
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'failure-lab-${AWS::AccountId}'
+      Tags:
+        - Key: Name
+          Value: Failure Lab Bucket (will be rolled back)
+        - Key: Purpose
+          Value: 回滚演示 - 这个 Bucket 会在回滚时被删除
+
+  # ---------------------------------------------------------------------------
+  # FailingInstance - 这个会失败（使用无效的 AMI ID）
+  # ---------------------------------------------------------------------------
+  #
+  # 【故意制造的错误】
+  # 使用一个不存在的 AMI ID，EC2 创建必定失败
+  #
+  # 观察点：
+  #   1. Events 显示错误: "AMI ami-invalid-id-12345 does not exist"
+  #   2. CloudFormation 自动开始 ROLLBACK
+  #   3. 已创建的 DemoBucket 被删除
+  #   4. 最终状态: ROLLBACK_COMPLETE
+
+  FailingInstance:
+    Type: AWS::EC2::Instance
+    DependsOn: DemoBucket              # 确保 Bucket 先创建成功
+    Properties:
+      # 无效的 AMI ID - 故意制造错误！
+      ImageId: ami-invalid-id-12345
+      InstanceType: t2.micro
+      Tags:
+        - Key: Name
+          Value: This will fail
+
+# =============================================================================
+# 预期的 Stack Events 序列
+# =============================================================================
+#
+# 时间     Logical ID           Status                  备注
+# ----     ----------           ------                  ----
+# T+0      failure-lab          CREATE_IN_PROGRESS      用户发起创建
+# T+1      DemoBucket           CREATE_IN_PROGRESS      开始创建 Bucket
+# T+3      DemoBucket           CREATE_COMPLETE         Bucket 创建成功
+# T+4      FailingInstance      CREATE_IN_PROGRESS      开始创建 EC2
+# T+5      FailingInstance      CREATE_FAILED           AMI 不存在，失败！
+# T+6      failure-lab          ROLLBACK_IN_PROGRESS    自动开始回滚
+# T+7      FailingInstance      DELETE_IN_PROGRESS      删除失败的实例
+# T+8      FailingInstance      DELETE_COMPLETE         完成
+# T+9      DemoBucket           DELETE_IN_PROGRESS      回滚删除 Bucket
+# T+11     DemoBucket           DELETE_COMPLETE         完成
+# T+12     failure-lab          ROLLBACK_COMPLETE       回滚完成
+#
+# =============================================================================
+# 对比 Terraform 的行为
+# =============================================================================
+#
+# Terraform 遇到失败时：
+#   1. 停止执行
+#   2. 已创建的资源保留（不自动回滚）
+#   3. 需要手动 terraform destroy 或修复后重试
+#
+# CloudFormation 遇到失败时：
+#   1. 自动回滚
+#   2. 已创建的资源被删除
+#   3. 恢复到创建前状态
+#
+# 【结论】CloudFormation 的自动回滚是生产环境的重要保障！
+#
+# =============================================================================
+# 其他触发失败的方法（供参考）
+# =============================================================================
+#
+# 1. 无效的安全组 ID
+#    SecurityGroupIds:
+#      - sg-invalid-12345
+#
+# 2. 不存在的子网
+#    SubnetId: subnet-invalid-12345
+#
+# 3. 权限不足
+#    # 使用需要特殊权限的资源，但 IAM 没有授权
+#
+# 4. 资源限制
+#    # 超过 VPC 数量限制、EIP 限制等
+#
+# 5. 无效的 IAM Role
+#    IamInstanceProfile: invalid-role-name
+#
+# =============================================================================

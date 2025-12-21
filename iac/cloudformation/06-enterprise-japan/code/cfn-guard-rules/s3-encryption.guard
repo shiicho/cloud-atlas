@@ -1,0 +1,129 @@
+# =============================================================================
+# s3-encryption.guard
+# S3 Bucket 加密检查规则
+# =============================================================================
+#
+# CloudFormation Guard 规则文件
+# 确保所有 S3 Bucket 都启用了服务端加密
+#
+# 使用方法:
+#   cfn-guard validate --data your-template.yaml --rules s3-encryption.guard
+#
+# 日本企业场景:
+#   - 金融业（金融庁ガイドライン）要求数据加密
+#   - ISMS/ISO27001 合规要求
+#   - 個人情報保護法対応
+#
+# =============================================================================
+
+# 获取所有 S3 Bucket 资源
+let s3_buckets = Resources.*[ Type == 'AWS::S3::Bucket' ]
+
+# -----------------------------------------------------------------------------
+# Rule 1: S3 Bucket 必须配置加密
+# -----------------------------------------------------------------------------
+rule s3_bucket_encryption_configured when %s3_buckets !empty {
+    # 检查 BucketEncryption 属性存在
+    %s3_buckets.Properties.BucketEncryption exists
+    <<
+        [必須/CRITICAL] S3 バケットには暗号化設定が必要です
+        S3 Bucket must have encryption configured
+
+        対応方法:
+        BucketEncryption プロパティを追加してください:
+
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
+
+        参考:
+        - https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-bucketencryption.html
+        - 情報セキュリティポリシー: SEC-001
+    >>
+}
+
+# -----------------------------------------------------------------------------
+# Rule 2: 加密算法检查（推荐使用 KMS）
+# -----------------------------------------------------------------------------
+rule s3_bucket_encryption_algorithm when %s3_buckets !empty {
+    when %s3_buckets.Properties.BucketEncryption exists {
+        %s3_buckets.Properties.BucketEncryption.ServerSideEncryptionConfiguration[*].ServerSideEncryptionByDefault.SSEAlgorithm in ["AES256", "aws:kms"]
+        <<
+            [推奨/WARNING] 暗号化アルゴリズムは AES256 または aws:kms を使用してください
+            Encryption algorithm should be AES256 or aws:kms
+
+            現在サポートされているアルゴリズム:
+            - AES256: S3 マネージドキー（デフォルト推奨）
+            - aws:kms: KMS マネージドキー（より厳格な管理が必要な場合）
+
+            機密データには aws:kms を推奨します。
+        >>
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Rule 3: 公开访问阻止检查
+# -----------------------------------------------------------------------------
+rule s3_bucket_public_access_blocked when %s3_buckets !empty {
+    %s3_buckets.Properties.PublicAccessBlockConfiguration exists
+    <<
+        [必須/CRITICAL] S3 バケットにはパブリックアクセスブロック設定が必要です
+        S3 Bucket must have PublicAccessBlockConfiguration
+
+        対応方法:
+        以下のプロパティを追加してください:
+
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+        これは AWS のセキュリティベストプラクティスです。
+        公開が必要な場合は、セキュリティチームの承認を得てください。
+    >>
+}
+
+# -----------------------------------------------------------------------------
+# Rule 4: 版本控制检查（生产环境推荐）
+# -----------------------------------------------------------------------------
+rule s3_bucket_versioning_enabled when %s3_buckets !empty {
+    %s3_buckets.Properties.VersioningConfiguration exists
+    <<
+        [推奨/INFO] S3 バケットにはバージョニング設定を推奨します
+        S3 Bucket versioning is recommended
+
+        バージョニングのメリット:
+        - 誤削除からの復元が可能
+        - 変更履歴の保持
+        - コンプライアンス要件への対応
+
+        VersioningConfiguration:
+          Status: Enabled
+    >>
+}
+
+# =============================================================================
+# 使用例
+# =============================================================================
+#
+# 正常なテンプレート例:
+#
+# Resources:
+#   MyBucket:
+#     Type: AWS::S3::Bucket
+#     Properties:
+#       BucketEncryption:
+#         ServerSideEncryptionConfiguration:
+#           - ServerSideEncryptionByDefault:
+#               SSEAlgorithm: AES256
+#       PublicAccessBlockConfiguration:
+#         BlockPublicAcls: true
+#         BlockPublicPolicy: true
+#         IgnorePublicAcls: true
+#         RestrictPublicBuckets: true
+#       VersioningConfiguration:
+#         Status: Enabled
+#
+# =============================================================================

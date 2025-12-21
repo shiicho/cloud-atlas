@@ -1,0 +1,241 @@
+# =============================================================================
+# drift-demo.yaml
+# CloudFormation Drift Detection 演示模板
+# =============================================================================
+#
+# 本模板创建一个简单的 EC2 实例，用于演示 Drift Detection 功能。
+#
+# 使用方法：
+#   1. AWS Console → CloudFormation → Create stack
+#   2. 上传此文件
+#   3. Stack name: drift-demo-stack
+#   4. 等待 CREATE_COMPLETE
+#
+# Drift 演练：
+#   1. 在 EC2 Console 手动修改实例标签
+#   2. 返回 CloudFormation → Stack actions → Detect drift
+#   3. 查看 Drift 结果
+#   4. 选择修复方式（Update stack 或更新模板）
+#
+# 清理方法：
+#   1. CloudFormation Console → 选择 Stack → Delete
+#   2. 等待 DELETE_COMPLETE
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+# -----------------------------------------------------------------------------
+# Description - 模板描述
+# -----------------------------------------------------------------------------
+
+Description: |
+  CloudFormation Drift Detection Demo
+  Lesson 05 - Drift 检测与资源导入 演示模板
+  创建一个带标签的 EC2 实例，用于演示 Drift Detection
+
+# -----------------------------------------------------------------------------
+# Metadata - Console 界面增强
+# -----------------------------------------------------------------------------
+# 使用 Metadata 让 Console 界面更友好
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "EC2 配置"
+        Parameters:
+          - InstanceType
+          - Environment
+    ParameterLabels:
+      InstanceType:
+        default: "实例类型"
+      Environment:
+        default: "环境"
+
+# -----------------------------------------------------------------------------
+# Parameters - 输入参数
+# -----------------------------------------------------------------------------
+
+Parameters:
+  # EC2 实例类型
+  # 使用 t3.micro 保持在免费层范围内
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Description: |
+      EC2 实例类型。
+      t3.micro 属于免费层（每月 750 小时）。
+      日本语: インスタンスタイプ
+
+  # 环境标签
+  # 这个参数将用于演示 Drift
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - production
+    Description: |
+      环境类型（用于 Tag）。
+      演练时会手动修改这个标签来制造 Drift。
+      日本语: 環境
+
+  # 最新 Amazon Linux 2023 AMI (使用 SSM Parameter)
+  # 使用 SSM Parameter 而非硬编码 AMI ID，确保始终使用最新的 Amazon Linux 2023
+  # 这是 AWS 推荐的最佳实践，避免 AMI 过期导致 Stack 创建失败
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: |
+      最新的 Amazon Linux 2023 AMI ID（自动从 SSM Parameter Store 获取）。
+      AWS 会自动更新此参数，无需手动维护 AMI ID。
+      日本语: 最新 AMI ID（SSM パラメータから自動取得）
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义
+# -----------------------------------------------------------------------------
+
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # EC2 Instance - 演示用实例
+  # ---------------------------------------------------------------------------
+  #
+  # 这个 EC2 实例将用于演示 Drift Detection：
+  # 1. 创建时设置 Environment 标签为参数值
+  # 2. 手动在 Console 修改标签
+  # 3. 运行 Drift Detection 检测变更
+  # 4. 通过 Update Stack 修复或更新模板接受变更
+
+  DemoInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      # 实例类型（来自参数）
+      InstanceType: !Ref InstanceType
+
+      # AMI ID（来自 SSM Parameter）
+      # 使用 SSM Parameter 自动获取最新 AMI，避免硬编码过期
+      ImageId: !Ref LatestAmiId
+
+      # 标签 - Drift Detection 的主要检测对象
+      #
+      # 演练步骤：
+      # 1. 创建后在 EC2 Console 修改 Environment 标签
+      # 2. 添加新标签如 ModifiedBy: console-user
+      # 3. 运行 Detect drift 查看差异
+      Tags:
+        # 实例名称
+        - Key: Name
+          Value: drift-demo-instance
+
+        # 环境标签（来自参数）
+        # 这是 Drift 演练的主要目标
+        - Key: Environment
+          Value: !Ref Environment
+
+        # 管理标识
+        - Key: ManagedBy
+          Value: CloudFormation
+
+        # 用途标识
+        - Key: Purpose
+          Value: Drift Detection Demo
+
+        # 课程标识
+        - Key: Course
+          Value: CloudFormation-Lesson05
+
+  # ---------------------------------------------------------------------------
+  # Security Group - 安全组
+  # ---------------------------------------------------------------------------
+  #
+  # 创建一个空的安全组（无入站规则）
+  # 仅用于满足 EC2 实例的网络配置需求
+
+  DemoSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Drift Detection demo (no inbound rules)
+      GroupName: !Sub 'drift-demo-sg-${AWS::StackName}'
+      Tags:
+        - Key: Name
+          Value: drift-demo-sg
+        - Key: ManagedBy
+          Value: CloudFormation
+
+# -----------------------------------------------------------------------------
+# Outputs - 输出值
+# -----------------------------------------------------------------------------
+# 输出重要信息，方便后续操作和验证
+
+Outputs:
+
+  # 实例 ID
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref DemoInstance
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceId'
+
+  # 实例私有 IP
+  PrivateIp:
+    Description: EC2 Private IP Address
+    Value: !GetAtt DemoInstance.PrivateIp
+
+  # 环境标签值（用于对比 Drift）
+  EnvironmentTag:
+    Description: |
+      Environment tag value (as defined in template).
+      Compare this with actual EC2 tags after manual modification.
+    Value: !Ref Environment
+
+  # 安全组 ID
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref DemoSecurityGroup
+
+# -----------------------------------------------------------------------------
+# Drift Detection 注意事项
+# -----------------------------------------------------------------------------
+#
+# CloudFormation Drift Detection 支持检测以下属性变更：
+#
+# EC2 Instance:
+#   - Tags (标签)
+#   - InstanceType (实例类型 - 需要停止实例)
+#   - SecurityGroupIds (安全组)
+#   - 其他部分属性
+#
+# 不支持检测的属性：
+#   - EBS 卷内容
+#   - 实例内部配置
+#   - CloudWatch 指标
+#
+# 完整支持列表参考：
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-stack-drift-resource-list.html
+#
+# -----------------------------------------------------------------------------
+# 日本 IT 场景
+# -----------------------------------------------------------------------------
+#
+# Drift Detection 在日本企业的典型使用场景：
+#
+# 1. 障害対応（しょうがいたいおう）- 故障响应
+#    夜间紧急情况下直接在 Console 修改配置
+#    第二天通过 Drift Detection 追踪变更
+#
+# 2. 変更管理（へんこうかんり）- 变更管理
+#    Drift 记录作为变更证据（エビデンス）
+#    配合変更管理票使用
+#
+# 3. 監査対応（かんさたいおう）- 审计应对
+#    定期 Drift 检测报告
+#    证明配置管理的有效性
+#
+# =============================================================================

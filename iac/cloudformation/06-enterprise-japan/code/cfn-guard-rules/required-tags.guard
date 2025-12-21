@@ -1,0 +1,204 @@
+# =============================================================================
+# required-tags.guard
+# 必须标签检查规则
+# =============================================================================
+#
+# CloudFormation Guard 规则文件
+# 确保所有资源都有必须的标签
+#
+# 使用方法:
+#   cfn-guard validate --data your-template.yaml --rules required-tags.guard
+#
+# 日本企业场景:
+#   - コスト管理（請求書按项目/环境分类）
+#   - リソース管理（担当者追跡）
+#   - 監査対応（リソース所有者明確化）
+#
+# =============================================================================
+
+# 需要检查标签的资源类型
+let taggable_resources = Resources.*[
+    Type in [
+        "AWS::S3::Bucket",
+        "AWS::EC2::Instance",
+        "AWS::EC2::VPC",
+        "AWS::EC2::Subnet",
+        "AWS::EC2::SecurityGroup",
+        "AWS::RDS::DBInstance",
+        "AWS::Lambda::Function",
+        "AWS::DynamoDB::Table",
+        "AWS::SNS::Topic",
+        "AWS::SQS::Queue",
+        "AWS::CloudWatch::Alarm"
+    ]
+]
+
+# -----------------------------------------------------------------------------
+# Rule 1: 所有资源必须有 Tags
+# -----------------------------------------------------------------------------
+rule resources_have_tags when %taggable_resources !empty {
+    %taggable_resources.Properties.Tags exists
+    <<
+        [必須/CRITICAL] リソースにはタグ設定が必要です
+        All resources must have Tags property
+
+        タグは以下の目的で必須です:
+        - コスト配分（請求管理）
+        - リソース追跡（運用管理）
+        - 監査対応（責任者明確化）
+
+        最低限必要なタグ:
+        Tags:
+          - Key: Environment
+            Value: dev/stg/prod
+          - Key: Owner
+            Value: team-email@example.com
+          - Key: Project
+            Value: project-code
+    >>
+}
+
+# -----------------------------------------------------------------------------
+# Rule 2: Environment 标签必须存在
+# -----------------------------------------------------------------------------
+rule environment_tag_exists when %taggable_resources !empty {
+    when %taggable_resources.Properties.Tags exists {
+        %taggable_resources.Properties.Tags[*].Key == "Environment"
+        <<
+            [必須/CRITICAL] Environment タグが必要です
+            Environment tag is required
+
+            許可される値:
+            - dev (開発環境)
+            - stg (ステージング環境)
+            - prod (本番環境)
+            - sandbox (検証環境)
+
+            例:
+            Tags:
+              - Key: Environment
+                Value: prod
+        >>
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Rule 3: Owner 标签必须存在
+# -----------------------------------------------------------------------------
+rule owner_tag_exists when %taggable_resources !empty {
+    when %taggable_resources.Properties.Tags exists {
+        %taggable_resources.Properties.Tags[*].Key == "Owner"
+        <<
+            [必須/CRITICAL] Owner タグが必要です
+            Owner tag is required
+
+            目的:
+            - リソース責任者の明確化
+            - 問い合わせ先の特定
+            - 不要リソース削除時の確認先
+
+            推奨フォーマット:
+            - チームメールアドレス: ops-team@example.com
+            - 担当者名: yamada-taro
+
+            例:
+            Tags:
+              - Key: Owner
+                Value: infra-team@example.com
+        >>
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Rule 4: Project 标签推荐存在
+# -----------------------------------------------------------------------------
+rule project_tag_recommended when %taggable_resources !empty {
+    when %taggable_resources.Properties.Tags exists {
+        %taggable_resources.Properties.Tags[*].Key == "Project"
+        <<
+            [推奨/WARNING] Project タグを推奨します
+            Project tag is recommended
+
+            目的:
+            - プロジェクト別コスト集計
+            - リソースのグルーピング
+            - 請求書の明細分類
+
+            例:
+            Tags:
+              - Key: Project
+                Value: customer-portal
+        >>
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Rule 5: ManagedBy 标签推荐存在
+# -----------------------------------------------------------------------------
+rule managedby_tag_recommended when %taggable_resources !empty {
+    when %taggable_resources.Properties.Tags exists {
+        %taggable_resources.Properties.Tags[*].Key == "ManagedBy"
+        <<
+            [推奨/INFO] ManagedBy タグを推奨します
+            ManagedBy tag is recommended
+
+            目的:
+            - リソース管理方法の明確化
+            - IaC 管理リソースの識別
+            - 手動変更防止の注意喚起
+
+            許可される値:
+            - CloudFormation
+            - Terraform
+            - Manual
+
+            例:
+            Tags:
+              - Key: ManagedBy
+                Value: CloudFormation
+        >>
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Rule 6: Name 标签推荐存在
+# -----------------------------------------------------------------------------
+rule name_tag_recommended when %taggable_resources !empty {
+    when %taggable_resources.Properties.Tags exists {
+        %taggable_resources.Properties.Tags[*].Key == "Name"
+        <<
+            [推奨/INFO] Name タグを推奨します
+            Name tag is recommended
+
+            目的:
+            - AWS コンソールでの識別容易化
+            - リソース一覧での判別
+
+            命名規則推奨:
+            {環境}-{プロジェクト}-{用途}
+            例: prod-portal-webserver
+        >>
+    }
+}
+
+# =============================================================================
+# 标签命名规范（日本企业推荐）
+# =============================================================================
+#
+# 必須タグ (Required):
+#   - Environment: dev/stg/prod
+#   - Owner: 担当者/チームメール
+#
+# 推奨タグ (Recommended):
+#   - Project: プロジェクトコード
+#   - ManagedBy: CloudFormation/Terraform/Manual
+#   - Name: リソース識別名
+#   - CostCenter: コストセンターコード（経理用）
+#   - Application: アプリケーション名
+#
+# タグ値の規則:
+#   - 小文字英数字とハイフンのみ使用
+#   - 最大 256 文字
+#   - 日本語は避ける（AWS CLI での扱いが煩雑）
+#
+# =============================================================================

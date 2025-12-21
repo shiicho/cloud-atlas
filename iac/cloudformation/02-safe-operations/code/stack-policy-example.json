@@ -1,0 +1,71 @@
+{
+  "_comment": [
+    "=============================================================================",
+    "Stack Policy Example - 保护关键资源",
+    "=============================================================================",
+    "",
+    "Stack Policy 用于防止意外更新或删除关键资源。",
+    "即使有人修改了模板，StackPolicy 也会阻止危险操作。",
+    "",
+    "日本企业场景：",
+    "  - 本番データベースの保護",
+    "  - 誤操作による削除防止",
+    "  - 複数チーム環境での安全対策",
+    "",
+    "使用方法：",
+    "  1. 创建 Stack 时设置 Stack Policy",
+    "  2. 或者使用 AWS CLI 更新现有 Stack 的 Policy",
+    "",
+    "CLI 设置方法：",
+    "  aws cloudformation set-stack-policy \\",
+    "    --stack-name your-stack-name \\",
+    "    --stack-policy-body file://stack-policy-example.json",
+    "",
+    "============================================================================="
+  ],
+  "Statement": [
+    {
+      "_description": "默认规则：允许所有资源的所有更新操作",
+      "Effect": "Allow",
+      "Action": "Update:*",
+      "Principal": "*",
+      "Resource": "*"
+    },
+    {
+      "_description": "保护规则：禁止替换 CriticalDatabase",
+      "_reason": "Replace 操作会删除现有数据库，数据会丢失！",
+      "_japanese": "データベースの Replace は禁止。データ損失の危険あり。",
+      "Effect": "Deny",
+      "Action": "Update:Replace",
+      "Principal": "*",
+      "Resource": "LogicalResourceId/CriticalDatabase"
+    },
+    {
+      "_description": "保护规则：禁止删除 CriticalDatabase",
+      "_reason": "防止通过更新模板删除数据库资源",
+      "_japanese": "データベースの削除も禁止。テンプレートから削除しても拒否される。",
+      "Effect": "Deny",
+      "Action": "Update:Delete",
+      "Principal": "*",
+      "Resource": "LogicalResourceId/CriticalDatabase"
+    },
+    {
+      "_description": "保护规则：禁止修改 ProductionVPC",
+      "_reason": "VPC 修改可能影响所有网络连接",
+      "_japanese": "本番 VPC の変更は禁止。ネットワーク全体に影響。",
+      "Effect": "Deny",
+      "Action": "Update:Modify",
+      "Principal": "*",
+      "Resource": "LogicalResourceId/ProductionVPC"
+    },
+    {
+      "_description": "保护规则：完全禁止操作 AuditLogBucket",
+      "_reason": "审计日志 Bucket 不允许任何修改（合规要求）",
+      "_japanese": "監査ログバケットは一切の変更禁止。コンプライアンス要件。",
+      "Effect": "Deny",
+      "Action": "Update:*",
+      "Principal": "*",
+      "Resource": "LogicalResourceId/AuditLogBucket"
+    }
+  ]
+}

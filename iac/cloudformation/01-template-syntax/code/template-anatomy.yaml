@@ -1,0 +1,295 @@
+# =============================================================================
+# CloudFormation Template 完整结构示例
+# =============================================================================
+#
+# 本文件展示 CloudFormation Template 的所有 Section，用于学习参考。
+# 实际项目中不需要使用所有 Section，只有 Resources 是必须的。
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+# -----------------------------------------------------------------------------
+# Description - 模板描述
+# -----------------------------------------------------------------------------
+# 简要说明模板用途，会显示在 CloudFormation Console
+Description: |
+  CloudFormation Template 完整结构示例
+  展示所有 Section：Parameters, Mappings, Conditions, Resources, Outputs, Metadata
+
+# -----------------------------------------------------------------------------
+# Metadata - 元数据（可选）
+# -----------------------------------------------------------------------------
+# 用于 Console UI 分组、提示等，不影响资源创建
+Metadata:
+  # AWS::CloudFormation::Interface 用于美化 Console 参数输入界面
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "基本設定"
+        Parameters:
+          - Environment
+          - ProjectName
+      - Label:
+          default: "EC2 設定"
+        Parameters:
+          - InstanceType
+          - KeyPairName
+      - Label:
+          default: "ネットワーク設定"
+        Parameters:
+          - VpcId
+          - SubnetId
+    ParameterLabels:
+      Environment:
+        default: "環境種別"
+      ProjectName:
+        default: "プロジェクト名"
+      InstanceType:
+        default: "インスタンスタイプ"
+
+# -----------------------------------------------------------------------------
+# Parameters - 输入参数（可选）
+# -----------------------------------------------------------------------------
+# 让用户在创建 Stack 时填写值，实现模板复用
+Parameters:
+  # 基本 String 类型
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+    Description: 環境種別（dev/stg/prod）
+    ConstraintDescription: dev, stg, prod のいずれかを選択してください
+
+  ProjectName:
+    Type: String
+    Default: myproject
+    MinLength: 3
+    MaxLength: 20
+    AllowedPattern: ^[a-z][a-z0-9-]*$
+    Description: プロジェクト名（英小文字、数字、ハイフンのみ）
+    ConstraintDescription: 英小文字で始まり、英小文字・数字・ハイフンのみ使用可能
+
+  # Number 类型
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Description: EC2 インスタンスタイプ
+
+  # AWS-specific 类型（Console 显示下拉菜单）
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 に使用するキーペア
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: EC2 を配置する VPC
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: EC2 を配置するサブネット
+
+  # SSM Parameter 类型（从 SSM 读取值）
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: 使用する AMI ID（SSM パラメータから取得）
+
+# -----------------------------------------------------------------------------
+# Mappings - 静态查找表（可选）
+# -----------------------------------------------------------------------------
+# 用于存储不会改变的映射关系，如区域 AMI ID、环境配置等
+Mappings:
+  # 区域 AMI 映射（备用方案，优先使用 SSM Parameter）
+  RegionAMI:
+    ap-northeast-1:
+      AmazonLinux2023: ami-0d52744d6551d851e
+      Ubuntu22: ami-0bba69335379e17f8
+    ap-northeast-3:
+      AmazonLinux2023: ami-0599b6e53ca798bb2
+      Ubuntu22: ami-0e9085e5dd6a47b69
+    us-east-1:
+      AmazonLinux2023: ami-0c02fb55956c7d316
+      Ubuntu22: ami-0c7217cdde317cfec
+
+  # 环境配置映射
+  EnvironmentConfig:
+    dev:
+      InstanceType: t3.micro
+      VolumeSize: 8
+      Monitoring: false
+    stg:
+      InstanceType: t3.small
+      VolumeSize: 20
+      Monitoring: true
+    prod:
+      InstanceType: t3.medium
+      VolumeSize: 50
+      Monitoring: true
+
+# -----------------------------------------------------------------------------
+# Conditions - 条件逻辑（可选）
+# -----------------------------------------------------------------------------
+# 根据参数值决定是否创建某些资源或设置某些属性
+Conditions:
+  # 是否是生产环境
+  IsProd: !Equals [!Ref Environment, prod]
+
+  # 是否不是生产环境
+  IsNotProd: !Not [!Equals [!Ref Environment, prod]]
+
+  # 是否是开发环境
+  IsDev: !Equals [!Ref Environment, dev]
+
+  # 是否需要创建 EIP（只在 prod 和 stg 创建）
+  CreateEIP: !Or
+    - !Equals [!Ref Environment, prod]
+    - !Equals [!Ref Environment, stg]
+
+  # 组合条件示例
+  IsProdInTokyo: !And
+    - !Equals [!Ref Environment, prod]
+    - !Equals [!Ref 'AWS::Region', ap-northeast-1]
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义（必须！）
+# -----------------------------------------------------------------------------
+# 定义要创建的 AWS 资源
+Resources:
+  # Security Group
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-sg'
+      GroupDescription: !Sub 'Security group for ${ProjectName} ${Environment}'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH access
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP access
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      # 使用 SSM Parameter 获取最新 AMI
+      ImageId: !Ref LatestAmiId
+      # 根据环境使用不同的 Instance Type
+      InstanceType: !FindInMap [EnvironmentConfig, !Ref Environment, InstanceType]
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      # 条件启用详细监控（prod/stg 启用）
+      Monitoring: !FindInMap [EnvironmentConfig, !Ref Environment, Monitoring]
+      # 根盘配置
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !FindInMap [EnvironmentConfig, !Ref Environment, VolumeSize]
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-instance'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: ManagedBy
+          Value: CloudFormation
+        # 使用 Pseudo Parameters
+        - Key: StackName
+          Value: !Ref AWS::StackName
+        - Key: Region
+          Value: !Ref AWS::Region
+
+  # Elastic IP - 只在 prod/stg 环境创建
+  ElasticIP:
+    Type: AWS::EC2::EIP
+    Condition: CreateEIP
+    Properties:
+      InstanceId: !Ref EC2Instance
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-eip'
+        - Key: Environment
+          Value: !Ref Environment
+
+# -----------------------------------------------------------------------------
+# Outputs - 输出值（可选）
+# -----------------------------------------------------------------------------
+# 输出重要信息，可以被其他 Stack 引用
+Outputs:
+  # Instance ID
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceId'
+
+  # Security Group ID
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref InstanceSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'
+
+  # Private IP（总是有的）
+  PrivateIP:
+    Description: EC2 Private IP Address
+    Value: !GetAtt EC2Instance.PrivateIp
+
+  # Public IP（条件输出）
+  PublicIP:
+    Description: Public IP Address
+    Value: !If
+      - CreateEIP
+      - !Ref ElasticIP                    # 有 EIP 时返回 EIP
+      - !GetAtt EC2Instance.PublicIp      # 没有 EIP 时返回动态 IP
+    Condition: CreateEIP
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicIP'
+
+  # Instance ARN（使用 !Sub 和 Pseudo Parameters 构建）
+  InstanceArn:
+    Description: EC2 Instance ARN
+    Value: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${EC2Instance}'
+
+  # SSH 连接命令（方便复制）
+  SSHCommand:
+    Description: SSH connection command
+    Value: !If
+      - CreateEIP
+      - !Sub 'ssh -i ${KeyPairName}.pem ec2-user@${ElasticIP}'
+      - !Sub 'ssh -i ${KeyPairName}.pem ec2-user@${EC2Instance.PublicIp}'
+
+  # 环境信息
+  EnvironmentInfo:
+    Description: Environment configuration summary
+    Value: !Sub |
+      Environment: ${Environment}
+      Project: ${ProjectName}
+      Instance Type: ${InstanceType}
+      Region: ${AWS::Region}

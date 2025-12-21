@@ -1,0 +1,558 @@
+# =============================================================================
+# monitoring-alarms.yaml
+# 企业级监控告警基础设施 - CloudWatch Alarms + SNS
+# =============================================================================
+#
+# 本模板部署企业级监控告警系统，包括：
+# - SNS Topic: 告警通知渠道
+# - CloudWatch Alarms: 各种监控告警
+# - 日语告警描述（日本企业运维场景）
+#
+# 使用场景：
+# - 運用監視（うんようかんし）- 日常运维监控
+# - 異常検知（いじょうけんち）- 异常检测
+# - 障害対応（しょうがいたいおう）- 故障响应
+#
+# 使用方法：
+#   1. AWS Console → CloudFormation → Create stack
+#   2. 上传此文件
+#   3. Stack name: enterprise-monitoring
+#   4. 输入通知邮箱
+#   5. 等待 CREATE_COMPLETE
+#   6. 确认 SNS 邮箱订阅
+#
+# 费用估算：
+# - SNS: $0.50/百万请求
+# - CloudWatch Alarms: $0.10/alarm/月
+# - 总计约 $1-2/月
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: |
+  Enterprise Monitoring Alarms - CloudWatch + SNS
+  企業級監視アラーム基盤 - 運用監視・異常検知用
+  CloudFormation 課程 Lesson 06 示例
+
+# -----------------------------------------------------------------------------
+# Metadata - 控制台参数分组
+# -----------------------------------------------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "通知设置 (通知設定)"
+        Parameters:
+          - NotificationEmail
+      - Label:
+          default: "EC2 监控阈值 (EC2 監視閾値)"
+        Parameters:
+          - CPUThreshold
+          - MemoryThreshold
+          - DiskThreshold
+      - Label:
+          default: "RDS 监控阈值 (RDS 監視閾値)"
+        Parameters:
+          - RDSCPUThreshold
+          - RDSStorageThreshold
+          - RDSConnectionsThreshold
+      - Label:
+          default: "可选配置 (オプション)"
+        Parameters:
+          - CreateEC2Alarms
+          - CreateRDSAlarms
+          - CreateBillingAlarm
+
+# -----------------------------------------------------------------------------
+# Parameters - 输入参数
+# -----------------------------------------------------------------------------
+Parameters:
+
+  # 通知设置
+  NotificationEmail:
+    Type: String
+    Description: |
+      告警通知邮箱（アラート通知先メールアドレス）
+      运维团队共享邮箱推荐：ops-team@example.com
+    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    ConstraintDescription: "请输入有效的邮箱地址"
+
+  # EC2 监控阈值
+  CPUThreshold:
+    Type: Number
+    Default: 80
+    MinValue: 50
+    MaxValue: 100
+    Description: |
+      CPU 使用率告警阈值 % (CPU 使用率アラーム閾値)
+      推荐值：80%（日本企业通常设置 70-85%）
+
+  MemoryThreshold:
+    Type: Number
+    Default: 85
+    MinValue: 50
+    MaxValue: 100
+    Description: |
+      内存使用率告警阈值 % (メモリ使用率アラーム閾値)
+      注意：需要 CloudWatch Agent 采集内存指标
+
+  DiskThreshold:
+    Type: Number
+    Default: 90
+    MinValue: 50
+    MaxValue: 100
+    Description: |
+      磁盘使用率告警阈值 % (ディスク使用率アラーム閾値)
+      注意：需要 CloudWatch Agent 采集磁盘指标
+
+  # RDS 监控阈值
+  RDSCPUThreshold:
+    Type: Number
+    Default: 80
+    MinValue: 50
+    MaxValue: 100
+    Description: "RDS CPU 使用率告警阈值 %"
+
+  RDSStorageThreshold:
+    Type: Number
+    Default: 10737418240  # 10GB in bytes
+    Description: |
+      RDS 剩余存储空间告警阈值（字节）
+      默认 10GB，低于此值告警
+
+  RDSConnectionsThreshold:
+    Type: Number
+    Default: 100
+    Description: "RDS 数据库连接数告警阈值"
+
+  # 可选配置
+  CreateEC2Alarms:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "是否创建 EC2 相关告警"
+
+  CreateRDSAlarms:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "是否创建 RDS 相关告警（需要有 RDS 实例）"
+
+  CreateBillingAlarm:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: |
+      是否创建费用告警 (課金アラームを作成するか)
+      注意：只在 us-east-1 有效
+
+# -----------------------------------------------------------------------------
+# Conditions - 条件逻辑
+# -----------------------------------------------------------------------------
+Conditions:
+
+  EnableEC2Alarms: !Equals
+    - !Ref CreateEC2Alarms
+    - "true"
+
+  EnableRDSAlarms: !Equals
+    - !Ref CreateRDSAlarms
+    - "true"
+
+  EnableBillingAlarm: !And
+    - !Equals
+      - !Ref CreateBillingAlarm
+      - "true"
+    - !Equals
+      - !Ref AWS::Region
+      - us-east-1
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义
+# -----------------------------------------------------------------------------
+Resources:
+
+  # ===========================================================================
+  # SNS Topic - 告警通知渠道
+  # ===========================================================================
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${AWS::StackName}-alerts'
+      DisplayName: "CloudFormation Enterprise Alerts"
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-alerts'
+        - Key: Environment
+          Value: monitoring
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Purpose
+          Value: "運用監視アラート (Operations Monitoring Alerts)"
+
+  # ---------------------------------------------------------------------------
+  # Email 订阅
+  # ---------------------------------------------------------------------------
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # ---------------------------------------------------------------------------
+  # SNS Topic Policy（允许 CloudWatch 发送通知）
+  # ---------------------------------------------------------------------------
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref AlertTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudWatchAlarms
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref AlertTopic
+
+  # ===========================================================================
+  # EC2 Alarms - EC2 监控告警
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # High CPU Alarm (高 CPU 使用率)
+  # ---------------------------------------------------------------------------
+  HighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableEC2Alarms
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ec2-high-cpu'
+      AlarmDescription: |
+        【警告】EC2 CPU 使用率が閾値を超過しました
+        CPU utilization exceeded threshold
+
+        対応手順:
+        1. CloudWatch メトリクスで詳細確認
+        2. EC2 インスタンスの状態確認
+        3. 必要に応じてスケールアップ/アウト検討
+
+        担当: 運用チーム
+      # 指标配置
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 300  # 5 分钟
+      EvaluationPeriods: 2  # 连续 2 个周期
+      Threshold: !Ref CPUThreshold
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      # 告警动作
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+      # ---------------------------------------------------------------------------
+      # Dimensions 说明：
+      # ---------------------------------------------------------------------------
+      # Dimensions: [] 表示监控所有 EC2 实例的聚合指标
+      #
+      # 如需监控特定实例，请添加：
+      #   Dimensions:
+      #     - Name: InstanceId
+      #       Value: i-0123456789abcdef0
+      #
+      # 注意：空 Dimensions 在没有任何 EC2 实例时会显示 INSUFFICIENT_DATA
+      # 这是正常现象，有实例运行后会自动变为 OK 或 ALARM
+      # ---------------------------------------------------------------------------
+      Dimensions: []
+
+  # ---------------------------------------------------------------------------
+  # Status Check Failed Alarm (状态检查失败)
+  # ---------------------------------------------------------------------------
+  StatusCheckFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableEC2Alarms
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-ec2-status-check-failed'
+      AlarmDescription: |
+        【緊急】EC2 ステータスチェック失敗
+        EC2 Status Check Failed - Immediate attention required
+
+        対応手順:
+        1. EC2 コンソールでインスタンス状態確認
+        2. システムステータス/インスタンスステータス確認
+        3. 必要に応じてインスタンス再起動
+        4. ハードウェア障害の場合は AWS サポートに連絡
+
+        エスカレーション: 15分以内に対応なければ上長報告
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed
+      Statistic: Maximum
+      Period: 60  # 1 分钟（紧急）
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+
+  # ===========================================================================
+  # RDS Alarms - RDS 监控告警
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # RDS High CPU Alarm
+  # ---------------------------------------------------------------------------
+  RDSHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableRDSAlarms
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-rds-high-cpu'
+      AlarmDescription: |
+        【警告】RDS CPU 使用率が閾値を超過しました
+        RDS CPU utilization exceeded threshold
+
+        対応手順:
+        1. Performance Insights で SQL 負荷確認
+        2. スロークエリログ確認
+        3. 必要に応じてインスタンスタイプ変更検討
+      Namespace: AWS/RDS
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: !Ref RDSCPUThreshold
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      Dimensions: []
+
+  # ---------------------------------------------------------------------------
+  # RDS Low Storage Alarm
+  # ---------------------------------------------------------------------------
+  RDSLowStorageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableRDSAlarms
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-rds-low-storage'
+      AlarmDescription: |
+        【警告】RDS ストレージ残量が少なくなっています
+        RDS Free Storage Space is low
+
+        対応手順:
+        1. 不要データの削除検討
+        2. ストレージ容量の拡張計画策定
+        3. 自動拡張設定の確認
+
+        緊急度: 24時間以内に対応必要
+      Namespace: AWS/RDS
+      MetricName: FreeStorageSpace
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: !Ref RDSStorageThreshold
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      Dimensions: []
+
+  # ---------------------------------------------------------------------------
+  # RDS High Connections Alarm
+  # ---------------------------------------------------------------------------
+  RDSHighConnectionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableRDSAlarms
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-rds-high-connections'
+      AlarmDescription: |
+        【警告】RDS 接続数が閾値に近づいています
+        RDS Database connections approaching limit
+
+        対応手順:
+        1. アプリケーションの接続プール設定確認
+        2. 不要な接続の特定と切断
+        3. max_connections パラメータ確認
+      Namespace: AWS/RDS
+      MetricName: DatabaseConnections
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: !Ref RDSConnectionsThreshold
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      Dimensions: []
+
+  # ===========================================================================
+  # Billing Alarm - 费用告警（仅 us-east-1）
+  # ===========================================================================
+
+  BillingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EnableBillingAlarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-billing-alert'
+      AlarmDescription: |
+        【注意】AWS 請求額が閾値を超過しました
+        AWS Estimated Charges exceeded threshold
+
+        対応:
+        1. Cost Explorer で費用内訳確認
+        2. 不要リソースの特定と削除
+        3. 予算超過の場合は上長報告
+      Namespace: AWS/Billing
+      MetricName: EstimatedCharges
+      Statistic: Maximum
+      Period: 21600  # 6 小时
+      EvaluationPeriods: 1
+      Threshold: 50  # $50
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      Dimensions:
+        - Name: Currency
+          Value: USD
+
+  # ===========================================================================
+  # CloudWatch Dashboard - 监控仪表板
+  # ===========================================================================
+
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${AWS::StackName}-dashboard'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 1,
+              "properties": {
+                "markdown": "# Enterprise Monitoring Dashboard (運用監視ダッシュボード)"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 1,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "EC2 CPU Utilization",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/EC2", "CPUUtilization", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "yAxis": {
+                  "left": {"min": 0, "max": 100}
+                },
+                "annotations": {
+                  "horizontal": [
+                    {
+                      "label": "Threshold",
+                      "value": ${CPUThreshold}
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 1,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "EC2 Network Traffic",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/EC2", "NetworkIn", {"stat": "Sum", "label": "Network In"}],
+                  ["AWS/EC2", "NetworkOut", {"stat": "Sum", "label": "Network Out"}]
+                ],
+                "period": 300
+              }
+            },
+            {
+              "type": "alarm",
+              "x": 0,
+              "y": 7,
+              "width": 24,
+              "height": 3,
+              "properties": {
+                "title": "Active Alarms (アクティブアラーム)",
+                "alarms": [
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:${AWS::StackName}-ec2-high-cpu",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:${AWS::StackName}-ec2-status-check-failed"
+                ]
+              }
+            }
+          ]
+        }
+
+# -----------------------------------------------------------------------------
+# Outputs - 输出值
+# -----------------------------------------------------------------------------
+Outputs:
+
+  AlertTopicArn:
+    Description: "告警 SNS Topic ARN"
+    Value: !Ref AlertTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-alert-topic'
+
+  AlertTopicName:
+    Description: "告警 SNS Topic 名称"
+    Value: !GetAtt AlertTopic.TopicName
+
+  DashboardURL:
+    Description: "监控仪表板 URL (Dashboard URL)"
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${AWS::StackName}-dashboard'
+
+  AlarmsConsoleURL:
+    Description: "告警控制台 URL (Alarms Console URL)"
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#alarmsV2:?~(search~(alarmNamePrefix~(contains~(0~%27${AWS::StackName}))))'
+
+  NotificationEmailAddress:
+    Description: "告警通知邮箱 (要确认订阅！)"
+    Value: !Ref NotificationEmail
+
+# =============================================================================
+# 日本 IT 场景说明
+# =============================================================================
+#
+# 運用監視（うんようかんし）:
+#   本模板提供日本企业标准的监控告警配置
+#   - 告警描述使用日语，方便运维团队理解
+#   - 包含对应手順（操作步骤）
+#   - 明确エスカレーション（升级）规则
+#
+# 告警级别说明:
+#   【緊急】- 需要立即响应（15分钟内）
+#   【警告】- 需要当日处理
+#   【注意】- 需要关注，可安排处理
+#
+# 运维轮班（シフト）场景:
+#   - 告警邮件发送到共享邮箱
+#   - 当值人员负责响应
+#   - 按障害対応手順書处理
+#
+# =============================================================================

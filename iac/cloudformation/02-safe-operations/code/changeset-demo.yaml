@@ -1,0 +1,206 @@
+# =============================================================================
+# changeset-demo.yaml
+# CloudFormation ChangeSet 演示模板
+# =============================================================================
+#
+# 本模板用于演示 ChangeSet 工作流：
+#   1. 创建初始 Stack
+#   2. 修改模板（添加标签）
+#   3. 创建 ChangeSet 预览变更
+#   4. 执行 ChangeSet
+#
+# 日本企业场景：
+#   - ChangeSet = 変更管理票の承認材料
+#   - 截图作为証跡保存
+#   - Replacement = 要リスク評価
+#
+# 使用方法：
+#   1. AWS Console -> CloudFormation -> Create stack
+#   2. 上传此文件
+#   3. Stack name: changeset-demo
+#   4. 等待 CREATE_COMPLETE
+#   5. 修改模板（添加 Owner 标签）
+#   6. Stack actions -> Create change set for current stack
+#   7. 预览变更 -> Execute change set
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: |
+  ChangeSet Demo - 演示 CloudFormation 安全更新流程
+  このテンプレートは ChangeSet の使い方を学ぶためのものです
+
+# -----------------------------------------------------------------------------
+# Metadata - 控制台界面元数据
+# -----------------------------------------------------------------------------
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "基本設定"
+        Parameters:
+          - Environment
+          - Version
+
+# -----------------------------------------------------------------------------
+# Parameters - 输入参数
+# -----------------------------------------------------------------------------
+
+Parameters:
+  Environment:
+    Type: String
+    Default: learning
+    AllowedValues:
+      - learning
+      - development
+      - staging
+      - production
+    Description: 環境名 (Environment name)
+
+  Version:
+    Type: String
+    Default: v1
+    Description: |
+      テンプレートバージョン。ChangeSet 演示時に v1 -> v2 に変更してください。
+      (Template version. Change from v1 to v2 when demonstrating ChangeSet.)
+
+# -----------------------------------------------------------------------------
+# Resources - 资源定义
+# -----------------------------------------------------------------------------
+
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # S3 Bucket - 演示用 Bucket
+  # ---------------------------------------------------------------------------
+  #
+  # 这个 Bucket 用于演示 ChangeSet 工作流：
+  #   - 修改 Tags: In-Place 更新（安全）
+  #   - 修改 BucketName: Replace（危险！数据丢失）
+  #
+  # 【重要】在 ChangeSet 预览中注意观察：
+  #   - Replacement: False = 安全（In-Place）
+  #   - Replacement: True = 危险（删除重建）
+
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # BucketName - S3 桶名称
+      #
+      # 使用账户 ID 确保全球唯一
+      # 注意：修改 BucketName 会导致 Replacement！
+      BucketName: !Sub 'changeset-demo-${AWS::AccountId}'
+
+      # Tags - 资源标签
+      #
+      # 修改标签是 In-Place 更新，不会导致服务中断
+      # 这是演示 ChangeSet 的安全场景
+      #
+      # 日本 IT 场景：
+      #   - 標準タグは必須（Environment, ManagedBy 等）
+      #   - コスト配分タグでプロジェクト別費用管理
+      Tags:
+        - Key: Name
+          Value: ChangeSet Demo Bucket
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Version
+          Value: !Ref Version
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Purpose
+          Value: ChangeSet 演示用
+
+        # ---------------------------------------------------------------------------
+        # 演示：添加以下标签后创建 ChangeSet 观察变更
+        # ---------------------------------------------------------------------------
+        # - Key: Owner
+        #   Value: your-name
+        # - Key: UpdatedAt
+        #   Value: 2025-01-01
+
+      # PublicAccessBlock - 阻止公共访问（安全最佳实践）
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+# -----------------------------------------------------------------------------
+# Outputs - 输出值
+# -----------------------------------------------------------------------------
+
+Outputs:
+
+  BucketName:
+    Description: S3 Bucket 名称
+    Value: !Ref DemoBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+
+  BucketArn:
+    Description: S3 Bucket ARN
+    Value: !GetAtt DemoBucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketArn'
+
+  BucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt DemoBucket.DomainName
+
+  CurrentVersion:
+    Description: 現在のテンプレートバージョン
+    Value: !Ref Version
+
+# =============================================================================
+# ChangeSet 演示步骤
+# =============================================================================
+#
+# Step 1: 创建初始 Stack
+#   - 使用默认参数创建 Stack
+#   - 观察 CREATE_COMPLETE
+#
+# Step 2: 修改模板准备 ChangeSet
+#   - 方法 A: 修改 Version 参数值 (v1 -> v2)
+#   - 方法 B: 取消注释 Owner/UpdatedAt 标签
+#
+# Step 3: 创建 ChangeSet
+#   - Stack actions -> Create change set for current stack
+#   - 上传修改后的模板
+#   - Change set name: add-owner-tag (或其他描述性名称)
+#
+# Step 4: 预览变更
+#   - 观察 Changes 部分
+#   - 确认 Action: Modify
+#   - 确认 Replacement: False (安全)
+#   - 【重要】截图保存作为変更管理の証跡
+#
+# Step 5: 执行 ChangeSet
+#   - Execute change set
+#   - 观察 UPDATE_IN_PROGRESS -> UPDATE_COMPLETE
+#
+# Step 6: 验证更新
+#   - S3 Console 确认标签已更新
+#   - Outputs 确认版本号已更新
+#
+# =============================================================================
+# 危险操作演示（可选）
+# =============================================================================
+#
+# 如果想演示 Replacement 场景：
+#
+# 1. 修改 BucketName:
+#    BucketName: !Sub 'changeset-demo-new-${AWS::AccountId}'
+#
+# 2. 创建 ChangeSet，观察：
+#    - Replacement: True (危险！)
+#    - 旧 Bucket 会被删除，数据丢失！
+#
+# 3. 这种情况在日本企业需要：
+#    - リスク評価（风险评估）
+#    - 特別承認（特别审批）
+#    - バックアップ確認（备份确认）
+#
+# =============================================================================
