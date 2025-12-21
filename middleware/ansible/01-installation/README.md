@@ -122,6 +122,40 @@ ansible [core 2.15.x]
 
 > **说明**：`config file = None` 是正常的。进入课程目录后会自动加载 `ansible.cfg`。
 
+<details>
+<summary>🔧 Control Node 初始化内容（点击展开）</summary>
+
+CloudFormation 模板通过 UserData 自动完成以下初始化：
+
+| 项目 | 操作 | 说明 |
+|------|------|------|
+| **主机名** | `hostnamectl set-hostname ansible-control` | 设置主机名 |
+| **软件安装** | `dnf install ansible-core git jq python3-pip` | 安装 Ansible 和工具 |
+| **Collections** | `ansible-galaxy collection install amazon.aws community.general` | 安装常用集合 |
+| **ansible 用户** | `useradd -m ansible` | 创建专用用户 |
+| **sudo 权限** | `echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible` | 无密码 sudo |
+| **SSH 目录** | `mkdir -p /home/ansible/.ssh && chmod 700` | 准备 SSH 目录 |
+
+**为什么需要 NOPASSWD？**
+
+```
+Ansible 执行流程：
+Control Node  ──SSH──►  Managed Node
+                              │
+                              ▼
+                         ansible 用户
+                              │
+                              ▼ become: true
+                         sudo (需要 NOPASSWD)
+                              │
+                              ▼
+                         root 执行任务
+```
+
+如果没有 NOPASSWD，Ansible 每次执行 `become: true` 任务时都需要输入密码，无法实现自动化。
+
+</details>
+
 ---
 
 ## Step 4 — 克隆课程仓库
