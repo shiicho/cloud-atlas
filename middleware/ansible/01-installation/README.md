@@ -284,6 +284,40 @@ become_ask_pass = False
 | | `become_user` | `root` | 提升后的目标用户 |
 | | `become_ask_pass` | `False` | 不询问 sudo 密码（需要 NOPASSWD 配置） |
 
+**什么是 `become = True`（默认 sudo）？**
+
+`become` 是在 **Managed Node**（目标服务器）上执行 sudo，不是在 Control Node：
+
+```
+┌─────────────────┐              ┌─────────────────┐
+│  Control Node   │    SSH       │  Managed Node   │
+│                 │ ──────────►  │                 │
+│  运行 Ansible   │              │  ansible 用户   │
+│  (不需要 sudo)  │              │      │          │
+└─────────────────┘              │      ▼ become   │
+                                 │  sudo → root    │
+                                 │  (执行任务)      │
+                                 └─────────────────┘
+```
+
+```yaml
+# 没有 become = True 时，需要在每个 Playbook 中指定：
+- name: Install package
+  hosts: all
+  become: true          # ← 每次都要写
+  tasks:
+    - dnf: name=httpd
+
+# 有了 become = True（在 ansible.cfg 中）：
+- name: Install package
+  hosts: all
+  # become: true        # ← 不用写，默认就是 sudo
+  tasks:
+    - dnf: name=httpd
+```
+
+> 💡 所以 NOPASSWD 需要配置在 **Managed Node** 上，让那边的 ansible 用户可以无密码 sudo。
+
 > ⚠️ **生产环境注意**：
 > - `host_key_checking = False` 仅适用于 Lab/测试环境
 > - 生产环境应保持默认值 `True` 以防止中间人攻击
