@@ -1,8 +1,8 @@
 # 02a · AWS SSM 连接（Zero-Trust Alternative）
 
-> **目标**：掌握 AWS SSM 连接插件作为 SSH 的替代方案
-> **前置**：[02 · インベントリ管理](../02-inventory/)、[AWS SSM 课程](../../../aws/ssm/)
-> **时间**：25 分钟
+> **目标**：掌握 AWS SSM 连接插件作为 SSH 的替代方案  
+> **前置**：[02 · インベントリ管理](../02-inventory/)、[AWS SSM 课程](../../../aws/ssm/)  
+> **时间**：25 分钟  
 > **性质**：选修 / AWS 专用
 
 ---

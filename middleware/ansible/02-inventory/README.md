@@ -1,8 +1,8 @@
 # 02 · インベントリ管理（Inventory Management）
 
-> **目标**：部署 Managed Nodes，掌握 Inventory 管理
-> **前置**：[01 · 环境构築](../01-installation/)
-> **时间**：30 分钟
+> **目标**：部署 Managed Nodes，掌握 Inventory 管理  
+> **前置**：[01 · 环境构築](../01-installation/)  
+> **时间**：30 分钟  
 > **费用**：约 $0.02/小时（2x t3.micro）
 
 ---

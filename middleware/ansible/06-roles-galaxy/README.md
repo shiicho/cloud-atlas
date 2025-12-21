@@ -1,8 +1,8 @@
 # 06 · Roles 与 Ansible Galaxy（Roles & Project Structure）
 
-> **目标**：掌握 Role 结构和 Ansible Galaxy
-> **前置**：[05 · 变量与逻辑](../05-variables-logic/)
-> **时间**：40 分钟
+> **目标**：掌握 Role 结构和 Ansible Galaxy  
+> **前置**：[05 · 变量与逻辑](../05-variables-logic/)  
+> **时间**：40 分钟  
 > **实战项目**：创建标准化 Role 库
 
 ---

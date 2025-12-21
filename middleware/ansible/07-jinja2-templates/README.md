@@ -1,8 +1,8 @@
 # 07 · Jinja2 模板引擎详解（Template Engine Mastery）
 
-> **目标**：掌握 Jinja2 模板技术
-> **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)
-> **时间**：35 分钟
+> **目标**：掌握 Jinja2 模板技术  
+> **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)  
+> **时间**：35 分钟  
 > **实战项目**：模板化 Nginx 配置
 
 ---

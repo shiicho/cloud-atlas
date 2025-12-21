@@ -1,8 +1,8 @@
 # 05 · 变量・Facts・条件・循环（Variables, Facts, Conditionals, Loops）
 
-> **目标**：掌握变量、Facts、条件判断和循环
-> **前置**：[04 · Playbook 基础](../04-playbook-basics/)
-> **时间**：40 分钟
+> **目标**：掌握变量、Facts、条件判断和循环  
+> **前置**：[04 · Playbook 基础](../04-playbook-basics/)  
+> **时间**：40 分钟  
 > **实战项目**：多环境配置管理
 
 ---

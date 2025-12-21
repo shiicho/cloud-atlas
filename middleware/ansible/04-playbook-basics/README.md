@@ -1,8 +1,8 @@
 # 04 · Playbook 基础（YAML, Tasks, Handlers）
 
-> **目标**：掌握 Playbook 基础结构
-> **前置**：[03 · Ad-hoc 命令](../03-adhoc-modules/)
-> **时间**：40 分钟
+> **目标**：掌握 Playbook 基础结构  
+> **前置**：[03 · Ad-hoc 命令](../03-adhoc-modules/)  
+> **时间**：40 分钟  
 > **实战项目**：编写 Web 服务器部署 Playbook
 
 ---
