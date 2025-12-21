@@ -1,0 +1,127 @@
+# infracost.yml
+# PR 时自动运行 Infracost，显示成本变化
+#
+# 功能：
+# - 比较 PR 分支与 main 分支的成本差异
+# - 将成本报告作为 PR 评论发布
+# - 帮助团队在合并前了解成本影响
+#
+# 前提条件：
+# - 在 GitHub Secrets 中设置 INFRACOST_API_KEY
+# - 注册 Infracost 账号: https://www.infracost.io/
+
+name: Infracost
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/infracost.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  TF_WORKING_DIR: terraform
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  # =============================================================================
+  # Job: infracost
+  # =============================================================================
+  infracost:
+    name: Infracost Cost Estimation
+    runs-on: ubuntu-latest
+
+    steps:
+      # -------------------------------------------------------------------------
+      # Step 1: Checkout PR 分支
+      # -------------------------------------------------------------------------
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------------------------------
+      # Step 2: 配置 AWS 凭证（用于获取实际使用量数据）
+      # -------------------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+        continue-on-error: true  # Infracost 可以在没有 AWS 凭证的情况下运行
+
+      # -------------------------------------------------------------------------
+      # Step 3: 安装 Infracost
+      # -------------------------------------------------------------------------
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # -------------------------------------------------------------------------
+      # Step 4: Checkout base 分支（用于比较）
+      # -------------------------------------------------------------------------
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base
+
+      # -------------------------------------------------------------------------
+      # Step 5: 生成 base 分支成本估算
+      # -------------------------------------------------------------------------
+      - name: Generate Infracost cost estimate (base)
+        run: |
+          infracost breakdown \
+            --path=base/${{ env.TF_WORKING_DIR }} \
+            --format=json \
+            --out-file=/tmp/infracost-base.json
+
+      # -------------------------------------------------------------------------
+      # Step 6: 生成 PR 分支成本估算
+      # -------------------------------------------------------------------------
+      - name: Generate Infracost cost estimate (PR)
+        run: |
+          infracost breakdown \
+            --path=${{ env.TF_WORKING_DIR }} \
+            --format=json \
+            --out-file=/tmp/infracost-pr.json
+
+      # -------------------------------------------------------------------------
+      # Step 7: 生成 diff 报告
+      # -------------------------------------------------------------------------
+      - name: Generate Infracost diff
+        run: |
+          infracost diff \
+            --path=${{ env.TF_WORKING_DIR }} \
+            --compare-to=/tmp/infracost-base.json \
+            --format=json \
+            --out-file=/tmp/infracost-diff.json
+
+      # -------------------------------------------------------------------------
+      # Step 8: 发布成本报告到 PR
+      # -------------------------------------------------------------------------
+      - name: Post Infracost comment
+        uses: infracost/actions/comment@v1
+        with:
+          path: /tmp/infracost-diff.json
+          # 行为：update（更新已有评论）或 new（始终创建新评论）
+          behavior: update
+
+      # -------------------------------------------------------------------------
+      # Step 9: 成本增加警告（可选）
+      # -------------------------------------------------------------------------
+      - name: Check cost increase threshold
+        run: |
+          # 读取成本变化
+          DIFF_PCT=$(cat /tmp/infracost-diff.json | jq -r '.diffTotalMonthlyCost // "0"' | tr -d '$,')
+          DIFF_ABS=$(echo "$DIFF_PCT" | sed 's/[^0-9.-]//g')
+
+          # 如果成本增加超过 $100/月，发出警告
+          if (( $(echo "$DIFF_ABS > 100" | bc -l 2>/dev/null || echo 0) )); then
+            echo "::warning::Cost increase exceeds $100/month. Please review carefully."
+          fi
+        continue-on-error: true

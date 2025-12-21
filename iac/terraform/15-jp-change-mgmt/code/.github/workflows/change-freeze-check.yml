@@ -1,0 +1,169 @@
+# =============================================================================
+# Change Freeze Check Workflow - 変更凍結期間のチェック
+# =============================================================================
+#
+# 変更凍結期間のチェックを行うワークフローです。
+# 他のワークフローから呼び出されます。
+#
+# 凍結期間:
+# - 年末年始 (12/28 - 1/3)
+# - ゴールデンウィーク (4/29 - 5/5)
+# - 決算期末 (3/25-3/31, 9/25-9/30) - Warning のみ
+# - お盆 (8/13-8/16) - オプション
+#
+# =============================================================================
+
+name: Change Freeze Check
+
+on:
+  workflow_call:
+    inputs:
+      block_on_freeze:
+        description: '凍結期間中にワークフローをブロックするか'
+        required: false
+        type: boolean
+        default: true
+    outputs:
+      is_frozen:
+        description: '凍結期間中かどうか'
+        value: ${{ jobs.check.outputs.is_frozen }}
+      freeze_reason:
+        description: '凍結理由'
+        value: ${{ jobs.check.outputs.freeze_reason }}
+      freeze_type:
+        description: '凍結タイプ (full/warning/none)'
+        value: ${{ jobs.check.outputs.freeze_type }}
+
+jobs:
+  check:
+    name: Check Change Freeze
+    runs-on: ubuntu-latest
+    outputs:
+      is_frozen: ${{ steps.freeze-check.outputs.is_frozen }}
+      freeze_reason: ${{ steps.freeze-check.outputs.freeze_reason }}
+      freeze_type: ${{ steps.freeze-check.outputs.freeze_type }}
+    steps:
+      - name: Check change freeze period
+        id: freeze-check
+        run: |
+          # 現在の日付を取得（JST）
+          export TZ=Asia/Tokyo
+          MONTH=$(date +%m)
+          DAY=$(date +%d)
+          WEEKDAY=$(date +%u)  # 1=月曜日, 7=日曜日
+
+          IS_FROZEN="false"
+          FREEZE_REASON=""
+          FREEZE_TYPE="none"
+
+          echo "=================================================="
+          echo "変更凍結チェック"
+          echo "現在日時 (JST): $(date)"
+          echo "=================================================="
+
+          # ---------------------------------------------------------------
+          # 年末年始 (12/28 - 1/3) - 完全凍結
+          # ---------------------------------------------------------------
+          if [[ "$MONTH" == "12" && "$DAY" -ge "28" ]] || \
+             [[ "$MONTH" == "01" && "$DAY" -le "03" ]]; then
+            IS_FROZEN="true"
+            FREEZE_REASON="年末年始期間 (12/28-1/3)"
+            FREEZE_TYPE="full"
+            echo "❌ 【変更凍結】$FREEZE_REASON"
+          fi
+
+          # ---------------------------------------------------------------
+          # ゴールデンウィーク (4/29 - 5/5) - 完全凍結
+          # ---------------------------------------------------------------
+          if [[ "$MONTH" == "04" && "$DAY" -ge "29" ]] || \
+             [[ "$MONTH" == "05" && "$DAY" -le "05" ]]; then
+            IS_FROZEN="true"
+            FREEZE_REASON="ゴールデンウィーク期間 (4/29-5/5)"
+            FREEZE_TYPE="full"
+            echo "❌ 【変更凍結】$FREEZE_REASON"
+          fi
+
+          # ---------------------------------------------------------------
+          # お盆 (8/13 - 8/16) - オプション凍結
+          # 必要に応じて有効化してください
+          # ---------------------------------------------------------------
+          # if [[ "$MONTH" == "08" && "$DAY" -ge "13" && "$DAY" -le "16" ]]; then
+          #   IS_FROZEN="true"
+          #   FREEZE_REASON="お盆期間 (8/13-8/16)"
+          #   FREEZE_TYPE="full"
+          #   echo "❌ 【変更凍結】$FREEZE_REASON"
+          # fi
+
+          # ---------------------------------------------------------------
+          # 決算期末 (3/25-3/31, 9/25-9/30) - 警告のみ
+          # ---------------------------------------------------------------
+          if [[ "$MONTH" == "03" && "$DAY" -ge "25" ]]; then
+            if [ "$FREEZE_TYPE" == "none" ]; then
+              FREEZE_TYPE="warning"
+              FREEZE_REASON="決算期末 (3月期末)"
+            fi
+            echo "⚠️ 【注意】$FREEZE_REASON - 変更は慎重に行ってください"
+          fi
+
+          if [[ "$MONTH" == "09" && "$DAY" -ge "25" ]]; then
+            if [ "$FREEZE_TYPE" == "none" ]; then
+              FREEZE_TYPE="warning"
+              FREEZE_REASON="決算期末 (9月期末)"
+            fi
+            echo "⚠️ 【注意】$FREEZE_REASON - 変更は慎重に行ってください"
+          fi
+
+          # ---------------------------------------------------------------
+          # 週末 (土日) - オプション警告
+          # 必要に応じて有効化してください
+          # ---------------------------------------------------------------
+          # if [[ "$WEEKDAY" == "6" || "$WEEKDAY" == "7" ]]; then
+          #   if [ "$FREEZE_TYPE" == "none" ]; then
+          #     FREEZE_TYPE="warning"
+          #     FREEZE_REASON="週末"
+          #   fi
+          #   echo "⚠️ 【注意】$FREEZE_REASON - 変更は慎重に行ってください"
+          # fi
+
+          # ---------------------------------------------------------------
+          # 結果の出力
+          # ---------------------------------------------------------------
+          echo "is_frozen=$IS_FROZEN" >> $GITHUB_OUTPUT
+          echo "freeze_reason=$FREEZE_REASON" >> $GITHUB_OUTPUT
+          echo "freeze_type=$FREEZE_TYPE" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "=================================================="
+          echo "結果: IS_FROZEN=$IS_FROZEN, TYPE=$FREEZE_TYPE"
+          echo "=================================================="
+
+          # 凍結期間中かつブロックが有効な場合は失敗
+          if [ "$IS_FROZEN" == "true" ] && [ "${{ inputs.block_on_freeze }}" == "true" ]; then
+            echo ""
+            echo "::error::【変更凍結中】$FREEZE_REASON"
+            echo ""
+            echo "緊急変更が必要な場合は、Break-glass 手順に従ってください。"
+            echo "手順書: docs/emergency-change.md"
+            exit 1
+          fi
+
+      - name: Output freeze status
+        run: |
+          echo "## 変更凍結ステータス" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.freeze-check.outputs.is_frozen }}" == "true" ]; then
+            echo "### :x: 変更凍結中" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**理由**: ${{ steps.freeze-check.outputs.freeze_reason }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.freeze-check.outputs.freeze_type }}" == "warning" ]; then
+            echo "### :warning: 注意期間" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**理由**: ${{ steps.freeze-check.outputs.freeze_reason }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "変更は可能ですが、慎重に行ってください。" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### :white_check_mark: 変更可能" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "変更凍結期間外です。" >> $GITHUB_STEP_SUMMARY
+          fi

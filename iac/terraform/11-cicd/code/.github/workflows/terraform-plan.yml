@@ -1,0 +1,205 @@
+# terraform-plan.yml
+# PR 时自动运行 terraform plan，结果作为评论发布到 PR
+#
+# 功能：
+# - 自动格式化检查 (terraform fmt)
+# - 自动验证 (terraform validate)
+# - 生成 plan 并发布到 PR 评论
+# - 可选：Infracost 成本估算
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-*.yml'
+
+# 权限设置
+# id-token: OIDC 认证需要
+# contents: 读取代码
+# pull-requests: 写入 PR 评论
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  # Terraform 工作目录
+  TF_WORKING_DIR: terraform
+  # AWS 区域
+  AWS_REGION: ap-northeast-1
+  # Terraform 版本
+  TF_VERSION: "1.9.0"
+
+jobs:
+  # =============================================================================
+  # Job: terraform-plan
+  # =============================================================================
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      # -------------------------------------------------------------------------
+      # Step 1: Checkout 代码
+      # -------------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------------------------------
+      # Step 2: 配置 AWS 凭证（OIDC 方式）
+      # -------------------------------------------------------------------------
+      # 使用 OIDC 认证，无需存储 Access Key
+      # IAM Role 需要预先配置信任策略
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          # 会话名称，便于 CloudTrail 追踪
+          role-session-name: GitHubActions-TerraformPlan
+
+      # -------------------------------------------------------------------------
+      # Step 3: 安装 Terraform
+      # -------------------------------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          # 启用 wrapper 以捕获输出
+          terraform_wrapper: true
+
+      # -------------------------------------------------------------------------
+      # Step 4: 格式化检查
+      # -------------------------------------------------------------------------
+      # terraform fmt -check 不会修改文件，只检查格式
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      # -------------------------------------------------------------------------
+      # Step 5: 初始化
+      # -------------------------------------------------------------------------
+      - name: Terraform Init
+        id: init
+        run: terraform init -no-color
+
+      # -------------------------------------------------------------------------
+      # Step 6: 验证配置
+      # -------------------------------------------------------------------------
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      # -------------------------------------------------------------------------
+      # Step 7: 生成 Plan
+      # -------------------------------------------------------------------------
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+        continue-on-error: true
+
+      # -------------------------------------------------------------------------
+      # Step 8: 发布 Plan 结果到 PR 评论
+      # -------------------------------------------------------------------------
+      - name: Post Plan to PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // 读取 plan 输出
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('${{ env.TF_WORKING_DIR }}/plan_output.txt', 'utf8');
+
+            // 截断过长的输出（GitHub 评论有字符限制）
+            const maxLength = 60000;
+            const truncatedPlan = planOutput.length > maxLength
+              ? planOutput.substring(0, maxLength) + '\n\n... (output truncated)'
+              : planOutput;
+
+            // 构建评论内容
+            const output = `## Terraform Plan Results
+
+            | Step | Status |
+            |------|--------|
+            | Format | ${{ steps.fmt.outcome == 'success' && '✅ Passed' || '⚠️ Failed' }} |
+            | Init | ${{ steps.init.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Validate | ${{ steps.validate.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Plan | ${{ steps.plan.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |
+
+            <details><summary>📋 Plan Output (click to expand)</summary>
+
+            \`\`\`hcl
+            ${truncatedPlan}
+            \`\`\`
+
+            </details>
+
+            ---
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*
+            *Workflow: \`${{ github.workflow }}\`*`;
+
+            // 查找已有评论
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## Terraform Plan Results')
+            );
+
+            // 更新或创建评论
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
+
+      # -------------------------------------------------------------------------
+      # Step 9: 保存 Plan 文件（供 Apply 使用）
+      # -------------------------------------------------------------------------
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.event.pull_request.number }}
+          path: ${{ env.TF_WORKING_DIR }}/tfplan
+          retention-days: 5
+
+      # -------------------------------------------------------------------------
+      # Step 10: 检查是否有错误
+      # -------------------------------------------------------------------------
+      - name: Check Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "::error::Terraform plan failed. Please review the output above."
+          exit 1
+
+      - name: Check Format Status
+        if: steps.fmt.outcome == 'failure'
+        run: |
+          echo "::warning::Terraform files are not properly formatted. Run 'terraform fmt' locally."

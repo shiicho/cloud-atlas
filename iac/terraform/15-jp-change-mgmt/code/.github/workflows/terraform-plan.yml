@@ -1,0 +1,250 @@
+# =============================================================================
+# Terraform Plan Workflow - PR 時に自動実行
+# =============================================================================
+#
+# Pull Request が作成/更新されたときに terraform plan を自動実行します。
+# Plan Role（読み取り専用）を使用するため、安全に実行できます。
+#
+# 機能:
+# - terraform fmt のチェック
+# - terraform validate のチェック
+# - terraform plan の実行
+# - PR への Plan 結果コメント
+# - 変更凍結期間の Warning 表示
+#
+# =============================================================================
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-*.yml'
+
+# 同じ PR で複数の workflow が実行されないように
+concurrency:
+  group: terraform-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write      # OIDC トークンの取得
+  contents: read       # リポジトリの読み取り
+  pull-requests: write # PR へのコメント
+
+env:
+  TF_VERSION: "1.9.0"
+  AWS_REGION: "ap-northeast-1"
+  WORKING_DIR: "terraform"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 変更凍結チェック
+  # ---------------------------------------------------------------------------
+  change-freeze-check:
+    name: Change Freeze Check
+    runs-on: ubuntu-latest
+    outputs:
+      is_frozen: ${{ steps.check.outputs.is_frozen }}
+      freeze_reason: ${{ steps.check.outputs.freeze_reason }}
+    steps:
+      - name: Check change freeze period
+        id: check
+        run: |
+          MONTH=$(date +%m)
+          DAY=$(date +%d)
+
+          IS_FROZEN="false"
+          FREEZE_REASON=""
+
+          # 年末年始 (12/28 - 1/3)
+          if [[ "$MONTH" == "12" && "$DAY" -ge "28" ]] || \
+             [[ "$MONTH" == "01" && "$DAY" -le "03" ]]; then
+            IS_FROZEN="true"
+            FREEZE_REASON="年末年始期間 (12/28-1/3)"
+          fi
+
+          # ゴールデンウィーク (4/29 - 5/5)
+          if [[ "$MONTH" == "04" && "$DAY" -ge "29" ]] || \
+             [[ "$MONTH" == "05" && "$DAY" -le "05" ]]; then
+            IS_FROZEN="true"
+            FREEZE_REASON="ゴールデンウィーク期間 (4/29-5/5)"
+          fi
+
+          # 決算期末 (3/25-3/31, 9/25-9/30) - Warning のみ
+          if [[ "$MONTH" == "03" && "$DAY" -ge "25" ]] || \
+             [[ "$MONTH" == "09" && "$DAY" -ge "25" ]]; then
+            echo "::warning::決算期末期間中です。変更は慎重に行ってください。"
+          fi
+
+          echo "is_frozen=$IS_FROZEN" >> $GITHUB_OUTPUT
+          echo "freeze_reason=$FREEZE_REASON" >> $GITHUB_OUTPUT
+
+          if [ "$IS_FROZEN" == "true" ]; then
+            echo "::warning::【変更凍結中】$FREEZE_REASON - Apply は凍結中です"
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Terraform Plan
+  # ---------------------------------------------------------------------------
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: change-freeze-check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Plan Role で認証（読み取り専用）
+      - name: Configure AWS credentials (Plan Role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          role-session-name: terraform-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        id: fmt
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform fmt -check -recursive -diff
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        id: validate
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          echo "exitcode=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Get Plan Summary
+        id: summary
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          # Plan のサマリーを抽出
+          SUMMARY=$(grep -E "^Plan:|^No changes" plan_output.txt || echo "Plan summary not found")
+          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+
+      # PR に Plan 結果をコメント
+      - name: Comment Plan on PR
+        uses: actions/github-script@v7
+        env:
+          PLAN: "${{ steps.plan.outputs.stdout || '' }}"
+          IS_FROZEN: "${{ needs.change-freeze-check.outputs.is_frozen }}"
+          FREEZE_REASON: "${{ needs.change-freeze-check.outputs.freeze_reason }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('${{ env.WORKING_DIR }}/plan_output.txt', 'utf8');
+
+            // 凍結期間のバナー
+            let freezeBanner = '';
+            if (process.env.IS_FROZEN === 'true') {
+              freezeBanner = `
+            ## :warning: 変更凍結中
+            **${process.env.FREEZE_REASON}** のため、Apply は凍結されています。
+
+            緊急変更の場合は、[Break-glass 手順](docs/emergency-change.md) に従ってください。
+
+            ---
+            `;
+            }
+
+            const output = `## Terraform Plan 結果
+            ${freezeBanner}
+            ### チェック結果
+
+            | チェック | 結果 |
+            |----------|------|
+            | Format | ${{ steps.fmt.outcome == 'success' && ':white_check_mark: Pass' || ':x: Fail' }} |
+            | Init | ${{ steps.init.outcome == 'success' && ':white_check_mark: Pass' || ':x: Fail' }} |
+            | Validate | ${{ steps.validate.outcome == 'success' && ':white_check_mark: Pass' || ':x: Fail' }} |
+            | Plan | ${{ steps.plan.outcome == 'success' && ':white_check_mark: Success' || ':warning: Check output' }} |
+
+            ### Plan 出力
+
+            <details>
+            <summary>クリックして展開</summary>
+
+            \`\`\`hcl
+            ${planOutput.substring(0, 60000)}
+            \`\`\`
+
+            </details>
+
+            ### 承認チェックリスト
+
+            レビュアーは以下を確認してください：
+
+            - [ ] Plan 内容を確認しました
+            - [ ] 意図しない変更（destroy/recreate）がないことを確認しました
+            - [ ] セキュリティ上の問題がないことを確認しました
+            - [ ] 影響範囲を理解しています
+            - [ ] 切り戻し手順を確認しました
+
+            ---
+
+            *:robot: Terraform Plan by GitHub Actions*
+            *Workflow: \`${{ github.workflow }}\` | Run: \`${{ github.run_id }}\`*
+            `;
+
+            // 既存のコメントを検索
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Terraform Plan 結果')
+            );
+
+            if (botComment) {
+              // 既存のコメントを更新
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              // 新規コメントを作成
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
+
+      - name: Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      # Plan ファイルをアーティファクトとして保存（Apply で使用）
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.run_id }}
+          path: ${{ env.WORKING_DIR }}/tfplan
+          retention-days: 5

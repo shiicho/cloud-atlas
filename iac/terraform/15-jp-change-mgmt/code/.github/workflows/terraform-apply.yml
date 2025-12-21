@@ -1,0 +1,197 @@
+# =============================================================================
+# Terraform Apply Workflow - main ブランチへの push 時に実行
+# =============================================================================
+#
+# main ブランチへのマージ後に terraform apply を実行します。
+# Apply Role（書き込み可能）を使用します。
+#
+# 機能:
+# - 変更凍結期間のチェック（凍結中は Apply をブロック）
+# - GitHub Environment による承認ゲート
+# - terraform apply の実行
+# - 変更記録の CloudWatch Logs への送信
+#
+# =============================================================================
+
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: "1.9.0"
+  AWS_REGION: "ap-northeast-1"
+  WORKING_DIR: "terraform"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 変更凍結チェック（Apply をブロック）
+  # ---------------------------------------------------------------------------
+  change-freeze-check:
+    name: Change Freeze Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check change freeze period
+        run: |
+          MONTH=$(date +%m)
+          DAY=$(date +%d)
+
+          # 年末年始 (12/28 - 1/3)
+          if [[ "$MONTH" == "12" && "$DAY" -ge "28" ]] || \
+             [[ "$MONTH" == "01" && "$DAY" -le "03" ]]; then
+            echo "::error::【変更凍結中】年末年始期間 (12/28-1/3) のため、Apply を停止しました"
+            echo ""
+            echo "=================================================="
+            echo "緊急変更の場合は、Break-glass 手順に従ってください"
+            echo "手順書: docs/emergency-change.md"
+            echo "=================================================="
+            exit 1
+          fi
+
+          # ゴールデンウィーク (4/29 - 5/5)
+          if [[ "$MONTH" == "04" && "$DAY" -ge "29" ]] || \
+             [[ "$MONTH" == "05" && "$DAY" -le "05" ]]; then
+            echo "::error::【変更凍結中】ゴールデンウィーク期間 (4/29-5/5) のため、Apply を停止しました"
+            exit 1
+          fi
+
+          # 決算期末 (3/25-3/31, 9/25-9/30)
+          if [[ "$MONTH" == "03" && "$DAY" -ge "25" ]] || \
+             [[ "$MONTH" == "09" && "$DAY" -ge "25" ]]; then
+            echo "::warning::【決算期末】変更は慎重に行ってください"
+          fi
+
+          echo "✅ 変更凍結期間外です。Apply を続行します。"
+
+  # ---------------------------------------------------------------------------
+  # Terraform Apply
+  # ---------------------------------------------------------------------------
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: change-freeze-check
+    # GitHub Environment で承認ゲート
+    # Settings > Environments > production で審批者を設定
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Apply Role で認証（書き込み可能）
+      - name: Configure AWS credentials (Apply Role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_APPLY_ROLE_ARN }}
+          role-session-name: terraform-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init -input=false
+
+      # 再度 Plan を実行（マージ中に変更があった場合に備えて）
+      - name: Terraform Plan (Confirm)
+        id: plan
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+
+      # Apply 実行
+      - name: Terraform Apply
+        id: apply
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          terraform apply -auto-approve tfplan 2>&1 | tee apply_output.txt
+
+      # 変更記録を出力
+      - name: Log Apply Result
+        run: |
+          echo "=================================================="
+          echo "Terraform Apply 完了"
+          echo "=================================================="
+          echo "Actor: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "=================================================="
+
+      # 変更記録を CloudWatch Logs に送信（オプション）
+      - name: Send to CloudWatch Logs
+        if: always()
+        run: |
+          # CloudWatch Logs へのログ送信（Log Group が存在する場合）
+          LOG_GROUP="/terraform/changes"
+          LOG_STREAM="${{ env.WORKING_DIR }}"
+
+          # Log Stream の存在確認
+          if aws logs describe-log-streams \
+            --log-group-name "$LOG_GROUP" \
+            --log-stream-name-prefix "$LOG_STREAM" \
+            --query 'logStreams[0].logStreamName' \
+            --output text 2>/dev/null | grep -q "$LOG_STREAM"; then
+
+            # ログイベントを送信
+            aws logs put-log-events \
+              --log-group-name "$LOG_GROUP" \
+              --log-stream-name "$LOG_STREAM" \
+              --log-events "timestamp=$(date +%s000),message={\"actor\":\"${{ github.actor }}\",\"commit\":\"${{ github.sha }}\",\"action\":\"apply\",\"status\":\"${{ steps.apply.outcome }}\"}" \
+              2>/dev/null || echo "CloudWatch Logs への送信をスキップ（Log Group が存在しない可能性）"
+          else
+            echo "CloudWatch Logs への送信をスキップ（Log Stream が存在しない）"
+          fi
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # 失敗時の通知
+  # ---------------------------------------------------------------------------
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [change-freeze-check, apply]
+    if: failure()
+    steps:
+      - name: Notify failure
+        run: |
+          echo "::error::Terraform Apply が失敗しました"
+          echo ""
+          echo "確認事項:"
+          echo "1. Apply 出力を確認してください"
+          echo "2. State Lock が残っていないか確認してください"
+          echo "3. 必要に応じて切り戻しを検討してください"
+          echo ""
+          echo "切り戻し手順:"
+          echo "  git revert ${{ github.sha }}"
+          echo "  git push origin main"
+
+      # Slack 通知（オプション）
+      # - name: Notify Slack
+      #   uses: slackapi/slack-github-action@v1.25.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": ":x: Terraform Apply 失敗",
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": ":x: *Terraform Apply が失敗しました*\n\nリポジトリ: ${{ github.repository }}\nコミット: ${{ github.sha }}\n実行者: ${{ github.actor }}"
+      #             }
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

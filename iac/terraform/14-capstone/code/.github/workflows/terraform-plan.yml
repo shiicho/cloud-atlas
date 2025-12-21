@@ -1,0 +1,233 @@
+# =============================================================================
+# .github/workflows/terraform-plan.yml
+# PR 时自动运行 terraform plan
+# =============================================================================
+#
+# 触发条件：
+# - 创建或更新 PR 到 main 分支
+# - PR 中包含 Terraform 文件变更
+#
+# 功能：
+# - 运行 terraform fmt 检查
+# - 运行 terraform validate
+# - 运行 tflint
+# - 运行 tfsec 安全扫描
+# - 运行 terraform plan
+# - 将 plan 结果作为 PR 评论
+#
+# =============================================================================
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'environments/**'
+      - 'modules/**'
+      - '.github/workflows/terraform-*.yml'
+
+# 权限配置
+permissions:
+  id-token: write      # OIDC 认证需要
+  contents: read       # 读取代码
+  pull-requests: write # 写入 PR 评论
+
+# 防止并发运行
+concurrency:
+  group: terraform-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_VERSION: "1.9.0"
+  AWS_REGION: "ap-northeast-1"
+  WORKING_DIRECTORY: "environments/dev"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 代码质量检查
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint & Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # 格式检查
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      # 语法验证
+      - name: Terraform Init (for validate)
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        id: validate
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: terraform validate -no-color
+        continue-on-error: true
+
+      # tflint
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init tflint
+        run: tflint --init
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tflint
+        id: tflint
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: tflint --format compact
+        continue-on-error: true
+
+      # tfsec 安全扫描
+      - name: Run tfsec
+        id: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ env.WORKING_DIRECTORY }}
+          soft_fail: true
+
+      # 检查结果汇总
+      - name: Check Results
+        if: steps.fmt.outcome == 'failure' || steps.validate.outcome == 'failure'
+        run: |
+          echo "## Quality Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Format: ${{ steps.fmt.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Validate: ${{ steps.validate.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- tflint: ${{ steps.tflint.outcome }}" >> $GITHUB_STEP_SUMMARY
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # Terraform Plan
+  # ---------------------------------------------------------------------------
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # OIDC 认证到 AWS
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Terraform Init
+      - name: Terraform Init
+        id: init
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: terraform init
+        continue-on-error: true
+
+      # Terraform Plan
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: |
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          echo "plan_exitcode=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      # 保存 Plan 输出
+      - name: Save Plan Output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: |
+            ${{ env.WORKING_DIRECTORY }}/tfplan
+            ${{ env.WORKING_DIRECTORY }}/plan_output.txt
+
+      # PR 评论
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planOutput = fs.readFileSync('${{ env.WORKING_DIRECTORY }}/plan_output.txt', 'utf8');
+
+            // 截断过长的输出
+            const maxLength = 60000;
+            let truncatedPlan = planOutput;
+            if (planOutput.length > maxLength) {
+              truncatedPlan = planOutput.substring(0, maxLength) + '\n\n... (output truncated)';
+            }
+
+            const output = `## Terraform Plan Results
+
+            ### Environment: \`dev\`
+
+            #### 🔧 Init: \`${{ steps.init.outcome }}\`
+            #### 📋 Plan: \`${{ steps.plan.outcome }}\`
+
+            <details>
+            <summary>Show Plan Output</summary>
+
+            \`\`\`terraform
+            ${truncatedPlan}
+            \`\`\`
+
+            </details>
+
+            ---
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
+            `;
+
+            // 查找并更新现有评论，或创建新评论
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' && comment.body.includes('Terraform Plan Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              });
+            }
+
+      # Plan 失败时退出
+      - name: Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

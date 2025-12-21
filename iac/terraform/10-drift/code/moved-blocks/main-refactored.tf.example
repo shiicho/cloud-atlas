@@ -1,0 +1,175 @@
+# main-refactored.tf.example
+# moved blocks 重构后的代码示例
+# =============================================================================
+#
+# 这是重构后的代码示例。演练时：
+# 1. 备份 main.tf
+# 2. 将此文件重命名为 main.tf
+# 3. 运行 terraform plan 观察 "will be moved"
+# 4. 运行 terraform apply 完成迁移
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# moved blocks 声明
+# -----------------------------------------------------------------------------
+# 这些声明告诉 Terraform 资源已移动
+# 可以在迁移完成后保留（作为历史记录）或删除
+
+moved {
+  from = aws_security_group.app
+  to   = aws_security_group.application
+}
+
+moved {
+  from = aws_instance.app
+  to   = aws_instance.application
+}
+
+moved {
+  from = aws_iam_role.app
+  to   = aws_iam_role.application
+}
+
+moved {
+  from = aws_iam_instance_profile.app
+  to   = aws_iam_instance_profile.application
+}
+
+# -----------------------------------------------------------------------------
+# Provider 配置 (保持不变)
+# -----------------------------------------------------------------------------
+
+terraform {
+  required_version = ">= 1.1.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "ap-northeast-1"
+
+  default_tags {
+    tags = {
+      Project   = "terraform-course"
+      ManagedBy = "terraform"
+      Lesson    = "10-drift-moved"
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Data Sources (保持不变)
+# -----------------------------------------------------------------------------
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+# -----------------------------------------------------------------------------
+# 重构后的资源定义 (名称已更改)
+# -----------------------------------------------------------------------------
+
+# 安全组 - 改名为 application
+resource "aws_security_group" "application" {
+  name        = "moved-demo-app-sg"
+  description = "Security group for moved blocks demo"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "moved-demo-app-sg"
+  }
+}
+
+# IAM Role - 改名为 application
+resource "aws_iam_role" "application" {
+  name = "moved-demo-app-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.application.name  # 更新引用
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "application" {
+  name = "moved-demo-app-profile"
+  role = aws_iam_role.application.name  # 更新引用
+}
+
+# EC2 实例 - 改名为 application
+resource "aws_instance" "application" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t3.micro"
+  subnet_id              = data.aws_subnets.default.ids[0]
+  vpc_security_group_ids = [aws_security_group.application.id]  # 更新引用
+  iam_instance_profile   = aws_iam_instance_profile.application.name  # 更新引用
+
+  tags = {
+    Name = "moved-demo-app"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# 输出值 (更新引用)
+# -----------------------------------------------------------------------------
+
+output "instance_id" {
+  description = "EC2 实例 ID"
+  value       = aws_instance.application.id  # 更新引用
+}
+
+output "security_group_id" {
+  description = "安全组 ID"
+  value       = aws_security_group.application.id  # 更新引用
+}
+
+output "private_ip" {
+  description = "私有 IP 地址"
+  value       = aws_instance.application.private_ip  # 更新引用
+}

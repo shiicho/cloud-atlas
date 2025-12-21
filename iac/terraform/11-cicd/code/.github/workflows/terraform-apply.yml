@@ -1,0 +1,177 @@
+# terraform-apply.yml
+# 手动触发 terraform apply，需要 Environment 审批
+#
+# 功能：
+# - 手动触发 (workflow_dispatch)
+# - 需要 production 环境审批
+# - 下载并使用 PR 阶段生成的 plan 文件
+# - 或重新生成 plan 后 apply
+
+name: Terraform Apply
+
+on:
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      pr_number:
+        description: 'PR number to apply (optional, uses saved plan)'
+        required: false
+        type: string
+      confirm:
+        description: 'Type "apply" to confirm'
+        required: true
+        type: string
+
+# 权限设置
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_WORKING_DIR: terraform
+  AWS_REGION: ap-northeast-1
+  TF_VERSION: "1.9.0"
+
+jobs:
+  # =============================================================================
+  # Job: validate-input
+  # =============================================================================
+  validate-input:
+    name: Validate Input
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: github.event.inputs.confirm != 'apply'
+        run: |
+          echo "::error::You must type 'apply' to confirm. Got: '${{ github.event.inputs.confirm }}'"
+          exit 1
+
+  # =============================================================================
+  # Job: terraform-apply
+  # =============================================================================
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    needs: validate-input
+
+    # 需要 production 环境审批
+    # 在 GitHub 仓库设置中配置：Settings > Environments > production > Required reviewers
+    environment: ${{ github.event.inputs.environment }}
+
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      # -------------------------------------------------------------------------
+      # Step 1: Checkout 代码
+      # -------------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # -------------------------------------------------------------------------
+      # Step 2: 配置 AWS 凭证（OIDC 方式）
+      # -------------------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-TerraformApply
+
+      # -------------------------------------------------------------------------
+      # Step 3: 安装 Terraform
+      # -------------------------------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # -------------------------------------------------------------------------
+      # Step 4: 初始化
+      # -------------------------------------------------------------------------
+      - name: Terraform Init
+        run: terraform init -no-color
+
+      # -------------------------------------------------------------------------
+      # Step 5: 尝试下载已保存的 Plan（如果指定了 PR 号）
+      # -------------------------------------------------------------------------
+      - name: Download Plan Artifact
+        if: github.event.inputs.pr_number != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ github.event.inputs.pr_number }}
+          path: ${{ env.TF_WORKING_DIR }}
+        continue-on-error: true
+        id: download-plan
+
+      # -------------------------------------------------------------------------
+      # Step 6: 如果没有已保存的 Plan，重新生成
+      # -------------------------------------------------------------------------
+      - name: Generate New Plan
+        if: steps.download-plan.outcome != 'success' || github.event.inputs.pr_number == ''
+        run: |
+          echo "::notice::No saved plan found. Generating new plan..."
+          terraform plan -no-color -out=tfplan
+
+      # -------------------------------------------------------------------------
+      # Step 7: 显示 Plan 内容（确认将要应用的变更）
+      # -------------------------------------------------------------------------
+      - name: Show Plan
+        run: terraform show -no-color tfplan
+
+      # -------------------------------------------------------------------------
+      # Step 8: Apply
+      # -------------------------------------------------------------------------
+      - name: Terraform Apply
+        run: |
+          echo "::notice::Applying Terraform changes to ${{ github.event.inputs.environment }}..."
+          terraform apply -no-color tfplan
+
+      # -------------------------------------------------------------------------
+      # Step 9: 记录 Apply 结果
+      # -------------------------------------------------------------------------
+      - name: Record Apply Result
+        if: always()
+        run: |
+          echo "## Apply Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ github.event.inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PR Number | ${{ github.event.inputs.pr_number || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+
+  # =============================================================================
+  # Job: notify (可选)
+  # =============================================================================
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: always()
+    steps:
+      - name: Notify on Success
+        if: needs.terraform-apply.result == 'success'
+        run: |
+          echo "::notice::Terraform apply completed successfully!"
+          # 可以添加 Slack/Teams 通知
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"Terraform apply to ${{ github.event.inputs.environment }} succeeded!"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify on Failure
+        if: needs.terraform-apply.result == 'failure'
+        run: |
+          echo "::error::Terraform apply failed!"
+          # 可以添加 Slack/Teams 通知

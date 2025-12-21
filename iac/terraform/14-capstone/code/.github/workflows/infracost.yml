@@ -1,0 +1,99 @@
+# =============================================================================
+# .github/workflows/infracost.yml
+# PR 中显示成本变化
+# =============================================================================
+#
+# Infracost 分析 Terraform 代码，估算云资源成本变化
+# 在 PR 中添加评论显示成本影响
+#
+# 配置要求：
+# - 需要 INFRACOST_API_KEY secret
+# - 免费注册：https://www.infracost.io/
+#
+# =============================================================================
+
+name: Infracost
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'environments/**'
+      - 'modules/**'
+
+# 权限配置
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  WORKING_DIRECTORY: "environments/dev"
+
+jobs:
+  infracost:
+    name: Cost Estimation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # 基准成本（main 分支）
+      - name: Generate base cost
+        run: |
+          infracost breakdown --path=${{ env.WORKING_DIRECTORY }} \
+            --format=json \
+            --out-file=/tmp/infracost-base.json
+        continue-on-error: true
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      # PR 分支成本
+      - name: Generate PR cost
+        run: |
+          infracost breakdown --path=${{ env.WORKING_DIRECTORY }} \
+            --format=json \
+            --out-file=/tmp/infracost-pr.json
+        continue-on-error: true
+
+      # 计算差异
+      - name: Generate diff
+        run: |
+          infracost diff --path=${{ env.WORKING_DIRECTORY }} \
+            --format=json \
+            --compare-to=/tmp/infracost-base.json \
+            --out-file=/tmp/infracost-diff.json
+        continue-on-error: true
+
+      # PR 评论
+      - name: Post Infracost comment
+        uses: infracost/actions/comment@v1
+        with:
+          path: /tmp/infracost-diff.json
+          behavior: update
+        continue-on-error: true
+
+      # 生成 Summary
+      - name: Generate Summary
+        run: |
+          echo "## 💰 Cost Estimation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f /tmp/infracost-pr.json ]; then
+            MONTHLY_COST=$(cat /tmp/infracost-pr.json | jq -r '.totalMonthlyCost // "N/A"')
+            echo "Estimated monthly cost: **\$${MONTHLY_COST}**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Cost estimation not available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See PR comment for detailed breakdown." >> $GITHUB_STEP_SUMMARY

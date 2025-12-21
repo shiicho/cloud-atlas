@@ -1,0 +1,245 @@
+# =============================================================================
+# Terraform Emergency Apply Workflow - 緊急変更用
+# =============================================================================
+#
+# hotfix-* ブランチからの緊急変更を実行するワークフローです。
+# 変更凍結期間中でも実行可能ですが、事後報告が必須です。
+#
+# 使用条件:
+# - Emergency Role が有効化されていること
+# - hotfix-* ブランチからの push であること
+# - 管理者の承認を取得済みであること
+#
+# =============================================================================
+
+name: Terraform Emergency Apply
+
+on:
+  push:
+    branches:
+      - 'hotfix-*'
+    paths:
+      - 'terraform/**'
+  # 手動実行も可能
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: '緊急変更を実行しますか？ "EMERGENCY" と入力してください'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+env:
+  TF_VERSION: "1.9.0"
+  AWS_REGION: "ap-northeast-1"
+  WORKING_DIR: "terraform"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 確認
+  # ---------------------------------------------------------------------------
+  confirm:
+    name: Confirm Emergency Change
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate manual trigger
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "EMERGENCY" ]; then
+            echo "::error::確認入力が正しくありません。'EMERGENCY' と入力してください。"
+            exit 1
+          fi
+
+      - name: Log emergency change
+        run: |
+          echo "::warning::【緊急変更】このワークフローは緊急変更用です"
+          echo ""
+          echo "=================================================="
+          echo "緊急変更情報"
+          echo "=================================================="
+          echo "実行者: ${{ github.actor }}"
+          echo "ブランチ: ${{ github.ref_name }}"
+          echo "コミット: ${{ github.sha }}"
+          echo "日時: $(TZ=Asia/Tokyo date)"
+          echo "=================================================="
+          echo ""
+          echo "⚠️ 事後報告書の作成を忘れないでください！"
+          echo "テンプレート: docs/templates/emergency-change.md"
+
+  # ---------------------------------------------------------------------------
+  # Emergency Apply
+  # ---------------------------------------------------------------------------
+  emergency-apply:
+    name: Emergency Terraform Apply
+    runs-on: ubuntu-latest
+    needs: confirm
+    # 手動承認なし - Emergency Role で制御
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Emergency Role で認証
+      - name: Configure AWS credentials (Emergency Role)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_EMERGENCY_ROLE_ARN }}
+          role-session-name: terraform-emergency-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          echo "::warning::【緊急変更】Plan を実行しています"
+          terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
+
+      - name: Terraform Apply
+        id: apply
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          echo "::warning::【緊急変更】Apply を実行しています"
+          terraform apply -auto-approve tfplan 2>&1 | tee apply_output.txt
+
+      - name: Log Emergency Apply
+        run: |
+          echo "=================================================="
+          echo "【緊急変更】Terraform Apply 完了"
+          echo "=================================================="
+          echo "実行者: ${{ github.actor }}"
+          echo "ブランチ: ${{ github.ref_name }}"
+          echo "コミット: ${{ github.sha }}"
+          echo "日時: $(TZ=Asia/Tokyo date)"
+          echo "=================================================="
+          echo ""
+          echo "⚠️ 次のステップ:"
+          echo "1. 変更が正常に適用されたことを確認"
+          echo "2. 事後報告書を作成"
+          echo "3. 通常の PR を作成して記録を残す"
+          echo "4. 管理者に報告"
+
+  # ---------------------------------------------------------------------------
+  # 事後報告 Issue 作成
+  # ---------------------------------------------------------------------------
+  create-followup-issue:
+    name: Create Follow-up Issue
+    runs-on: ubuntu-latest
+    needs: emergency-apply
+    if: always() && needs.emergency-apply.result == 'success'
+    steps:
+      - name: Create Issue for Post-Mortem
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[緊急変更] 事後報告 - ${new Date().toISOString().split('T')[0]} - ${{ github.ref_name }}`,
+              body: `## 緊急変更事後報告
+
+            ### 基本情報
+
+            | 項目 | 内容 |
+            |------|------|
+            | 実行日時 | ${new Date().toISOString()} |
+            | 実行者 | @${{ github.actor }} |
+            | ブランチ | \`${{ github.ref_name }}\` |
+            | コミット | \`${{ github.sha }}\` |
+            | Workflow Run | [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+
+            ### TODO
+
+            - [ ] インシデント概要を記入
+            - [ ] 実施した変更内容を記入
+            - [ ] 承認記録を添付
+            - [ ] 根本原因を分析
+            - [ ] 再発防止策を検討
+            - [ ] 通常の PR を作成して記録
+            - [ ] Emergency Role を無効化
+
+            ### インシデント概要
+
+            <!-- インシデントの概要を記入してください -->
+
+            ### 実施した変更
+
+            <!-- 実施した変更内容を記入してください -->
+
+            ### 承認記録
+
+            <!-- 承認者、承認方法、承認日時を記入してください -->
+            - 承認者:
+            - 承認方法: Slack / 電話 / その他
+            - 承認日時:
+            - 証跡: <!-- スクリーンショットなど -->
+
+            ### 根本原因分析（RCA）
+
+            <!-- 根本原因を分析してください -->
+
+            ### 再発防止策
+
+            <!-- 再発防止策を検討してください -->
+
+            ---
+
+            :warning: この Issue は緊急変更後に自動作成されました。
+            上記の TODO を完了し、この Issue をクローズしてください。
+            `,
+              labels: ['emergency-change', 'post-mortem']
+            });
+
+            console.log(`Issue created: ${issue.data.html_url}`);
+
+  # ---------------------------------------------------------------------------
+  # 通知
+  # ---------------------------------------------------------------------------
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [emergency-apply, create-followup-issue]
+    if: always()
+    steps:
+      - name: Notify result
+        run: |
+          if [ "${{ needs.emergency-apply.result }}" == "success" ]; then
+            echo "::warning::【緊急変更完了】Apply が正常に完了しました"
+            echo "事後報告 Issue が作成されました。"
+          else
+            echo "::error::【緊急変更失敗】Apply が失敗しました"
+            echo "ログを確認し、必要に応じて手動で対応してください。"
+          fi
+
+      # Slack 通知（オプション）
+      # - name: Notify Slack
+      #   if: always()
+      #   uses: slackapi/slack-github-action@v1.25.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": ":rotating_light: 緊急変更が実行されました",
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": ":rotating_light: *緊急変更が実行されました*\n\n実行者: ${{ github.actor }}\nブランチ: ${{ github.ref_name }}\n結果: ${{ needs.emergency-apply.result }}"
+      #             }
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,303 @@
+# github-oidc.yaml
+# CloudFormation 模板：配置 GitHub Actions OIDC Provider
+#
+# 功能：
+# - 创建 OIDC Identity Provider（信任 GitHub）
+# - 创建 IAM Role（GitHub Actions 可以 Assume）
+# - 配置信任策略（限制到特定仓库）
+#
+# 部署命令：
+# aws cloudformation deploy \
+#   --template-file github-oidc.yaml \
+#   --stack-name github-oidc-terraform \
+#   --capabilities CAPABILITY_NAMED_IAM \
+#   --parameter-overrides \
+#     GitHubOrg=your-org \
+#     RepoName=your-repo
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  GitHub Actions OIDC Provider and IAM Role for Terraform
+  无需存储 Access Key，使用临时凭证
+
+# =============================================================================
+# Parameters - 参数
+# =============================================================================
+Parameters:
+  GitHubOrg:
+    Type: String
+    Description: |
+      GitHub 组织名或用户名
+      例如：your-org 或 your-username
+
+  RepoName:
+    Type: String
+    Description: |
+      GitHub 仓库名
+      例如：terraform-infra
+
+  OIDCAudience:
+    Type: String
+    Default: sts.amazonaws.com
+    Description: |
+      OIDC Audience 值
+      默认为 sts.amazonaws.com，无需修改
+
+  AllowedBranches:
+    Type: String
+    Default: "*"
+    Description: |
+      允许的分支模式
+      例如：main, feature/*, 或 * 表示所有分支
+
+# =============================================================================
+# Resources - 资源
+# =============================================================================
+Resources:
+  # ---------------------------------------------------------------------------
+  # OIDC Identity Provider
+  # ---------------------------------------------------------------------------
+  # 在 AWS 中注册 GitHub 作为可信的身份提供商
+  # 一个 AWS 账户只需要创建一次，可以被多个 Role 共享
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - !Ref OIDCAudience
+      # GitHub OIDC 的 thumbprint
+      # 这是 GitHub 签发 OIDC 令牌时使用的证书指纹
+      # 参考：https://github.blog/changelog/2023-06-27-github-actions-update-on-oidc-integration-with-aws/
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+      Tags:
+        - Key: Purpose
+          Value: GitHub Actions OIDC
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ---------------------------------------------------------------------------
+  # IAM Role for Terraform
+  # ---------------------------------------------------------------------------
+  # GitHub Actions 将 Assume 这个 Role 来执行 Terraform
+  GitHubActionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub github-actions-terraform-${RepoName}
+      Description: !Sub |
+        IAM Role for GitHub Actions to run Terraform
+        Repository: ${GitHubOrg}/${RepoName}
+
+      # 信任策略：只信任来自特定仓库的 GitHub Actions
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubOIDCProvider.Arn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                # Audience 必须匹配
+                token.actions.githubusercontent.com:aud: !Ref OIDCAudience
+              StringLike:
+                # Subject 必须匹配仓库和分支
+                # 格式：repo:org/repo:ref:refs/heads/branch
+                # 或：repo:org/repo:pull_request（PR 触发）
+                # 或：repo:org/repo:*（所有触发方式）
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepoName}:*
+
+      # 最大会话时长：1 小时（适合大型 Terraform 操作）
+      MaxSessionDuration: 3600
+
+      Tags:
+        - Key: Repository
+          Value: !Sub ${GitHubOrg}/${RepoName}
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # ---------------------------------------------------------------------------
+  # IAM Policy for Terraform
+  # ---------------------------------------------------------------------------
+  # 授予 Terraform 操作 AWS 资源的权限
+  # 注意：这是示例权限，生产环境应该根据实际需要收窄
+  TerraformPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TerraformAccess
+      Roles:
+        - !Ref GitHubActionsRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # State 后端访问
+          - Sid: TerraformStateAccess
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}
+              - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}/*
+
+          # State Lock 访问
+          - Sid: TerraformLockAccess
+            Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+            Resource:
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/terraform-locks
+
+          # EC2 操作（示例）
+          - Sid: EC2Access
+            Effect: Allow
+            Action:
+              - ec2:Describe*
+              - ec2:CreateTags
+              - ec2:RunInstances
+              - ec2:TerminateInstances
+              - ec2:StartInstances
+              - ec2:StopInstances
+            Resource: "*"
+            Condition:
+              StringEquals:
+                aws:RequestedRegion: ap-northeast-1
+
+          # S3 操作（示例）
+          - Sid: S3Access
+            Effect: Allow
+            Action:
+              - s3:CreateBucket
+              - s3:DeleteBucket
+              - s3:GetBucket*
+              - s3:PutBucket*
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::*-${AWS::AccountId}
+
+          # IAM 只读（用于 data sources）
+          - Sid: IAMReadOnly
+            Effect: Allow
+            Action:
+              - iam:GetRole
+              - iam:GetPolicy
+              - iam:ListRolePolicies
+              - iam:ListAttachedRolePolicies
+            Resource: "*"
+
+  # ---------------------------------------------------------------------------
+  # Separate Plan Role (可选：Plan 和 Apply 权限分离)
+  # ---------------------------------------------------------------------------
+  # 更严格的安全模式：Plan 只能读取，Apply 可以写入
+  GitHubActionsPlanRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub github-actions-terraform-plan-${RepoName}
+      Description: !Sub |
+        Read-only IAM Role for terraform plan
+        Repository: ${GitHubOrg}/${RepoName}
+
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !GetAtt GitHubOIDCProvider.Arn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: !Ref OIDCAudience
+              StringLike:
+                # 只允许 PR 触发（pull_request 事件）
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepoName}:pull_request
+
+      MaxSessionDuration: 3600
+
+      Tags:
+        - Key: Repository
+          Value: !Sub ${GitHubOrg}/${RepoName}
+        - Key: Purpose
+          Value: Terraform Plan (Read-Only)
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  # Plan Role 的只读策略
+  TerraformPlanPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TerraformPlanAccess
+      Roles:
+        - !Ref GitHubActionsPlanRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # State 只读
+          - Sid: TerraformStateReadOnly
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}
+              - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}/*
+
+          # Lock 表访问（plan 也需要）
+          - Sid: TerraformLockAccess
+            Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+            Resource:
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/terraform-locks
+
+          # 所有资源只读
+          - Sid: ReadOnlyAccess
+            Effect: Allow
+            Action:
+              - ec2:Describe*
+              - s3:Get*
+              - s3:List*
+              - iam:Get*
+              - iam:List*
+              - rds:Describe*
+              - elasticloadbalancing:Describe*
+            Resource: "*"
+
+# =============================================================================
+# Outputs - 输出
+# =============================================================================
+Outputs:
+  OIDCProviderArn:
+    Description: OIDC Provider ARN
+    Value: !GetAtt GitHubOIDCProvider.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-OIDCProviderArn
+
+  RoleArn:
+    Description: |
+      IAM Role ARN for Terraform (full access)
+      添加到 GitHub Secrets: AWS_ROLE_ARN
+    Value: !GetAtt GitHubActionsRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-RoleArn
+
+  PlanRoleArn:
+    Description: |
+      IAM Role ARN for Terraform Plan (read-only)
+      用于更严格的权限分离
+    Value: !GetAtt GitHubActionsPlanRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-PlanRoleArn
+
+  TrustPolicyExample:
+    Description: 信任策略中的 Subject 格式示例
+    Value: !Sub |
+      repo:${GitHubOrg}/${RepoName}:ref:refs/heads/main - 只允许 main 分支
+      repo:${GitHubOrg}/${RepoName}:pull_request - 只允许 PR
+      repo:${GitHubOrg}/${RepoName}:* - 允许所有
