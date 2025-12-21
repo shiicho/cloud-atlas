@@ -80,23 +80,20 @@ cd ~/02-inventory
 # 获取 SSH 公钥
 PUBLIC_KEY=$(cat ~/.ssh/id_ed25519.pub)
 
-# 部署共享资源 + 节点（智能部署：不存在则创建，已存在则跳过）
-aws cloudformation deploy \
-  --stack-name ansible-managed-common \
-  --template-file cfn/common.yaml \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --no-fail-on-empty-changeset
-
+# 部署 Managed Nodes（每个节点自包含 IAM/SG/Instance）
 for node in web-1 db-1; do
   aws cloudformation deploy \
     --stack-name ansible-${node} \
     --template-file cfn/${node}.yaml \
     --parameter-overrides PublicKey="$PUBLIC_KEY" \
+    --capabilities CAPABILITY_NAMED_IAM \
     --no-fail-on-empty-changeset
 done
 
 # 验证部署状态
-aws cloudformation describe-stacks --query "Stacks[?starts_with(StackName,'ansible-')].{Name:StackName,Status:StackStatus}" --output table
+aws cloudformation describe-stacks \
+  --query "Stacks[?starts_with(StackName,'ansible-')].{Name:StackName,Status:StackStatus}" \
+  --output table
 ```
 
 ### 1.4 验证 DNS 解析

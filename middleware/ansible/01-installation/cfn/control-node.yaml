@@ -113,59 +113,16 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
+        # SSM for Session Manager access
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        - arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess
+        # CloudFormation for deploying managed nodes
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+        # EC2 for creating instances
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+        # Route53 for DNS records
         - arn:aws:iam::aws:policy/AmazonRoute53FullAccess
-      Policies:
-        - PolicyName: AnsibleCoursePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - cloudformation:*
-                Resource: !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ansible-*/*
-              - Effect: Allow
-                Action:
-                  - cloudformation:ListStacks
-                  - cloudformation:DescribeStacks
-                  - cloudformation:ValidateTemplate
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - ec2:RunInstances
-                  - ec2:TerminateInstances
-                  - ec2:CreateSecurityGroup
-                  - ec2:DeleteSecurityGroup
-                  - ec2:AuthorizeSecurityGroupIngress
-                  - ec2:AuthorizeSecurityGroupEgress
-                  - ec2:RevokeSecurityGroupIngress
-                  - ec2:RevokeSecurityGroupEgress
-                  - ec2:CreateTags
-                  - ec2:DescribeInstances
-                  - ec2:DescribeImages
-                  - ec2:DescribeSecurityGroups
-                  - ec2:DescribeSubnets
-                  - ec2:DescribeVpcs
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - iam:CreateRole
-                  - iam:DeleteRole
-                  - iam:PutRolePolicy
-                  - iam:DeleteRolePolicy
-                  - iam:AttachRolePolicy
-                  - iam:DetachRolePolicy
-                  - iam:CreateInstanceProfile
-                  - iam:DeleteInstanceProfile
-                  - iam:AddRoleToInstanceProfile
-                  - iam:RemoveRoleFromInstanceProfile
-                  - iam:PassRole
-                  - iam:GetRole
-                  - iam:GetInstanceProfile
-                Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/ansible-*
-                  - !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/ansible-*
+        # IAM for creating roles/instance profiles
+        - arn:aws:iam::aws:policy/IAMFullAccess
       Tags:
         - Key: Name
           Value: ansible-control-role

@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   Ansible Course - db-1 (Amazon Linux 2023 - dbserver)
+  Self-contained: includes IAM Role, Security Group, Instance
 
 Parameters:
   InstanceType:
@@ -17,6 +18,52 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
 
 Resources:
+  # IAM Role for this node
+  NodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ansible-db-1-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: ansible-db-1-profile
+      Roles:
+        - !Ref NodeRole
+
+  # Security Group for this node
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for db-1
+      GroupName: ansible-db-1-sg
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ansible-db-1-sg
+
+  # EC2 Instance
   Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -26,9 +73,9 @@ Resources:
         - DeviceIndex: 0
           SubnetId: !ImportValue ansible-course-subnet-id
           GroupSet:
-            - !ImportValue ansible-managed-sg-id
+            - !Ref NodeSecurityGroup
           AssociatePublicIpAddress: true
-      IamInstanceProfile: !ImportValue ansible-managed-profile
+      IamInstanceProfile: !Ref NodeInstanceProfile
       Tags:
         - Key: Name
           Value: db-1
@@ -49,6 +96,7 @@ Resources:
           chown -R ansible:ansible /home/ansible/.ssh
           dnf install -y python3
 
+  # DNS Record
   DnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -65,7 +113,7 @@ Outputs:
     Value: db-1.ans.local
 
   PublicIp:
-    Description: Public IP (for HTTP access)
+    Description: Public IP
     Value: !GetAtt Instance.PublicIp
 
   PrivateIp:

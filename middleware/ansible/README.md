@@ -224,11 +224,10 @@ cfn/
 学完课程后，删除所有 AWS 资源以避免产生费用：
 
 ```bash
-# 删除 Managed Nodes (按需)
+# 删除 Managed Nodes（每个节点独立 stack，可单独删除）
 aws cloudformation delete-stack --stack-name ansible-app-1
 aws cloudformation delete-stack --stack-name ansible-db-1
 aws cloudformation delete-stack --stack-name ansible-web-1
-aws cloudformation delete-stack --stack-name ansible-managed-common
 
 # 等待节点删除完成
 aws cloudformation wait stack-delete-complete --stack-name ansible-web-1

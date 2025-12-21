@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   Ansible Course - web-1 (Amazon Linux 2023 - webserver)
+  Self-contained: includes IAM Role, Security Group, Instance
 
 Parameters:
   InstanceType:
@@ -17,6 +18,56 @@ Parameters:
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
 
 Resources:
+  # IAM Role for this node
+  NodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ansible-web-1-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: ansible-web-1-profile
+      Roles:
+        - !Ref NodeRole
+
+  # Security Group for this node
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for web-1
+      GroupName: ansible-web-1-sg
+      VpcId: !ImportValue ansible-course-vpc-id
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ansible-web-1-sg
+
+  # EC2 Instance
   Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -26,9 +77,9 @@ Resources:
         - DeviceIndex: 0
           SubnetId: !ImportValue ansible-course-subnet-id
           GroupSet:
-            - !ImportValue ansible-managed-sg-id
+            - !Ref NodeSecurityGroup
           AssociatePublicIpAddress: true
-      IamInstanceProfile: !ImportValue ansible-managed-profile
+      IamInstanceProfile: !Ref NodeInstanceProfile
       Tags:
         - Key: Name
           Value: web-1
@@ -49,6 +100,7 @@ Resources:
           chown -R ansible:ansible /home/ansible/.ssh
           dnf install -y python3
 
+  # DNS Record
   DnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
