@@ -194,10 +194,15 @@ touch ~/.ansible.cfg
 ansible --version | grep config
 # → config file = /home/ansible/.ansible.cfg
 
-# ② 进入有 ansible.cfg 的目录（覆盖用户级）
+# ② 在当前目录创建 ansible.cfg（覆盖用户级）
+touch ~/ansible.cfg    # 在 home 目录时，等同于 ./ansible.cfg
+ansible --version | grep config
+# → config file = /home/ansible/ansible.cfg
+
+# ② 进入有 ansible.cfg 的项目目录（同样是当前目录配置）
 cd ~/01-installation
 ansible --version | grep config
-# → config file = /home/ansible/01-installation/ansible.cfg
+# → config file = /home/ansible/repo/middleware/ansible/01-installation/ansible.cfg
 
 # ① 使用环境变量（最高优先级，覆盖一切）
 touch /tmp/my-custom.cfg
@@ -207,11 +212,11 @@ ansible --version | grep config
 
 # 清理测试文件
 unset ANSIBLE_CONFIG
-rm -f ~/.ansible.cfg /tmp/my-custom.cfg
+rm -f ~/.ansible.cfg ~/ansible.cfg /tmp/my-custom.cfg
 sudo rm -rf /etc/ansible
 ```
 
-> 💡 **要点**：高优先级的配置会覆盖低优先级的配置。
+> 💡 **要点**：`./ansible.cfg` 指「当前目录下的 ansible.cfg」，所以在 `~` 目录时 `~/ansible.cfg` 就是当前目录配置。
 
 **查看本课配置内容**：
 
