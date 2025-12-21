@@ -140,7 +140,7 @@ ansible-playbook 07-multi-os.yaml --check --diff
 
 ```bash
 # 查看主机变量
-ansible-inventory --host al2023-1.ans.local --yaml
+ansible-inventory --host web-1.ans.local --yaml
 
 # 验证变量加载
 ansible all -m debug -a "var=hostvars[inventory_hostname]"

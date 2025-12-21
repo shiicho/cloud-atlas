@@ -18,8 +18,8 @@
 ## 准备环境
 
 ```bash
-# 1. 切换到 ansible 用户（如果刚登录 Control Node）
-sudo su - ansible
+# 1. 切换到 ansible 用户（如果当前不是 ansible 用户）
+[ "$(whoami)" != "ansible" ] && sudo su - ansible
 
 # 2. 更新课程仓库（获取最新内容）
 cd ~/repo && git pull
@@ -52,7 +52,7 @@ ansible <目标> -m <模块> -a "<参数>" [选项]
 
 | 部分 | 说明 | 示例 |
 |------|------|------|
-| `<目标>` | 主机或组 | `all`, `webservers`, `al2023-1.ans.local` |
+| `<目标>` | 主机或组 | `all`, `webservers`, `web-1.ans.local` |
 | `-m <模块>` | 使用的模块 | `-m ping`, `-m shell`, `-m copy` |
 | `-a "<参数>"` | 模块参数 | `-a "name=httpd state=present"` |
 | `-b` | 使用 sudo | `ansible all -b -m dnf ...` |
@@ -294,7 +294,7 @@ bash 01-setup-facts.sh
 ```bash
 # 正确做法
 export ANSIBLE_LOG_PATH=~/ansible-$(date +%Y%m%d).log
-ansible webservers --limit al2023-1.ans.local -m shell -a "uptime"
+ansible webservers --limit web-1.ans.local -m shell -a "uptime"
 ```
 
 > 📋 **面试题**：「アドホックコマンドはいつ使いますか？」

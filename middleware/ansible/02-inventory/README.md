@@ -19,8 +19,8 @@
 ## 准备环境
 
 ```bash
-# 1. 切换到 ansible 用户（如果刚登录 Control Node）
-sudo su - ansible
+# 1. 切换到 ansible 用户（如果当前不是 ansible 用户）
+[ "$(whoami)" != "ansible" ] && sudo su - ansible
 
 # 2. 更新课程仓库（获取最新内容）
 cd ~/repo && git pull
@@ -47,11 +47,11 @@ cd ~/02-inventory
 │   │   │ ans.local   │     ┌─────────────────────────┐   │    │
 │   │   │ (Control)   │     │ ans.local               │   │    │
 │   │   └──────┬──────┘     │ ├─ control.ans.local    │   │    │
-│   │          │            │ ├─ al2023-1.ans.local   │   │    │
-│   │          │ SSH        │ └─ al2023-2.ans.local   │   │    │
+│   │          │            │ ├─ web-1.ans.local   │   │    │
+│   │          │ SSH        │ └─ db-1.ans.local   │   │    │
 │   │          ▼            └─────────────────────────┘   │    │
 │   │   ┌─────────────┐  ┌─────────────┐                  │    │
-│   │   │ al2023-1    │  │ al2023-2    │  ← 本课部署      │    │
+│   │   │ web-1    │  │ db-1    │  ← 本课部署      │    │
 │   │   │ (webserver) │  │ (dbserver)  │                  │    │
 │   │   └─────────────┘  └─────────────┘                  │    │
 │   │                                                      │    │
@@ -96,8 +96,8 @@ aws cloudformation wait stack-create-complete --stack-name ansible-lesson-02
 CloudFormation 自动创建 Route 53 DNS 记录：
 
 ```bash
-nslookup al2023-1.ans.local
-nslookup al2023-2.ans.local
+nslookup web-1.ans.local
+nslookup db-1.ans.local
 ```
 
 ---
@@ -112,10 +112,10 @@ cat inventory/hosts.ini
 
 ```ini
 [webservers]
-al2023-1.ans.local
+web-1.ans.local
 
 [dbservers]
-al2023-2.ans.local
+db-1.ans.local
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3
@@ -129,11 +129,11 @@ ansible all -m ping
 
 **默认输出**（多行格式）：
 ```
-al2023-1.ans.local | SUCCESS => {
+web-1.ans.local | SUCCESS => {
     "changed": false,
     "ping": "pong"
 }
-al2023-2.ans.local | SUCCESS => {
+db-1.ans.local | SUCCESS => {
     "changed": false,
     "ping": "pong"
 }
@@ -144,8 +144,8 @@ al2023-2.ans.local | SUCCESS => {
 ansible all -m ping -o
 ```
 ```
-al2023-1.ans.local | SUCCESS => {"changed": false,"ping": "pong"}
-al2023-2.ans.local | SUCCESS => {"changed": false,"ping": "pong"}
+web-1.ans.local | SUCCESS => {"changed": false,"ping": "pong"}
+db-1.ans.local | SUCCESS => {"changed": false,"ping": "pong"}
 ```
 
 如果成功，你已完成 Ansible 的第一次远程连接！
@@ -169,10 +169,10 @@ ansible dbservers -m ping
 ```ini
 # 主机列表
 [webservers]
-al2023-1.ans.local
+web-1.ans.local
 
 [dbservers]
-al2023-2.ans.local
+db-1.ans.local
 
 # 组变量
 [webservers:vars]
@@ -241,10 +241,10 @@ db_host = config["db_host"]       # 不同环境不同值
 
 ```ini
 [webservers]
-al2023-1.ans.local
+web-1.ans.local
 
 [dbservers]
-al2023-2.ans.local
+db-1.ans.local
 
 [webservers:vars]
 http_port=80
@@ -266,7 +266,7 @@ inventory/
 │   ├── webservers      # webservers 组
 │   └── dbservers       # dbservers 组
 └── host_vars/          # 主机变量（独立文件）
-    └── al2023-1.ans.local
+    └── web-1.ans.local
 ```
 
 > 💡 变量文件可以是 YAML 格式（`.yaml`）或无扩展名的 key=value 格式。
@@ -308,7 +308,7 @@ ansible-inventory --list
 ansible-inventory --graph
 
 # 查看特定主机变量
-ansible-inventory --host al2023-1.ans.local
+ansible-inventory --host web-1.ans.local
 
 # 使用不同的 inventory
 ansible -i inventory/hosts.ini all -m ping

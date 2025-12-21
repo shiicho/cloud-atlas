@@ -53,11 +53,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -70,9 +70,12 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref AWXSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref AWXSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref AWXNodeInstanceProfile
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -110,9 +113,12 @@ Resources:
     Properties:
       InstanceType: t3.micro
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref AWXSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref AWXSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref AWXNodeInstanceProfile
       Tags:
         - Key: Name
@@ -162,3 +168,11 @@ Outputs:
   TargetDns:
     Description: Target Node DNS Name
     Value: awx-target.ans.local
+
+  AWXPublicIp:
+    Description: AWX Server Public IP (for HTTP access)
+    Value: !GetAtt AWXNode.PublicIp
+
+  TargetPublicIp:
+    Description: Target Node Public IP (for HTTP access)
+    Value: !GetAtt TargetNode.PublicIp

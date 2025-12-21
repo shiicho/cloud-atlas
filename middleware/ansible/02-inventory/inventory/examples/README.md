@@ -48,12 +48,13 @@ ansible -i 02-with-groups dbservers -m ping
 
 **测试命令**:
 ```bash
-ansible -i 03-host-ranges amazon_linux --list-hosts
+ansible -i 03-host-ranges webservers --list-hosts
+ansible -i 03-host-ranges dbservers --list-hosts
 ```
 
 **扩展说明**:
-- `al2023-[1:2].ans.local` → 扩展为 2 台主机
-- `al2023-[1:10].ans.local` → 可扩展到 10 台主机
+- `web-[1:5].ans.local` → 扩展为 5 台 webservers
+- `db-[1:3].ans.local` → 扩展为 3 台 dbservers
 - `server-[a:z].example.com` → 也支持字母范围
 
 ---
@@ -96,9 +97,9 @@ ansible-inventory -i 05-children-groups --graph
 ```
 production
 ├── webservers
-│   └── al2023-1.ans.local
+│   └── web-1.ans.local
 └── dbservers
-    └── al2023-2.ans.local
+    └── db-1.ans.local
 ```
 
 ---
@@ -133,8 +134,8 @@ ansible -i 06-control-local all --list-hosts
 ## 实验环境 / Lab Environment
 
 本示例使用的主机名基于 Route 53 Private Hosted Zone:
-- `al2023-1.ans.local` (webserver)
-- `al2023-2.ans.local` (dbserver)
+- `web-1.ans.local` (webserver)
+- `db-1.ans.local` (dbserver)
 - `control.ans.local` (control node)
 
 ## 进一步学习 / Further Learning

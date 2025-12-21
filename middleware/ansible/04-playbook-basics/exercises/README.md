@@ -95,7 +95,7 @@ ansible-playbook 05-multi-play.yaml
 ansible all -a "cat /etc/motd"
 
 # 检查 Web 服务
-curl http://al2023-1.ans.local/
+curl http://web-1.ans.local/
 
 # 查看 handler 日志
 ansible all -a "cat /var/log/ansible/motd_changes.log" --become

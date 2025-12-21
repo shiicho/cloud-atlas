@@ -1,6 +1,11 @@
 # 03 - Host Ranges: Range notation
-[amazon_linux]
-al2023-[1:2].ans.local
+# Note: This is a conceptual example showing range syntax
+# In our lab, we only have web-1 and db-1, but this shows how to scale
+[webservers]
+web-[1:5].ans.local
+
+[dbservers]
+db-[1:3].ans.local
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

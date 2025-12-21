@@ -20,8 +20,8 @@
 ## 准备环境
 
 ```bash
-# 1. 切换到 ansible 用户（如果刚登录 Control Node）
-sudo su - ansible
+# 1. 切换到 ansible 用户（如果当前不是 ansible 用户）
+[ "$(whoami)" != "ansible" ] && sudo su - ansible
 
 # 2. 更新课程仓库（获取最新内容）
 cd ~/repo && git pull
@@ -86,8 +86,8 @@ Ansible 内置的变量，无需定义即可使用：
 
 | 变量 | 说明 | 示例值 |
 |------|------|--------|
-| `inventory_hostname` | Inventory 中定义的主机名 | `al2023-1.ans.local` |
-| `inventory_hostname_short` | 短主机名（不含域名） | `al2023-1` |
+| `inventory_hostname` | Inventory 中定义的主机名 | `web-1.ans.local` |
+| `inventory_hostname_short` | 短主机名（不含域名） | `web-1` |
 | `group_names` | 当前主机所属的组列表 | `['webservers', 'production']` |
 | `groups` | 所有组及其成员 | `{'webservers': ['node1', 'node2']}` |
 | `hostvars` | 访问其他主机的变量 | `hostvars['node2'].ansible_host` |

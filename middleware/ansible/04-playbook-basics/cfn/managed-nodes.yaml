@@ -51,7 +51,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 10.0.0.0/16
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -64,20 +68,23 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref ManagedNodeSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref ManagedNodeSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: al2023-1
+          Value: web-1
         - Key: Role
           Value: webserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname al2023-1
+          hostnamectl set-hostname web-1
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -93,20 +100,23 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref ManagedNodeSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref ManagedNodeSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref ManagedNodeInstanceProfile
       Tags:
         - Key: Name
-          Value: al2023-2
+          Value: db-1
         - Key: Role
           Value: dbserver
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          hostnamectl set-hostname al2023-2
+          hostnamectl set-hostname db-1
           useradd -m ansible
           echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible
           chmod 440 /etc/sudoers.d/ansible
@@ -121,7 +131,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !ImportValue ansible-course-hosted-zone-id
-      Name: al2023-1.ans.local
+      Name: web-1.ans.local
       Type: A
       TTL: 60
       ResourceRecords:
@@ -131,7 +141,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !ImportValue ansible-course-hosted-zone-id
-      Name: al2023-2.ans.local
+      Name: db-1.ans.local
       Type: A
       TTL: 60
       ResourceRecords:
@@ -140,8 +150,16 @@ Resources:
 Outputs:
   Node1Dns:
     Description: Node 1 DNS Name
-    Value: al2023-1.ans.local
+    Value: web-1.ans.local
 
   Node2Dns:
     Description: Node 2 DNS Name
-    Value: al2023-2.ans.local
+    Value: db-1.ans.local
+
+  Node1PublicIp:
+    Description: Node 1 Public IP (for HTTP access)
+    Value: !GetAtt ManagedNode1.PublicIp
+
+  Node2PublicIp:
+    Description: Node 2 Public IP (for HTTP access)
+    Value: !GetAtt ManagedNode2.PublicIp

@@ -53,7 +53,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          SourceSecurityGroupId: !ImportValue ansible-course-sg-id
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 10051
           ToPort: 10051
@@ -74,9 +78,12 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref ZabbixSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref ZabbixSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -108,9 +115,12 @@ Resources:
     Properties:
       InstanceType: t3.micro
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref ZabbixSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref ZabbixSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
       Tags:
         - Key: Name
@@ -138,9 +148,12 @@ Resources:
     Properties:
       InstanceType: t3.micro
       ImageId: !Ref LatestAmiId
-      SubnetId: !ImportValue ansible-course-subnet-id
-      SecurityGroupIds:
-        - !Ref ZabbixSecurityGroup
+      NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !ImportValue ansible-course-subnet-id
+          GroupSet:
+            - !Ref ZabbixSecurityGroup
+          AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref ZabbixNodeInstanceProfile
       Tags:
         - Key: Name
@@ -204,3 +217,15 @@ Outputs:
   Target2Dns:
     Description: Target 2 DNS Name
     Value: target-2.ans.local
+
+  ZabbixPublicIp:
+    Description: Zabbix Server Public IP (for HTTP access)
+    Value: !GetAtt ZabbixServer.PublicIp
+
+  Target1PublicIp:
+    Description: Target 1 Public IP (for HTTP access)
+    Value: !GetAtt TargetNode1.PublicIp
+
+  Target2PublicIp:
+    Description: Target 2 Public IP (for HTTP access)
+    Value: !GetAtt TargetNode2.PublicIp

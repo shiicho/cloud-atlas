@@ -1,9 +1,9 @@
 # 04 - Group Variables: Variables per group
 [webservers]
-al2023-1.ans.local
+web-1.ans.local
 
 [dbservers]
-al2023-2.ans.local
+db-1.ans.local
 
 [webservers:vars]
 http_port=80

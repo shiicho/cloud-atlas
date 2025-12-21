@@ -52,8 +52,8 @@ Ansible 核心理念是 **Agentless**（无需安装 Ansible 代理）。传统�
 ## 准备环境
 
 ```bash
-# 1. 切换到 ansible 用户（如果刚登录 Control Node）
-sudo su - ansible
+# 1. 切换到 ansible 用户（如果当前不是 ansible 用户）
+[ "$(whoami)" != "ansible" ] && sudo su - ansible
 
 # 2. 更新课程仓库（获取最新内容）
 cd ~/repo && git pull

@@ -19,8 +19,8 @@
 ## 准备环境
 
 ```bash
-# 1. 切换到 ansible 用户（如果刚登录 Control Node）
-sudo su - ansible
+# 1. 切换到 ansible 用户（如果当前不是 ansible 用户）
+[ "$(whoami)" != "ansible" ] && sudo su - ansible
 
 # 2. 更新课程仓库（获取最新内容）
 cd ~/repo && git pull
@@ -48,7 +48,7 @@ packages:
 
 # 嵌套
 server:
-  name: al2023-1
+  name: web-1
   ports: [80, 443]
 
 # 多行字符串
@@ -219,7 +219,7 @@ ansible-playbook exercises/04-webserver-deploy.yaml --check --diff
 ansible-playbook exercises/04-webserver-deploy.yaml
 
 # 验证结果
-curl http://al2023-1.ans.local/
+curl http://web-1.ans.local/
 ```
 
 **预期输出**：

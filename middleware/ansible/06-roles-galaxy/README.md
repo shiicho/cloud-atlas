@@ -20,8 +20,8 @@
 ## 准备环境
 
 ```bash
-# 1. 切换到 ansible 用户（如果刚登录 Control Node）
-sudo su - ansible
+# 1. 切换到 ansible 用户（如果当前不是 ansible 用户）
+[ "$(whoami)" != "ansible" ] && sudo su - ansible
 
 # 2. 更新课程仓库（获取最新内容）
 cd ~/repo && git pull
@@ -173,7 +173,7 @@ ansible-playbook site.yaml --check --diff
 ansible-playbook site.yaml
 
 # 验证结果
-curl http://al2023-1.ans.local/
+curl http://web-1.ans.local/
 ```
 
 ---

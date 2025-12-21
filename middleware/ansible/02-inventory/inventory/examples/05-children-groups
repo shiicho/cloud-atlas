@@ -1,9 +1,9 @@
 # 05 - Children Groups: Hierarchical grouping
 [webservers]
-al2023-1.ans.local
+web-1.ans.local
 
 [dbservers]
-al2023-2.ans.local
+db-1.ans.local
 
 [production:children]
 webservers
