@@ -246,8 +246,4 @@ Outputs:
   # 环境配置摘要
   ConfigSummary:
     Description: Environment configuration summary
-    Value: !Sub |
-      Environment: ${Environment}
-      Instance Type: ${!FindInMap [EnvironmentConfig, ${Environment}, InstanceType]}
-      Volume Size: ${!FindInMap [EnvironmentConfig, ${Environment}, VolumeSize]} GB
-      Has EIP: ${!If [IsProd, Yes, No]}
+    Value: !Sub 'Environment: ${Environment}, Region: ${AWS::Region}'

@@ -832,10 +832,10 @@ A: ライフサイクル別にレイヤー分離（Network / Foundations / Appli
 - 资源导入（将现有资源纳入 CloudFormation 管理）
 - Stack Refactoring（2025 新功能）
 
---> [05 - Drift 检测与资源导入](../05-drift-import/)
+-> [05 - Drift 检测与资源导入](../05-drift-import/)
 
 ---
 
 ## 系列导航
 
-[<-- 03 - 现代工具](../03-modern-tools/) | [Home](../) | [05 - Drift 检测 -->](../05-drift-import/)
+[<- 03 - 现代工具](../03-modern-tools/) | [Home](../) | [05 - Drift 检测 ->](../05-drift-import/)
