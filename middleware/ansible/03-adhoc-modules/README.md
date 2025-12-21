@@ -12,6 +12,7 @@
 2. 核心模块：setup, file, copy, command, shell, dnf, service, user
 3. 幂等性（Idempotency）
 4. Check mode (-C) 和 Diff mode (-D)
+5. 查阅模块文档（ansible-doc）
 
 ---
 
@@ -64,17 +65,74 @@ ansible <目标> -m <模块> -a "<参数>" [选项]
 
 ## Step 2 — 核心模块
 
-### 2.1 setup - 收集系统信息
+### 2.1 setup - 收集系统信息（Facts）
+
+**什么是 Facts？**
+
+Facts = Ansible 自动收集的服务器"体检报告"。每次运行 Playbook 时，Ansible 会先扫描目标服务器，收集 OS、CPU、内存、IP 等信息。
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Ansible 运行时                                              │
+│                                                              │
+│  1. 连接到 Managed Node                                      │
+│  2. 执行 setup 模块 → 收集 Facts（自动）                      │
+│  3. 执行你的 Tasks                                           │
+│                                                              │
+│  Facts 示例：                                                │
+│  ├─ ansible_distribution: "Amazon"                          │
+│  ├─ ansible_os_family: "RedHat"                             │
+│  ├─ ansible_memory_mb.real.total: 983                       │
+│  ├─ ansible_processor_cores: 2                              │
+│  └─ ansible_default_ipv4.address: "10.0.1.50"              │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ```bash
 # 查看所有 Facts（输出很长，建议用 filter）
 ansible all -m setup
+
 # 过滤特定信息
 ansible all -m setup -a "filter=ansible_distribution*"
 ansible all -m setup -a "filter=ansible_memory_mb"
+ansible all -m setup -a "filter=ansible_default_ipv4"
 ```
 
-> 💡 `setup` 模块收集的信息称为 **Facts**，可在 Playbook 中使用。
+**生产环境常见用途**：
+
+| 场景 | 使用的 Fact | 说明 |
+|------|-------------|------|
+| **Multi-OS 支持** | `ansible_os_family` | RedHat 用 dnf，Debian 用 apt |
+| **资源检查** | `ansible_memory_mb` | 内存 < 2GB 时跳过某些服务 |
+| **网络配置** | `ansible_default_ipv4` | 动态生成配置文件中的 IP |
+| **巡检报告** | 多个 Facts | 批量收集服务器信息 |
+
+<details>
+<summary>💡 实战示例：Multi-OS Playbook（点击展开）</summary>
+
+```yaml
+# 同一个 Playbook 支持 Amazon Linux 和 Ubuntu
+- name: Install web server
+  hosts: all
+  tasks:
+    - name: Install on RedHat/Amazon
+      dnf:
+        name: httpd
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Install on Debian/Ubuntu
+      apt:
+        name: apache2
+        state: present
+      when: ansible_os_family == "Debian"
+```
+
+Ansible 自动根据 `ansible_os_family` 选择正确的包管理器。
+
+</details>
+
+> 💡 **记住**：Facts 让你写一套 Playbook，自动适配不同环境。
 
 ### 2.2 command - 执行命令（默认模块）
 
@@ -261,6 +319,74 @@ ansible all -m copy -a "content='new' dest=/tmp/test.txt" -C -D
 
 ---
 
+## Step 5 — 查阅模块文档
+
+掌握查文档的能力比记住所有模块更重要。Ansible 有 3000+ 模块，不可能全记住。
+
+### 5.1 ansible-doc 命令（离线）
+
+```bash
+# 列出所有可用模块
+ansible-doc -l | head -20
+
+# 搜索特定模块
+ansible-doc -l | grep copy
+
+# 查看模块详细文档
+ansible-doc copy
+
+# 只看参数摘要（snippet）
+ansible-doc -s copy
+
+# 查看模块示例
+ansible-doc copy | grep -A 50 "EXAMPLES"
+```
+
+**输出说明**：
+
+```
+> ANSIBLE.BUILTIN.COPY    (module)
+
+        The `copy' module copies a file from the local or remote
+        machine to a location on the remote machine.
+
+OPTIONS (= is mandatory):           ← = 表示必填参数
+        - backup
+            Create a backup file...
+            [Default: no]
+            type: bool
+
+        = dest                       ← 必填：目标路径
+            Remote absolute path...
+```
+
+### 5.2 在线文档
+
+| 资源 | 链接 | 用途 |
+|------|------|------|
+| **Module Index** | [docs.ansible.com/ansible/latest/collections](https://docs.ansible.com/ansible/latest/collections/index_module.html) | 按字母查找模块 |
+| **Builtin Modules** | [ansible.builtin](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html) | 核心模块（无需安装） |
+| **Playbook Keywords** | [playbooks_keywords](https://docs.ansible.com/ansible/latest/reference_appendices/playbooks_keywords.html) | become, when, loop 等 |
+
+### 5.3 debug 模块
+
+`debug` 是调试利器，用于打印变量值：
+
+```bash
+# 打印变量值
+ansible all -m debug -a "var=ansible_distribution"
+
+# 打印自定义消息
+ansible all -m debug -a "msg='OS is {{ ansible_distribution }}'"
+
+# 配合 group_vars 验证变量
+ansible webservers -m debug -a "var=http_port"
+```
+
+> 💡 **学习建议**：遇到新模块时，先 `ansible-doc -s <module>` 看参数，再试一个最小示例。
+
+---
+
 ## 实战练习
 
 本课提供 6 个练习脚本，位于 `exercises/`：
@@ -314,6 +440,13 @@ ansible webservers --limit web-1.ans.local -m shell -a "uptime"
 | dnf | 包管理 | `-m dnf -a "name=.. state=.."` |
 | service | 服务管理 | `-m service -a "name=.. state=.."` |
 | user | 用户管理 | `-m user -a "name=.. state=.."` |
+| debug | 打印变量/消息 | `-m debug -a "var=..."` |
+
+| 命令 | 用途 |
+|------|------|
+| `ansible-doc -l` | 列出所有模块 |
+| `ansible-doc <module>` | 查看模块文档 |
+| `ansible-doc -s <module>` | 查看参数摘要 |
 
 ---
 

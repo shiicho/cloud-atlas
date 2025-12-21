@@ -216,29 +216,99 @@ ansible-inventory -i 05-children-groups --graph
 
 ## Step 4 — host_vars 和 group_vars
 
-### 为什么需要变量？
+### Ansible 设计哲学：分离「谁」和「做什么」
 
-变量就像编程中的 **配置文件** 或 **环境变量**：
+**核心原则**：Inventory 定义「谁 + 他们的配置」，Playbook 定义「做什么」。
 
-```python
-# 硬编码（不好）
-port = 80
-db_host = "192.168.1.100"
-
-# 使用变量（好）
-port = config["http_port"]        # 从配置读取
-db_host = config["db_host"]       # 不同环境不同值
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Ansible 的分离设计                           │
+├────────────────────────────┬────────────────────────────────────┤
+│     Inventory 文件          │         Playbook 文件              │
+│     (hosts.ini)            │         (site.yaml)                │
+├────────────────────────────┼────────────────────────────────────┤
+│  WHO:  管理哪些服务器        │  WHAT: 执行什么任务                │
+│  WHERE: 服务器地址/分组      │  HOW:  怎么执行                    │
+│  CONFIG: 每组/每台的配置值   │  LOGIC: 通用的业务逻辑             │
+├────────────────────────────┼────────────────────────────────────┤
+│  ✅ 每个环境不同            │  ✅ 所有环境相同                    │
+│  ✅ 运维人员维护            │  ✅ 开发/架构师编写                 │
+└────────────────────────────┴────────────────────────────────────┘
 ```
 
-**Ansible 变量的作用**：把「服务器特定的配置」和「通用的操作逻辑」分离。
+### 为什么变量放在 Inventory 而不是 Playbook？
 
-| 变量类型 | 作用 | 例子 |
-|----------|------|------|
-| `group_vars/all` | 所有服务器共用 | Python 路径、管理员邮箱 |
-| `group_vars/webservers` | Web 服务器专用 | HTTP 端口、网站根目录 |
-| `host_vars/server1` | 单台服务器专用 | 该服务器的特殊端口 |
+**反例：硬编码在 Playbook 中**（❌ 不推荐）
 
-> 💡 现在只需理解「变量 = 可复用的配置值」。后续课程会实际使用。
+```yaml
+# site.yaml - 硬编码版本
+- name: Deploy web server
+  hosts: webservers
+  tasks:
+    - name: Configure nginx
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      vars:
+        http_port: 80           # ❌ 硬编码
+        max_connections: 1000   # ❌ 生产环境需要不同值怎么办？
+```
+
+问题：开发环境用 80 端口，生产环境用 8080 怎么办？复制一份 Playbook 改数字？
+
+**正确做法：配置放 Inventory，逻辑放 Playbook**（✅ 推荐）
+
+```ini
+# inventory/dev/hosts.ini
+[webservers]
+dev-web-1.local
+
+[webservers:vars]
+http_port=80
+max_connections=100
+```
+
+```ini
+# inventory/prod/hosts.ini
+[webservers]
+prod-web-1.local
+prod-web-2.local
+
+[webservers:vars]
+http_port=8080
+max_connections=10000
+```
+
+```yaml
+# site.yaml - 同一个 Playbook，不改任何代码
+- name: Deploy web server
+  hosts: webservers
+  tasks:
+    - name: Configure nginx
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      # http_port 和 max_connections 自动从 Inventory 读取
+```
+
+```bash
+# 执行时选择环境
+ansible-playbook -i inventory/dev  site.yaml   # 用 dev 的配置
+ansible-playbook -i inventory/prod site.yaml   # 用 prod 的配置
+```
+
+**效果**：一套 Playbook 代码，多套环境配置，零修改切换。
+
+### 变量类型和作用域
+
+| 变量位置 | 作用范围 | 使用场景 |
+|----------|----------|----------|
+| `group_vars/all` | 所有服务器 | Python 路径、NTP 服务器、管理员邮箱 |
+| `group_vars/webservers` | webservers 组 | HTTP 端口、DocumentRoot |
+| `group_vars/dbservers` | dbservers 组 | DB 端口、数据目录 |
+| `host_vars/web-1` | 仅 web-1 | 该服务器的特殊配置 |
+
+> 💡 **记住**：Inventory 是「数据」，Playbook 是「代码」。数据和代码分离，才能复用。
 
 ### 4.1 定义变量的两种方式
 
