@@ -25,7 +25,7 @@
 ### 1.1 进入示例代码目录
 
 ```bash
-cd ~/terraform-examples/lesson-10-drift/code/drift-detect
+cd ~/cloud-atlas/iac/terraform/10-drift/code/drift-detect
 ls -la
 ```
 
@@ -235,7 +235,7 @@ terraform apply -refresh-only
 进入 state-operations 目录：
 
 ```bash
-cd ~/terraform-examples/lesson-10-drift/code/state-operations
+cd ~/cloud-atlas/iac/terraform/10-drift/code/state-operations
 terraform init && terraform apply -auto-approve
 ```
 
@@ -354,7 +354,7 @@ terraform apply
 进入 moved-blocks 目录：
 
 ```bash
-cd ~/terraform-examples/lesson-10-drift/code/moved-blocks
+cd ~/cloud-atlas/iac/terraform/10-drift/code/moved-blocks
 terraform init && terraform apply -auto-approve
 ```
 
@@ -429,7 +429,7 @@ Plan: 0 to add, 0 to change, 0 to destroy.
 ### 6.1 运行注入脚本
 
 ```bash
-cd ~/terraform-examples/lesson-10-drift/code/drift-detect
+cd ~/cloud-atlas/iac/terraform/10-drift/code/drift-detect
 
 # 确保有资源存在
 terraform apply -auto-approve
@@ -477,15 +477,15 @@ terraform plan
 
 ```bash
 # 清理 drift-detect
-cd ~/terraform-examples/lesson-10-drift/code/drift-detect
+cd ~/cloud-atlas/iac/terraform/10-drift/code/drift-detect
 terraform destroy -auto-approve
 
 # 清理 state-operations
-cd ~/terraform-examples/lesson-10-drift/code/state-operations
+cd ~/cloud-atlas/iac/terraform/10-drift/code/state-operations
 terraform destroy -auto-approve
 
 # 清理 moved-blocks
-cd ~/terraform-examples/lesson-10-drift/code/moved-blocks
+cd ~/cloud-atlas/iac/terraform/10-drift/code/moved-blocks
 terraform destroy -auto-approve
 ```
 

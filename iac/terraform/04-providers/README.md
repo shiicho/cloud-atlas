@@ -132,7 +132,7 @@ required_providers {
 
 ### 3.2 版本约束流程
 
-![terraform init 流程](./img/init-flow.png)
+![terraform init 流程](images/init-flow.png)
 
 ### 3.3 锁文件的 Git 策略
 
