@@ -1,8 +1,8 @@
 # 02 · Agent 安装与主机管理（Agent & Host Management）
 
-> **目标**：配置 Zabbix Agent 2，在 Web UI 注册主机
-> **前置**：[01 · Server 初始化](../01-server-setup/)
-> **时间**：20-25 分钟
+> **目标**：配置 Zabbix Agent 2，在 Web UI 注册主机  
+> **前置**：[01 · Server 初始化](../01-server-setup/)  
+> **时间**：20-25 分钟  
 > **实战项目**：配置 Active Agent，创建 Host Groups 和 Tags
 
 ## 将学到的内容

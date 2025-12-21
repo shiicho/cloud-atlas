@@ -1,8 +1,8 @@
 # 06 · State Manager 状态管理器（Ensure + Check 双关联）
 
-> **目标**：用 **状态管理器（State Manager）+ AWS-RunShellScript（内联脚本）** 完成一次完整闭环：**创建关联 → 目标选择 → 调度 → 合规与执行日志**。
-> **前置**：已完成 [01](../01-cfn-deploy/)、[02](../02-session-manager/)、[03](../03-run-command/)；实例为受管实例。
-> **区域**：ap-northeast-1（或任意已启用 SSM 的区域）
+> **目标**：用 **状态管理器（State Manager）+ AWS-RunShellScript（内联脚本）** 完成一次完整闭环：**创建关联 → 目标选择 → 调度 → 合规与执行日志**。  
+> **前置**：已完成 [01](../01-cfn-deploy/)、[02](../02-session-manager/)、[03](../03-run-command/)；实例为受管实例。  
+> **区域**：ap-northeast-1（或任意已启用 SSM 的区域）  
 > **费用**：State Manager 关联免费；EC2 按实例类型计费。课后可删除关联，保留或清理堆栈参考 [01 课清理](../01-cfn-deploy/)。
 
 ## 将完成的内容

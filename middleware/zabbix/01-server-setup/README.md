@@ -1,8 +1,8 @@
 # 01 · Zabbix Server 初始化（Server Setup）
 
-> **目标**：完成 Zabbix Server 数据库初始化和 Web UI 配置
-> **前置**：[00 · 环境与架构导入](../00-architecture-lab/)
-> **时间**：20-30 分钟
+> **目标**：完成 Zabbix Server 数据库初始化和 Web UI 配置  
+> **前置**：[00 · 环境与架构导入](../00-architecture-lab/)  
+> **时间**：20-30 分钟  
 > **实战项目**：配置 Housekeeping，创建运维账户
 
 ## 将学到的内容
