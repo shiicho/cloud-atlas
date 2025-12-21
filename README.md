@@ -1,6 +1,6 @@
 # cloud-atlas｜云上地图
 
-A mapped guide to **Cloud & Infrastructure** — reproducible labs by **shiicho**.
+A mapped guide to **Cloud & Infrastructure** — reproducible labs by **shiicho**.  
 面向中文读者的云基础设施实战教程，每个课堂都提供「可复现」的代码与步骤。
 
 ## 仓库定位 / What this repo is
