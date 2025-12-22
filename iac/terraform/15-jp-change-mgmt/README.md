@@ -350,6 +350,10 @@ code/
 
 ### Step 1：Plan Role の作成
 
+> **Note**: 以下の IAM ポリシーは DynamoDB によるロック機構を想定しています。
+> Terraform 1.10+ では `use_lockfile = true` による S3 原生ロックが推奨されており、
+> DynamoDB は不要です。DynamoDB ロックは Terraform 1.11 で非推奨となり、将来削除予定です。
+
 Plan Role は**読み取り専用**で、誰でも安全に `terraform plan` を実行可能：
 
 ```bash
@@ -650,7 +654,7 @@ jobs:
 
       # PR に Plan 結果をコメント
       - name: Comment Plan on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const output = `## Terraform Plan 結果

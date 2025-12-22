@@ -393,12 +393,18 @@ resource "aws_s3_bucket_object_lock_configuration" "cloudtrail" {
 
   rule {
     default_retention {
-      mode = "GOVERNANCE"
+      mode = "GOVERNANCE"  # または "COMPLIANCE"（下記参照）
       days = 90
     }
   }
 }
 ```
+
+> **Object Lock モード**：
+> - `GOVERNANCE` — 特権ユーザー（s3:BypassGovernanceRetention 権限）は削除可能
+> - `COMPLIANCE` — **誰も削除不可**（期間満了まで。設定後の変更不可）
+>
+> ISMAP/SOC2 で「絶対改竄不可」を求められる場合は `COMPLIANCE` を検討。ただし、誤設定時にも削除できないため、テスト環境で十分検証してから本番適用すること。
 
 ---
 
@@ -458,7 +464,7 @@ cat README.md
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.0 |
+| terraform | >= 1.13 |
 | aws | ~> 5.0 |
 
 ## Providers
@@ -562,6 +568,21 @@ cat state-backup.json | jq '.resources | length'
 ```
 
 ### State Lock 解除（緊急時）
+
+**S3 原生ロック（Terraform 1.10+、推奨）**：
+
+```bash
+# .tflock ファイルを確認
+aws s3 ls s3://your-tfstate-bucket/path/
+
+# ロック解除（強制）
+terraform force-unlock LOCK_ID_HERE
+```
+
+**DynamoDB ロック（旧版、TF 1.11 で非推奨）**：
+
+> ⚠️ DynamoDB によるロックは Terraform 1.11 で非推奨となり、将来のバージョンで削除予定です。
+> 新規プロジェクトでは `use_lockfile = true` による S3 原生ロックを使用してください。
 
 ```bash
 # DynamoDB のロックを確認

@@ -266,7 +266,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"  # AWS Provider 6.x available with breaking changes - see upgrade guide
+      version = "~> 5.0"  # 6.x (2025-04 GA) 有 breaking changes，升级前查阅 upgrade guide
     }
     random = {
       source  = "hashicorp/random"

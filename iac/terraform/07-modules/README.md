@@ -314,7 +314,7 @@ module "vpc" {
 ```hcl
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 6.0"
+  version = "~> 6.0"  # 2025-12 时点最新: 6.5.1
 
   name = "my-vpc"
   cidr = "10.0.0.0/16"
@@ -389,7 +389,7 @@ output "vpc" {
 | 平台 | 命令 |
 |------|------|
 | **macOS** | `brew install terraform-docs` |
-| **Linux** | `curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.20.0/terraform-docs-v0.20.0-linux-amd64.tar.gz && tar -xzf terraform-docs.tar.gz && chmod +x terraform-docs && sudo mv terraform-docs /usr/local/bin/` |
+| **Linux** | `curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.21.0/terraform-docs-v0.21.0-linux-amd64.tar.gz && tar -xzf terraform-docs.tar.gz && chmod +x terraform-docs && sudo mv terraform-docs /usr/local/bin/` |
 | **Windows** | `choco install terraform-docs` 或 `scoop install terraform-docs` |
 
 ```bash

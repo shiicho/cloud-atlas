@@ -368,6 +368,8 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       # 推荐：使用 ~> 允许 patch 更新
+      # AWS Provider 6.x (2025-04 GA) 有 breaking changes
+      # 升级前请查阅: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-6-upgrade
       version = "~> 5.0"
     }
   }

@@ -545,7 +545,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Trivy IaC Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'config'
           scan-ref: 'terraform/'

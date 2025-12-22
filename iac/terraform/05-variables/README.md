@@ -149,16 +149,19 @@ Terraform 变量优先级（从高到低）
          1 │   │  -var 或 -var-file 命令行参数    │
            │   └─────────────────────────────────┘
            │   ┌─────────────────────────────────┐
-         2 │   │  *.auto.tfvars 自动加载文件      │
+         2 │   │  *.auto.tfvars（字典序自动加载）  │
            │   └─────────────────────────────────┘
            │   ┌─────────────────────────────────┐
-         3 │   │  terraform.tfvars 自动加载文件   │
+         3 │   │  terraform.tfvars.json          │
            │   └─────────────────────────────────┘
            │   ┌─────────────────────────────────┐
-         4 │   │  TF_VAR_xxx 环境变量             │
+         4 │   │  terraform.tfvars               │
            │   └─────────────────────────────────┘
            │   ┌─────────────────────────────────┐
-         5 │   │  default 值（变量定义中的默认值） │
+         5 │   │  TF_VAR_xxx 环境变量             │
+           │   └─────────────────────────────────┘
+           │   ┌─────────────────────────────────┐
+         6 │   │  default 值（变量定义中的默认值） │
            │   └─────────────────────────────────┘
   低优先级 ▼
 ```
@@ -341,7 +344,15 @@ validation {
   condition     = var.instance_count >= 1 && var.instance_count <= 10
   error_message = "instance_count 必须在 1-10 之间"
 }
+
+# 跨变量验证（Terraform 1.9+）
+validation {
+  condition     = var.environment == "prod" ? var.instance_count >= 2 : true
+  error_message = "生产环境至少需要 2 个实例"
+}
 ```
+
+> **Terraform 1.9+**：validation 块可引用其他变量和数据源，实现跨变量验证。
 
 ---
 
@@ -409,6 +420,27 @@ data "aws_ssm_parameter" "db_password" {
 password = data.aws_ssm_parameter.db_password.value
 ```
 
+### 6.5 临时变量（Terraform 1.10+）
+
+> **新功能**：Terraform 1.10 引入了 `ephemeral` 变量，值**不会存储在 State 中**。
+
+```hcl
+# Terraform 1.10+: 临时变量
+variable "db_password" {
+  type      = string
+  ephemeral = true  # 值不会存储在 State！
+}
+```
+
+**对比**：
+
+| 特性 | `sensitive = true` | `ephemeral = true` |
+|------|--------------------|--------------------|
+| CLI 输出 | 隐藏 | 隐藏 |
+| State 存储 | **明文存储** | **不存储** |
+| TF 版本 | 任意 | 1.10+ |
+| 用途 | 隐藏输出 | 真正的密钥保护 |
+
 ---
 
 ## Step 7 — 深入理解：环境管理（5 分钟）
@@ -442,11 +474,12 @@ terraform plan
 
 ### 7.3 自动加载规则
 
-| 文件 | 自动加载？ |
-|------|------------|
-| `terraform.tfvars` | 是 |
-| `*.auto.tfvars` | 是 |
-| `envs/dev.tfvars` | 否，需要 `-var-file` |
+| 文件 | 自动加载？ | 优先级 |
+|------|------------|--------|
+| `terraform.tfvars` | 是 | 低 |
+| `terraform.tfvars.json` | 是 | 中 |
+| `*.auto.tfvars` / `*.auto.tfvars.json` | 是（字典序） | 高 |
+| `envs/dev.tfvars` | 否，需要 `-var-file` | 最高 |
 
 ---
 
@@ -474,10 +507,10 @@ Destroy complete! Resources: 2 destroyed.
 | `locals` | 本地计算值，减少重复 |
 | `output` | 导出值供外部使用 |
 
-**变量优先级**：
+**变量优先级**（高 → 低）：
 
 ```
--var > *.auto.tfvars > terraform.tfvars > TF_VAR_ > default
+-var > *.auto.tfvars > terraform.tfvars.json > terraform.tfvars > TF_VAR_ > default
 ```
 
 ---
@@ -496,7 +529,7 @@ Destroy complete! Resources: 2 destroyed.
 
 **Q: 変数の優先順位は？**
 
-A: 高い順に：`-var`/`-var-file`（コマンドライン）> `*.auto.tfvars` > `terraform.tfvars` > `TF_VAR_` 環境変数 > `default` 値。同じ変数が複数箇所で定義されている場合、優先度の高い方が使われる。
+A: 高い順に：`-var`/`-var-file`（コマンドライン）> `*.auto.tfvars` > `terraform.tfvars.json` > `terraform.tfvars` > `TF_VAR_` 環境変数 > `default` 値。同じ変数が複数箇所で定義されている場合、優先度の高い方が使われる。
 
 **Q: sensitive = true の効果と限界は？**
 

@@ -306,7 +306,7 @@ module "database" {
 
   identifier         = "${var.environment}-db"
   engine             = "mysql"
-  engine_version     = "8.0"
+  engine_version     = "8.0"  # AWS RDS EOL: 2026-07, 新项目考虑 8.4+
   instance_class     = "db.t3.micro"
   allocated_storage  = 20
   db_name            = "appdb"
@@ -437,11 +437,24 @@ terraform apply
 
 模拟 Lock 卡住的场景：
 
+**使用原生 S3 锁定（Terraform 1.10+，推荐）**：
+
 ```bash
+# 查看 .tflock 文件
+aws s3 ls s3://tfstate-capstone-YOUR_ACCOUNT_ID/dev/
+
+# 强制解锁（谨慎！确认无其他操作进行中）
+terraform force-unlock LOCK_ID
+```
+
+**使用 DynamoDB 锁定（旧版，TF 1.11 已弃用）**：
+
+```bash
+# ⚠️ DynamoDB 锁定已在 Terraform 1.11 弃用，将在未来版本移除
 # 查看当前锁
 aws dynamodb scan --table-name tfstate-lock-capstone
 
-# 强制解锁（谨慎！确认无其他操作进行中）
+# 强制解锁
 terraform force-unlock LOCK_ID
 ```
 
@@ -571,7 +584,7 @@ aws dynamodb delete-table --table-name tfstate-lock-capstone
 
 **Q: Terraform プロジェクトで苦労したことは？**
 
-A: State の管理が最も難しかった。チーム開発では State Lock の競合、Drift の検知と修復、Import 時のコード生成など、State 関連の課題が多い。解決策として、S3+DynamoDB のリモートバックエンド、定期的な Drift 検知、コードレビューでの plan 結果確認を導入した。
+A: State の管理が最も難しかった。チーム開発では State Lock の競合、Drift の検知と修復、Import 時のコード生成など、State 関連の課題が多い。解決策として、S3 リモートバックエンド（TF 1.10+ の `use_lockfile` による原生ロック）、定期的な Drift 検知、コードレビューでの plan 結果確認を導入した。
 
 **Q: モジュール設計で気をつけていることは？**
 

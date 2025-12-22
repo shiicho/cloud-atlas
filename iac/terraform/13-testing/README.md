@@ -156,7 +156,7 @@ Pre-commit 自动完成了：
   │  │ terraform fmt    [auto-fix]  │──┼──▶ Modified files
   │  │ terraform validate  [check]  │  │    │
   │  │ tflint             [check]   │  │    │
-  │  │ tfsec              [check]   │  │    │
+  │  │ trivy              [check]   │  │    │
   │  └──────────────────────────────┘  │    │
   │                                    │    │
   │  ┌──────────┐    ┌──────────────┐  │    │
@@ -267,7 +267,7 @@ plugin "terraform" {
 
 plugin "aws" {
   enabled = true
-  version = "0.32.0"
+  version = "0.44.0"
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
 
@@ -294,7 +294,7 @@ tflint --init
 
 ```
 Installing "aws" plugin...
-Installed "aws" (source: github.com/terraform-linters/tflint-ruleset-aws, version: 0.32.0)
+Installed "aws" (source: github.com/terraform-linters/tflint-ruleset-aws, version: 0.44.0)
 ```
 
 ### 5.3 运行 tflint
@@ -694,7 +694,7 @@ repos:
   # Terraform 格式化和验证
   # ---------------------------------------------------------------------------
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.96.1
+    rev: v1.97.3
     hooks:
       # 格式检查（自动修复）
       - id: terraform_fmt
@@ -709,10 +709,10 @@ repos:
         args:
           - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
 
-      # 安全扫描（可选但推荐）
-      - id: terraform_tfsec
+      # 安全扫描（Trivy - tfsec 已弃用并合并到 Trivy）
+      - id: terraform_trivy
         args:
-          - --args=--soft-fail
+          - --args=--severity HIGH,CRITICAL
 
       # 文档生成（可选）
       - id: terraform_docs
@@ -725,7 +725,7 @@ repos:
   # 通用代码质量
   # ---------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -744,7 +744,7 @@ pre-commit run --all-files
 terraform_fmt.........................................................Passed
 terraform_validate....................................................Passed
 terraform_tflint......................................................Passed
-terraform_tfsec.......................................................Passed
+terraform_trivy.......................................................Passed
 trailing-whitespace...................................................Passed
 end-of-file-fixer.....................................................Passed
 check-yaml............................................................Passed
@@ -804,7 +804,7 @@ git commit                    PR 创建
 │ fmt          │            └──────┬───────┘
 │ validate     │                   │
 │ tflint       │                   ▼
-│ tfsec        │            ┌──────────────┐
+│ trivy        │            ┌──────────────┐
 └──────────────┘            │ OPA/Sentinel │
                             │ policy check │
                             └──────┬───────┘
@@ -832,7 +832,7 @@ git commit                    PR 创建
 
 **Q: Terraform コードの品質保証方法は？**
 
-A: 多層アプローチ：`fmt`/`validate` で基本チェック、`tflint` で Provider 特有の Linting、`terraform test` でロジック検証、`tfsec` でセキュリティスキャン。ローカルで pre-commit hooks、CI/CD で同じチェック + OPA policy。
+A: 多層アプローチ：`fmt`/`validate` で基本チェック、`tflint` で Provider 特有の Linting、`terraform test` でロジック検証、Trivy でセキュリティスキャン（tfsec は Trivy に統合済み）。ローカルで pre-commit hooks、CI/CD で同じチェック + OPA policy。
 
 **Q: terraform test とは？**
 
