@@ -48,10 +48,9 @@ code/
 │   ├── main.tf
 │   ├── variables.tf
 │   └── outputs.tf
-├── tfsec-example/          # 安全扫描演示
+├── scanning-demo/          # 安全扫描演示（Trivy / checkov）
 │   ├── main.tf
-│   └── .tfsec/
-│       └── config.yml
+│   └── .trivyignore        # Trivy 忽略配置
 └── state-security/         # State 安全配置
     ├── main.tf
     ├── bucket-policy.tf

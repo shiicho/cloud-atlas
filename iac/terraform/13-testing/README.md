@@ -424,8 +424,8 @@ run "default_values" {
   command = plan  # 只 plan，不创建真实资源
 
   assert {
-    condition     = aws_s3_bucket.main.bucket_prefix == "test-bucket-"
-    error_message = "Bucket prefix 应该是 'test-bucket-'"
+    condition     = startswith(aws_s3_bucket.main.bucket, "test-bucket-")
+    error_message = "Bucket name 应该以 'test-bucket-' 开头"
   }
 
   assert {

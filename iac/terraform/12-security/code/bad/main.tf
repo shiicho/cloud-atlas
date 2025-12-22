@@ -59,7 +59,7 @@ resource "aws_db_instance" "main" {
   # - 出现在 terraform.tfstate 中（明文）
   # - 在 PR 中对所有人可见
   username = "admin"
-  password = "SuperSecret123!"  # tfsec:ignore:general-secrets-sensitive-in-local
+  password = "SuperSecret123!"  # trivy:ignore:AVD-GEN-0000 - 演示用故意暴露
 
   # 网络配置
   publicly_accessible    = false  # 至少这个做对了

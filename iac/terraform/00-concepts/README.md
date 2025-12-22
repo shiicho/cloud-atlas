@@ -103,7 +103,7 @@
 **什么时候用什么？**
 
 - **纯 AWS 项目** → 两者都可以，CloudFormation 集成更深
-- **多云项目** → Terraform 是唯一选择
+- **多云项目** → Terraform 最流行（OpenTofu、Pulumi 也支持多云）
 - **团队已有 Terraform 经验** → 继续用 Terraform
 - **需要 AWS 最新功能** → CloudFormation 通常先支持
 

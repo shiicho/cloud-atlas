@@ -54,7 +54,6 @@ taggable_resource_types := {
     "aws_security_group",
     "aws_db_instance",
     "aws_lambda_function",
-    "aws_dynamodb_table",
     "aws_sqs_queue",
     "aws_sns_topic",
     "aws_iam_role",
@@ -62,7 +61,7 @@ taggable_resource_types := {
     "aws_ecs_service",
     "aws_eks_cluster",
     "aws_elasticache_cluster",
-    "aws_elasticsearch_domain",
+    "aws_opensearch_domain",
     "aws_kinesis_stream",
     "aws_kms_key"
 }

@@ -2,14 +2,11 @@
 # 安全扫描演示（Security Scanning Demo）
 # =============================================================================
 #
-# ⚠️  注意: tfsec 已被 Aqua Security 合并到 Trivy 中，不再积极开发。
-# ⚠️  Note: tfsec has been merged into Trivy and is no longer actively developed.
-#
-# 推荐使用 Trivy（同样能检测这些问题）：
+# 使用 Trivy 扫描此目录：
 #   trivy config .
 #
-# 旧版 tfsec 命令（仍可用于遗留项目）：
-#   tfsec .
+# 使用 checkov 扫描：
+#   checkov -d .
 #
 # 这个文件包含多种安全问题，用于演示安全扫描工具如何检测它们。
 #
@@ -32,7 +29,7 @@ provider "aws" {
 
 # =============================================================================
 # 问题 1: S3 Bucket 安全配置缺失
-# tfsec ID: aws-s3-enable-versioning, aws-s3-encryption-customer-key
+# Trivy: AVD-AWS-0089 (versioning), AVD-AWS-0132 (encryption)
 # =============================================================================
 
 resource "aws_s3_bucket" "insecure" {
@@ -85,7 +82,7 @@ resource "aws_s3_bucket_public_access_block" "secure" {
 
 # =============================================================================
 # 问题 2: Security Group 过于宽松
-# tfsec ID: aws-ec2-no-public-ingress-sgr
+# Trivy: AVD-AWS-0107 (public ingress)
 # =============================================================================
 
 resource "aws_security_group" "insecure" {
@@ -97,7 +94,7 @@ resource "aws_security_group" "insecure" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # tfsec 会标记这个！
+    cidr_blocks = ["0.0.0.0/0"]  # Trivy 会检测到！
     description = "SSH from anywhere - INSECURE"
   }
 
@@ -106,7 +103,7 @@ resource "aws_security_group" "insecure" {
     from_port   = 3389
     to_port     = 3389
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # tfsec 会标记这个！
+    cidr_blocks = ["0.0.0.0/0"]  # Trivy 会检测到！
     description = "RDP from anywhere - INSECURE"
   }
 
@@ -150,7 +147,7 @@ resource "aws_security_group" "secure" {
 
 # =============================================================================
 # 问题 3: IAM 策略过于宽松
-# tfsec ID: aws-iam-no-policy-wildcards
+# Trivy: AVD-AWS-0057 (no-policy-wildcards)
 # =============================================================================
 
 resource "aws_iam_policy" "insecure" {
@@ -196,24 +193,24 @@ resource "aws_iam_policy" "secure" {
 
 # =============================================================================
 # 问题 4: RDS 公开访问
-# tfsec ID: aws-rds-no-public-db-access
+# Trivy: AVD-AWS-0080 (no-public-db-access)
 # =============================================================================
 
 # 注释掉以避免实际创建 RDS（成本高）
 # resource "aws_db_instance" "insecure" {
 #   identifier = "insecure-db"
 #   ...
-#   publicly_accessible = true  # ❌ tfsec 会标记这个！
+#   publicly_accessible = true  # ❌ Trivy 会检测到！
 # }
 
 # =============================================================================
 # 问题 5: CloudWatch Logs 未加密
-# tfsec ID: aws-cloudwatch-log-group-customer-key
+# Trivy: AVD-AWS-0017 (log-group-customer-key)
 # =============================================================================
 
 resource "aws_cloudwatch_log_group" "insecure" {
   name = "/myapp/insecure-logs"
-  # 缺少 kms_key_id - tfsec 会建议使用 KMS 加密
+  # 缺少 kms_key_id - Trivy 会建议使用 KMS 加密
 }
 
 # ✓ 安全的 Log Group
@@ -280,7 +277,7 @@ resource "random_id" "suffix" {
 
 # 有时候你知道某个检查不适用，可以使用注释忽略
 resource "aws_s3_bucket" "logs" {
-  # tfsec:ignore:aws-s3-enable-versioning - 日志桶不需要版本控制，有生命周期策略
+  # trivy:ignore:AVD-AWS-0089 - 日志桶不需要版本控制，有生命周期策略
   bucket = "logs-bucket-${random_id.suffix.hex}"
 
   tags = {

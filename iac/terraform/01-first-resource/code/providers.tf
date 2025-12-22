@@ -21,7 +21,7 @@ terraform {
     # Random Provider（生成随机值）
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.0"
+      version = "~> 3.6"
     }
   }
 }

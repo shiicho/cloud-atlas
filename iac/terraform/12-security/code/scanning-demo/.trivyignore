@@ -1,0 +1,18 @@
+# =============================================================================
+# Trivy Ignore Configuration
+# =============================================================================
+#
+# Usage: trivy config .
+# Trivy will automatically read this file.
+#
+# Format: One rule ID per line
+# Reference: https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/
+#
+# =============================================================================
+
+# This file intentionally contains security issues for demonstration.
+# In real projects, document each exclusion with clear justification.
+
+# Example exclusions (uncomment if needed):
+# AVD-AWS-0089  # S3 versioning - logs bucket uses lifecycle policy instead
+# AVD-AWS-0090  # S3 encryption - handled by different control
