@@ -266,7 +266,7 @@ terraform plan
 
 ```
 # aws_security_group.lifecycle_demo must be replaced
--/+ resource "aws_security_group" "lifecycle_demo" {
++/- resource "aws_security_group" "lifecycle_demo" {
       ~ name = "lesson-03-sg-lifecycle-demo" -> "lesson-03-sg-lifecycle-demo-v2" # forces replacement
       ...
     }
@@ -274,9 +274,9 @@ terraform plan
 Plan: 1 to add, 0 to change, 1 to destroy.
 ```
 
-注意 `-/+`：这表示 **先创建新的，再删除旧的**（因为 `create_before_destroy = true`）。
+注意 `+/-`：这表示 **先创建新的，再删除旧的**（因为 `create_before_destroy = true`）。
 
-如果没有 `create_before_destroy`，符号会是 `+/-`（先删除，再创建）。
+如果没有 `create_before_destroy`，符号会是 `-/+`（先删除，再创建）。
 
 ### 5.2 体验 prevent_destroy
 
