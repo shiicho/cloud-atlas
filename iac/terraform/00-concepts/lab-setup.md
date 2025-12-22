@@ -90,62 +90,70 @@ sudo su - ec2-user
 
 ### 方式 B：VS Code Remote-SSH（推荐日常开发）
 
-#### 1. 安装 Session Manager 插件
+> 📖 **详细指南**: 完整的 VS Code 远程开发设置请参考 [VS Code 远程开发指南](../../../references/vscode-remote-dev/)
 
-**macOS:**
-```bash
-curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip" -o "sessionmanager-bundle.zip"
-unzip sessionmanager-bundle.zip
-sudo ./sessionmanager-bundle/install -i /usr/local/sessionmanagerplugin -b /usr/local/bin/session-manager-plugin
-```
+#### 快速设置
 
-**Windows:**
-下载并运行：https://s3.amazonaws.com/session-manager-downloads/plugin/latest/windows/SessionManagerPluginSetup.exe
+**1. 安装 Session Manager 插件**
 
-**Linux:**
-```bash
-curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-sudo dpkg -i session-manager-plugin.deb
-```
+| 平台 | 命令 |
+|------|------|
+| **Windows** | `winget install Amazon.SessionManagerPlugin` 或 [下载 MSI](https://s3.amazonaws.com/session-manager-downloads/plugin/latest/windows/SessionManagerPluginSetup.exe) |
+| **macOS** | `brew install --cask session-manager-plugin` |
+| **Linux** | `sudo dpkg -i session-manager-plugin.deb` ([下载](https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb)) |
 
-#### 2. 配置 SSH Config
+**2. 配置 SSH Config**
 
-编辑 `~/.ssh/config`（Windows: `C:\Users\你的用户名\.ssh\config`）：
+编辑 `~/.ssh/config`（Windows: `C:\Users\你的用户名\.ssh\config`）
 
-```
+> ⚠️ **Windows 用户注意**: Windows 和 macOS/Linux 配置不同！详见 [故障排除](../../../references/vscode-remote-dev/troubleshooting.md#windows-专属问题)
+
+**Windows 配置（无引号）:**
+```ssh-config
 Host terraform-lab
     HostName i-你的实例ID
     User ec2-user
-    ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p' --region ap-northeast-1
+    ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ap-northeast-1
 ```
 
-#### 3. 生成 SSH Key（如果没有）
+**macOS/Linux 配置（带引号）:**
+```ssh-config
+Host terraform-lab
+    HostName i-你的实例ID
+    User ec2-user
+    ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters "portNumber=%p" --region ap-northeast-1
+```
+
+**3. 生成 SSH Key（如果没有）**
 
 ```bash
 ssh-keygen -t ed25519 -C "terraform-lab"
 ```
 
-#### 4. 上传公钥到实例
+**4. 上传公钥到实例**
 
 ```bash
-# 先通过 SSM 连接
+# 通过 SSM 连接
 aws ssm start-session --target i-你的实例ID --region ap-northeast-1
 
 # 在实例内执行
 sudo su - ec2-user
-mkdir -p ~/.ssh
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
 echo "你的公钥内容" >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 exit
 exit
 ```
 
-#### 5. VS Code 连接
+**5. VS Code 连接**
 
 1. 打开 VS Code
 2. `Ctrl+Shift+P` → "Remote-SSH: Connect to Host"
 3. 选择 `terraform-lab`
-4. 等待连接完成
+4. 如果出现登录提示，可以选择 GitHub 登录或按 Esc 跳过
+5. 等待连接完成（首次需要几分钟安装 VS Code Server）
+
+> 💡 **遇到问题？** 查看 [故障排除指南](../../../references/vscode-remote-dev/troubleshooting.md)
 
 ---
 
@@ -227,16 +235,21 @@ aws ec2 describe-instances \
 </details>
 
 <details>
-<summary>❓ VS Code 连接超时</summary>
+<summary>❓ VS Code 连接超时 / Error parsing parameter</summary>
 
-1. 确认 Session Manager 插件已安装：
-   ```bash
-   session-manager-plugin --version
-   ```
+**Windows 常见问题:** 如果看到 `Error parsing parameter '--parameters'` 错误，是因为 SSH 配置中的引号问题。
 
-2. 确认 SSH Config 中的 Instance ID 正确
+**解决方案:** Windows 用户使用**无引号**的配置：
+```ssh-config
+ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ap-northeast-1
+```
 
-3. 确认公钥已上传到实例
+**其他检查:**
+1. Session Manager 插件已安装：`session-manager-plugin --version`
+2. SSH Config 中的 Instance ID 正确
+3. 公钥已上传到实例
+
+> 更多问题请参考 [故障排除指南](../../../references/vscode-remote-dev/troubleshooting.md)
 
 </details>
 
