@@ -3,7 +3,17 @@
 #
 # 本文件创建：
 # 1. S3 Bucket - 存储 Terraform State
-# 2. DynamoDB Table - 提供 State Locking
+# 2. DynamoDB Table - 提供 State Locking（已弃用，仅供旧版参考）
+#
+# ============================================================================
+# 重要更新 (2024年12月)
+# ============================================================================
+# Terraform 1.10 起支持原生 S3 锁定 (use_lockfile = true)，无需 DynamoDB。
+# Terraform 1.11 正式弃用 DynamoDB 锁定。
+#
+# 新项目推荐：仅创建 S3 Bucket，使用原生 S3 锁定。
+# 本文件保留 DynamoDB 配置供维护旧项目参考。
+# ============================================================================
 #
 # 注意：这些资源本身使用 Local State（鸡生蛋问题）
 # 在生产环境中，通常使用 CloudFormation 或手动创建这些资源。
@@ -66,7 +76,13 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
 }
 
 # -----------------------------------------------------------------------------
-# DynamoDB Table - State Locking
+# [LEGACY] DynamoDB Table - State Locking (已弃用)
+# -----------------------------------------------------------------------------
+# Terraform 1.10+ 推荐使用原生 S3 锁定 (use_lockfile = true)
+# 此资源仅供：
+#   - 使用 Terraform < 1.10 的项目
+#   - 维护已使用 DynamoDB 锁定的旧项目
+# 新项目请注释或删除此资源块
 # -----------------------------------------------------------------------------
 
 resource "aws_dynamodb_table" "tflock" {
@@ -80,8 +96,8 @@ resource "aws_dynamodb_table" "tflock" {
   }
 
   tags = {
-    Name    = "Terraform Lock Table"
-    Purpose = "terraform-state-locking"
+    Name    = "Terraform Lock Table (Legacy)"
+    Purpose = "terraform-state-locking-deprecated"
   }
 }
 
@@ -93,12 +109,26 @@ resource "aws_dynamodb_table" "tflock" {
 #
 # 2. 在其他项目中配置 backend：
 #
+#    【推荐】Terraform 1.10+ 原生 S3 锁定：
+#
 #    terraform {
 #      backend "s3" {
-#        bucket         = "tfstate-xxxx"        # 使用 output 的值
+#        bucket       = "tfstate-xxxx"        # 使用 output 的值
+#        key          = "project/terraform.tfstate"
+#        region       = "ap-northeast-1"
+#        encrypt      = true
+#        use_lockfile = true                  # 原生 S3 锁定
+#      }
+#    }
+#
+#    【旧版】DynamoDB 锁定（已弃用，仅供旧项目参考）：
+#
+#    terraform {
+#      backend "s3" {
+#        bucket         = "tfstate-xxxx"
 #        key            = "project/terraform.tfstate"
 #        region         = "ap-northeast-1"
-#        dynamodb_table = "terraform-lock"
+#        dynamodb_table = "terraform-lock"   # 已弃用
 #        encrypt        = true
 #      }
 #    }

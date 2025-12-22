@@ -16,7 +16,7 @@ output "bucket_arn" {
 }
 
 output "dynamodb_table" {
-  description = "DynamoDB table name for state locking"
+  description = "[LEGACY] DynamoDB table name for state locking (deprecated in TF 1.11+)"
   value       = aws_dynamodb_table.tflock.name
 }
 
@@ -24,10 +24,25 @@ output "dynamodb_table" {
 # 后端配置示例
 # -----------------------------------------------------------------------------
 
-output "backend_config" {
-  description = "Example backend configuration to use in other projects"
+output "backend_config_recommended" {
+  description = "[RECOMMENDED] Backend config with native S3 locking (TF 1.10+)"
   value       = <<-EOT
-    # 将以下配置添加到你的 terraform {} 块中：
+    # 【推荐】Terraform 1.10+ 原生 S3 锁定配置：
+
+    backend "s3" {
+      bucket       = "${aws_s3_bucket.tfstate.bucket}"
+      key          = "your-project/terraform.tfstate"
+      region       = "ap-northeast-1"
+      encrypt      = true
+      use_lockfile = true
+    }
+  EOT
+}
+
+output "backend_config_legacy" {
+  description = "[LEGACY] Backend config with DynamoDB locking (deprecated)"
+  value       = <<-EOT
+    # 【旧版】DynamoDB 锁定配置（已弃用，仅供旧项目参考）：
 
     backend "s3" {
       bucket         = "${aws_s3_bucket.tfstate.bucket}"
