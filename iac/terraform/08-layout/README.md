@@ -247,22 +247,22 @@ tree -L 3
 # environments/dev/backend.tf
 terraform {
   backend "s3" {
-    bucket         = "my-terraform-state"
-    key            = "dev/terraform.tfstate"    # dev 独立路径
-    region         = "ap-northeast-1"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
+    bucket       = "my-terraform-state"
+    key          = "dev/terraform.tfstate"    # dev 独立路径
+    region       = "ap-northeast-1"
+    use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
+    encrypt      = true
   }
 }
 
 # environments/prod/backend.tf
 terraform {
   backend "s3" {
-    bucket         = "my-terraform-state"
-    key            = "prod/terraform.tfstate"   # prod 独立路径
-    region         = "ap-northeast-1"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
+    bucket       = "my-terraform-state"
+    key          = "prod/terraform.tfstate"   # prod 独立路径
+    region       = "ap-northeast-1"
+    use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
+    encrypt      = true
   }
 }
 ```
@@ -528,22 +528,22 @@ resource "aws_db_instance" "main" {
 # environments/dev/backend.tf
 terraform {
   backend "s3" {
-    bucket         = "my-terraform-state"
-    key            = "dev/terraform.tfstate"     # 只有这里不同
-    region         = "ap-northeast-1"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
+    bucket       = "my-terraform-state"
+    key          = "dev/terraform.tfstate"     # 只有这里不同
+    region       = "ap-northeast-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
 # environments/staging/backend.tf
 terraform {
   backend "s3" {
-    bucket         = "my-terraform-state"
-    key            = "staging/terraform.tfstate" # 只有这里不同
-    region         = "ap-northeast-1"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
+    bucket       = "my-terraform-state"
+    key          = "staging/terraform.tfstate" # 只有这里不同
+    region       = "ap-northeast-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
@@ -562,11 +562,11 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    bucket         = "my-terraform-state"
-    key            = "${path_relative_to_include()}/terraform.tfstate"
-    region         = "ap-northeast-1"
-    dynamodb_table = "terraform-locks"
-    encrypt        = true
+    bucket       = "my-terraform-state"
+    key          = "${path_relative_to_include()}/terraform.tfstate"
+    region       = "ap-northeast-1"
+    use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
+    encrypt      = true
   }
 }
 

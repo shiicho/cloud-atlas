@@ -141,7 +141,7 @@ code/
 
 ### 1.2 创建远程后端（Bootstrap）
 
-首先需要创建 S3 bucket 和 DynamoDB table 用于存储 state：
+首先需要创建 S3 bucket 用于存储 state：
 
 ```bash
 # 创建 S3 bucket（替换 YOUR_ACCOUNT_ID）
@@ -151,26 +151,20 @@ aws s3 mb s3://tfstate-capstone-YOUR_ACCOUNT_ID --region ap-northeast-1
 aws s3api put-bucket-versioning \
   --bucket tfstate-capstone-YOUR_ACCOUNT_ID \
   --versioning-configuration Status=Enabled
-
-# 创建 DynamoDB 锁表
-aws dynamodb create-table \
-  --table-name tfstate-lock-capstone \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region ap-northeast-1
 ```
+
+> **Note**: Terraform 1.10+ 支持原生 S3 锁定 (`use_lockfile = true`)，无需创建 DynamoDB 表。
 
 ### 1.3 配置后端（environments/dev/backend.tf）
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "tfstate-capstone-YOUR_ACCOUNT_ID"
-    key            = "dev/terraform.tfstate"
-    region         = "ap-northeast-1"
-    dynamodb_table = "tfstate-lock-capstone"
-    encrypt        = true
+    bucket       = "tfstate-capstone-YOUR_ACCOUNT_ID"
+    key          = "dev/terraform.tfstate"
+    region       = "ap-northeast-1"
+    use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
+    encrypt      = true
   }
 }
 ```
@@ -195,7 +189,6 @@ locals {
 ### 1.5 验证检查点
 
 - [ ] S3 bucket 已创建并启用版本控制
-- [ ] DynamoDB 锁表已创建
 - [ ] `terraform init` 成功连接远程后端
 - [ ] GitHub Actions 工作流文件已创建
 

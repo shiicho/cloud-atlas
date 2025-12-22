@@ -239,6 +239,8 @@ resource "aws_subnet" "public" {
 }
 ```
 
+> **count vs for_each**：这里用 `count` 是因为子网列表是有序的。如果用 `for_each`（基于 key），删除中间元素时不会影响其他资源的 index。生产环境建议评估 `for_each` 以获得更稳定的状态管理。
+
 ### 4.3 查看模块输出
 
 ```bash
@@ -312,7 +314,7 @@ module "vpc" {
 ```hcl
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
+  version = "~> 6.0"
 
   name = "my-vpc"
   cidr = "10.0.0.0/16"
@@ -382,11 +384,15 @@ output "vpc" {
 
 使用 terraform-docs 自动生成：
 
-```bash
-# 安装 terraform-docs
-brew install terraform-docs  # macOS
-# 或下载二进制
+**安装 terraform-docs:**
 
+| 平台 | 命令 |
+|------|------|
+| **macOS** | `brew install terraform-docs` |
+| **Linux** | `curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.20.0/terraform-docs-v0.20.0-linux-amd64.tar.gz && tar -xzf terraform-docs.tar.gz && chmod +x terraform-docs && sudo mv terraform-docs /usr/local/bin/` |
+| **Windows** | `choco install terraform-docs` 或 `scoop install terraform-docs` |
+
+```bash
 # 生成文档
 terraform-docs markdown table ./modules/vpc > ./modules/vpc/README.md
 ```

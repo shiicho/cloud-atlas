@@ -11,7 +11,7 @@
 # - 运行 terraform fmt 检查
 # - 运行 terraform validate
 # - 运行 tflint
-# - 运行 tfsec 安全扫描
+# - 运行 Trivy 安全扫描
 # - 运行 terraform plan
 # - 将 plan 结果作为 PR 评论
 #

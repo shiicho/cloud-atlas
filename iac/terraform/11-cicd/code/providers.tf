@@ -9,7 +9,7 @@
 # =============================================================================
 terraform {
   # Terraform 版本约束
-  required_version = ">= 1.5.0"
+  required_version = ">= 1.9.0, < 2.0.0"
 
   # Provider 版本约束
   required_providers {
@@ -23,18 +23,8 @@ terraform {
     }
   }
 
-  # 远程后端配置
-  # 在 CI/CD 环境中使用 S3 存储状态
-  # 注意：需要先创建 S3 bucket 和 DynamoDB 表
-  #
+  # 远程后端配置见 backend.tf
   # 参考 Lesson 02: 状态管理与远程后端
-  # backend "s3" {
-  #   bucket         = "terraform-state-YOUR_ACCOUNT_ID"
-  #   key            = "cicd-example/terraform.tfstate"
-  #   region         = "ap-northeast-1"
-  #   encrypt        = true
-  #   dynamodb_table = "terraform-locks"
-  # }
 }
 
 # =============================================================================

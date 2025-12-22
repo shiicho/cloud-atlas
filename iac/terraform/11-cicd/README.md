@@ -422,7 +422,7 @@ jobs:
 
 **Q: Terraform の CI/CD ベストプラクティスは？**
 
-A: PR で plan 自動実行、apply は手動承認、OIDC で認証（Access Key 不要）、State は S3+DynamoDB でリモート管理。コスト可視化のため Infracost も導入。
+A: PR で plan 自動実行、apply は手動承認、OIDC で認証（Access Key 不要）、State は S3 リモートバックエンドで管理（use_lockfile で原生ロック）。コスト可視化のため Infracost も導入。
 
 **Q: OIDC 認証のメリットは？**
 
@@ -461,7 +461,7 @@ Error: Error acquiring the state lock
 
 **対処**：
 1. 他の apply が実行中でないか確認
-2. DynamoDB のロックレコードを確認
+2. S3 の `.tflock` ファイルを確認（use_lockfile 使用時）
 3. 必要に応じて `terraform force-unlock`
 
 ---

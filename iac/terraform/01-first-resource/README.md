@@ -108,7 +108,7 @@ aws s3 ls | grep my-first-terraform
 ```
 
 ```
-2024-xx-xx xx:xx:xx my-first-terraform-bucket-a1b2c3d4
+2025-xx-xx xx:xx:xx my-first-terraform-bucket-a1b2c3d4
 ```
 
 🎉 **恭喜！你刚刚用 Terraform 创建了一个 S3 Bucket！**
@@ -261,12 +261,12 @@ cat providers.tf
 
 ```hcl
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.9.0, < 2.0.0"
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"              # 5.x，不超过 6.0
+      version = "~> 5.0"  # AWS Provider 6.x available with breaking changes - see upgrade guide
     }
     random = {
       source  = "hashicorp/random"

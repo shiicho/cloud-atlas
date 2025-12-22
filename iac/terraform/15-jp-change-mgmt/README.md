@@ -597,7 +597,7 @@ permissions:
   pull-requests: write # PR コメント
 
 env:
-  TF_VERSION: "1.9.0"
+  TF_VERSION: "1.14.3"
   AWS_REGION: "ap-northeast-1"
 
 jobs:
@@ -605,7 +605,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # 変更凍結チェック（Warning のみ、block はしない）
       - name: Check change freeze (warning)
@@ -702,7 +702,7 @@ permissions:
   contents: read
 
 env:
-  TF_VERSION: "1.9.0"
+  TF_VERSION: "1.14.3"
   AWS_REGION: "ap-northeast-1"
 
 jobs:
@@ -713,7 +713,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # 変更凍結チェック（Block する）
       - name: Check change freeze period
