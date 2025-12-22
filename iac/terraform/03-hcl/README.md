@@ -15,6 +15,8 @@
 4. 使用 Lifecycle 控制资源行为
 5. 观察资源创建/销毁顺序
 
+> **速查表**：[HCL 语法速查表](HCL-CHEATSHEET.md) — Block vs Argument 区别、CloudFormation 对照、错误信息解读
+
 ---
 
 ## Step 1 — 快速验证环境（2 分钟）
