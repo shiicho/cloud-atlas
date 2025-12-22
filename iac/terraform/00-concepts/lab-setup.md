@@ -170,7 +170,7 @@ git --version
 应该看到：
 
 ```
-Terraform v1.9.x
+Terraform v1.14.x
 aws-cli/2.x.x
 git version 2.x.x
 ```

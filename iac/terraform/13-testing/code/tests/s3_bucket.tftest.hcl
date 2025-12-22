@@ -24,8 +24,8 @@ run "default_values" {
 
   # Assertions check expected behavior
   assert {
-    condition     = aws_s3_bucket.main.bucket_prefix == "test-bucket-"
-    error_message = "Bucket prefix should be 'test-bucket-' by default"
+    condition     = startswith(aws_s3_bucket.main.bucket, "test-bucket-")
+    error_message = "Bucket name should start with 'test-bucket-' by default"
   }
 
   assert {

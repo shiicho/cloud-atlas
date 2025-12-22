@@ -61,27 +61,33 @@ code/
 ### 安装安全扫描工具
 
 ```bash
-# 安装 tfsec（Aqua Security 开源工具）
+# 推荐：安装 Trivy（Aqua Security，tfsec 的继承者）
 # macOS
-brew install tfsec
+brew install trivy
 
 # Linux
-curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
 # Windows (使用 scoop 或 chocolatey)
-scoop install tfsec
+scoop install trivy
+
+# 备用：tfsec（仍可用但不再积极开发）
+# brew install tfsec
 
 # 安装 checkov（Bridgecrew/Palo Alto）
 pip install checkov
 ```
+
+> **注意**: tfsec 已被 Aqua Security 合并到 Trivy 中。新项目推荐使用 Trivy。
+> 迁移指南: https://github.com/aquasecurity/tfsec/blob/master/tfsec-to-trivy-migration-guide.md
 
 ### 扫描不安全的代码
 
 ```bash
 cd ~/cloud-atlas/iac/terraform/12-security/code/bad
 
-# 运行 tfsec
-tfsec .
+# 运行 Trivy（推荐）
+trivy config .
 ```
 
 **输出示例**：
@@ -380,7 +386,7 @@ cat ~/cloud-atlas/iac/terraform/12-security/code/bad/main.tf
 resource "aws_db_instance" "main" {
   identifier     = "myapp-db"
   engine         = "mysql"
-  engine_version = "8.0"
+  engine_version = "8.0"  # Note: MySQL 8.0 EOL April 2026, consider 8.4+ for new projects
   instance_class = "db.t3.micro"
 
   username = "admin"
@@ -406,7 +412,7 @@ data "aws_ssm_parameter" "db_password" {
 resource "aws_db_instance" "main" {
   identifier     = "myapp-db-${var.environment}"
   engine         = "mysql"
-  engine_version = "8.0"
+  engine_version = "8.0"  # Note: MySQL 8.0 EOL April 2026, consider 8.4+ for new projects
   instance_class = "db.t3.micro"
 
   username = "admin"
@@ -527,20 +533,22 @@ on:
       - 'terraform/**'
 
 jobs:
-  tfsec:
+  trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: tfsec
-        uses: aquasecurity/tfsec-action@v1.0.0
+      - name: Trivy IaC Scan
+        uses: aquasecurity/trivy-action@master
         with:
-          working_directory: terraform/
+          scan-type: 'config'
+          scan-ref: 'terraform/'
+          severity: 'HIGH,CRITICAL'
 
   checkov:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: checkov
         uses: bridgecrewio/checkov-action@v12

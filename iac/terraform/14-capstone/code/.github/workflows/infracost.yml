@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout base branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.base.ref }}
 
@@ -55,7 +55,7 @@ jobs:
         continue-on-error: true
 
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # PR 分支成本
       - name: Generate PR cost

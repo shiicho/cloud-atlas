@@ -32,7 +32,7 @@ terraform version
 ```
 
 ```
-Terraform v1.9.x
+Terraform v1.14.x
 on linux_amd64
 ```
 

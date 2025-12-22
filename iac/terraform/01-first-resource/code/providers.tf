@@ -6,15 +6,16 @@
 
 terraform {
   # Terraform CLI 版本约束
-  # 使用 1.0.0 或更高版本
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.9.0, < 2.0.0"
 
   # Provider 版本约束
   required_providers {
     # AWS Provider
+    # Note: AWS Provider 6.x available (June 2025) with breaking changes
+    # See upgrade guide: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-6-upgrade
     aws = {
-      source  = "hashicorp/aws"    # Provider 来源（Terraform Registry）
-      version = "~> 5.0"           # 悲观约束：5.x（不超过 6.0）
+      source  = "hashicorp/aws"
+      version = "~> 5.0"           # 保持 5.x 以确保稳定性
     }
 
     # Random Provider（生成随机值）

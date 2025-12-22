@@ -378,14 +378,16 @@ moved {
 
 ### 3.3 添加 Policy Gate
 
-配置 tfsec 和 tflint 在 CI 中运行：
+配置 Trivy 和 tflint 在 CI 中运行：
 
 ```yaml
 # .github/workflows/terraform-plan.yml
-- name: Run tfsec
-  uses: aquasecurity/tfsec-action@v1.0.0
+- name: Run Trivy
+  uses: aquasecurity/trivy-action@master
   with:
-    working_directory: environments/dev
+    scan-type: 'config'
+    scan-ref: 'environments/dev'
+    severity: 'HIGH,CRITICAL'
 
 - name: Run tflint
   uses: terraform-linters/setup-tflint@v3
@@ -410,7 +412,7 @@ moved {
 
 - [ ] 成功导入一个手动创建的资源
 - [ ] moved block 正常工作（无资源重建）
-- [ ] tfsec/tflint 在 CI 中运行并通过
+- [ ] Trivy/tflint 在 CI 中运行并通过
 - [ ] Infracost PR 评论显示成本
 
 ---

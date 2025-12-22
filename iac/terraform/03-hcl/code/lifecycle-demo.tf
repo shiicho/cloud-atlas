@@ -96,8 +96,7 @@ resource "null_resource" "config_watcher" {
     sg_id = aws_security_group.lifecycle_demo.id
   }
 
-  # 注意：null_resource 需要 hashicorp/null provider
-  # 这里仅作演示，实际使用需要添加 provider
+  # null_resource 使用 hashicorp/null provider（已在 providers.tf 中配置）
 }
 
 # -----------------------------------------------------------------------------

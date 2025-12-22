@@ -24,6 +24,8 @@ terraform {
   # -------------------------------------------------------------------------
   required_providers {
     # AWS Provider
+    # Note: AWS Provider 6.x available (June 2025) with breaking changes
+    # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-6-upgrade
     aws = {
       # source: Provider 来源
       # 格式: namespace/name（如 hashicorp/aws）

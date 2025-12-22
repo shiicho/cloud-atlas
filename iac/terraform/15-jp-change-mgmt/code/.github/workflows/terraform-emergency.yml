@@ -34,7 +34,7 @@ permissions:
   issues: write
 
 env:
-  TF_VERSION: "1.9.0"
+  TF_VERSION: "1.14.3"
   AWS_REGION: "ap-northeast-1"
   WORKING_DIR: "terraform"
 
@@ -80,7 +80,7 @@ jobs:
     # 手動承認なし - Emergency Role で制御
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Emergency Role で認証
       - name: Configure AWS credentials (Emergency Role)

@@ -35,7 +35,7 @@ permissions:
   pull-requests: write # PR へのコメント
 
 env:
-  TF_VERSION: "1.9.0"
+  TF_VERSION: "1.14.3"
   AWS_REGION: "ap-northeast-1"
   WORKING_DIR: "terraform"
 
@@ -95,7 +95,7 @@ jobs:
     needs: change-freeze-check
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Plan Role で認証（読み取り専用）
       - name: Configure AWS credentials (Plan Role)

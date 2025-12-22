@@ -41,7 +41,7 @@ jobs:
       # Step 1: Checkout PR 分支
       # -------------------------------------------------------------------------
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # -------------------------------------------------------------------------
       # Step 2: 配置 AWS 凭证（用于获取实际使用量数据）
@@ -65,7 +65,7 @@ jobs:
       # Step 4: Checkout base 分支（用于比较）
       # -------------------------------------------------------------------------
       - name: Checkout base branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.base.ref }}
           path: base

@@ -40,7 +40,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TF_VERSION: "1.9.0"
+  TF_VERSION: "1.14.3"
   AWS_REGION: "ap-northeast-1"
   WORKING_DIRECTORY: "environments/dev"
 
@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -80,7 +80,7 @@ jobs:
 
       # tflint
       - name: Setup tflint
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: latest
 
@@ -95,13 +95,15 @@ jobs:
         run: tflint --format compact
         continue-on-error: true
 
-      # tfsec 安全扫描
-      - name: Run tfsec
-        id: tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
+      # Trivy 安全扫描（tfsec 的继承者）
+      - name: Run Trivy
+        id: trivy
+        uses: aquasecurity/trivy-action@master
         with:
-          working_directory: ${{ env.WORKING_DIRECTORY }}
-          soft_fail: true
+          scan-type: 'config'
+          scan-ref: ${{ env.WORKING_DIRECTORY }}
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
 
       # 检查结果汇总
       - name: Check Results
@@ -123,7 +125,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

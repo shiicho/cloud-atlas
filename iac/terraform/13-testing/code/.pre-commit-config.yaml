@@ -13,7 +13,7 @@ repos:
   # Terraform formatting and validation
   # ---------------------------------------------------------------------------
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.96.1
+    rev: v1.104.0
     hooks:
       # Format check (auto-fix)
       # Automatically fixes formatting issues
@@ -32,10 +32,10 @@ repos:
           - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
 
       # Security scanning (optional but recommended)
-      # Scans for security issues
-      - id: terraform_tfsec
+      # Scans for security issues using Trivy (tfsec successor)
+      - id: terraform_trivy
         args:
-          - --args=--soft-fail
+          - --args=--severity HIGH,CRITICAL
 
       # Documentation generation (optional)
       # Auto-generates README from terraform-docs
@@ -49,7 +49,7 @@ repos:
   # General code quality
   # ---------------------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       # Remove trailing whitespace
       - id: trailing-whitespace

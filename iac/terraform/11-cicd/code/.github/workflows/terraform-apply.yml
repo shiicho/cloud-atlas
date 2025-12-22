@@ -38,7 +38,7 @@ permissions:
 env:
   TF_WORKING_DIR: terraform
   AWS_REGION: ap-northeast-1
-  TF_VERSION: "1.9.0"
+  TF_VERSION: "1.14.3"
 
 jobs:
   # =============================================================================
@@ -75,7 +75,7 @@ jobs:
       # Step 1: Checkout 代码
       # -------------------------------------------------------------------------
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # -------------------------------------------------------------------------
       # Step 2: 配置 AWS 凭证（OIDC 方式）
