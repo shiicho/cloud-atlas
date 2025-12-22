@@ -157,6 +157,8 @@ Resources:
         # S3 full access (for Terraform S3 exercises)
         # Using managed policy avoids permission gaps as AWS provider evolves
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        # CloudFormation read access (for querying stack outputs)
+        - arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
       Policies:
         # Terraform learning permissions (scoped)
         - PolicyName: TerraformLearningPermissions
