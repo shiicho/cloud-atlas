@@ -198,6 +198,42 @@ No changes. Your infrastructure matches the configuration.
 
 ![Import Flow - Before and After](images/import-flow.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  BEFORE Import                                                  │
+│  ┌─────────────────┐                    ┌─────────────────────┐ │
+│  │    main.tf      │    -- no link --   │     AWS Cloud       │ │
+│  │  (empty/none)   │                    │   EC2: i-abc123     │ │
+│  ├─────────────────┤                    │ (manually created)  │ │
+│  │     State       │                    └─────────────────────┘ │
+│  │    (empty)      │                                            │
+│  └─────────────────┘                                            │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    terraform import / apply
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  AFTER Import                                                   │
+│  ┌─────────────────┐    ← mapping →     ┌─────────────────────┐ │
+│  │    main.tf      │                    │     AWS Cloud       │ │
+│  │resource "imported"│                   │   EC2: i-abc123     │ │
+│  └────────┬────────┘                    │ (Terraform managed) │ │
+│           │                             └─────────────────────┘ │
+│           ▼                                       ▲             │
+│  ┌─────────────────┐                              │             │
+│  │     State       │──────────────────────────────┘             │
+│  │   Records ID    │                                            │
+│  └─────────────────┘                                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+</details>
+
 ### 3.2 Import 做了什么
 
 | 步骤 | 说明 |
@@ -289,6 +325,36 @@ terraform plan
 ### 4.4 对比两种方式
 
 ![Import Approaches Comparison](images/import-approaches.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌─────────────────────────────────────┐  ┌─────────────────────────────────────┐
+│ Traditional: terraform import cmd   │  │ Recommended: Import Block (TF 1.5+) │
+├─────────────────────────────────────┤  ├─────────────────────────────────────┤
+│                                     │  │                                     │
+│ 1. Query AWS resource attributes    │  │ 1. Declare import block [Declarative]│
+│    aws ec2 describe-instances ...   │  │    import {                         │
+│              │                      │  │      id = "i-xxx"                   │
+│              ▼                      │  │      to = aws_instance.legacy       │
+│ 2. Manually write main.tf [Manual]  │  │    }                                │
+│    resource "aws_instance" "legacy" │  │              │                      │
+│    { ami = "..." # fill manually }  │  │              ▼                      │
+│              │                      │  │ 2. Auto-generate code [Automated]   │
+│              ▼                      │  │    terraform plan -generate...      │
+│ 3. Execute import command           │  │              │                      │
+│    terraform import aws_instance... │  │              ▼                      │
+│              │                      │  │ 3. Review + Apply [One-shot]        │
+│              ▼                      │  │    terraform apply                  │
+│ 4. Iterate plan/adjust [Repetitive] │  │                                     │
+│    terraform plan # fix, repeat...  │  │ Advantages: Automated, reviewable   │
+│                                     │  │                                     │
+│ Pain: Manual, error-prone, slow     │  └─────────────────────────────────────┘
+└─────────────────────────────────────┘
+```
+
+</details>
 
 ---
 
@@ -383,6 +449,43 @@ resource "aws_instance" "web_server" {
 ### 6.1 两种策略对比
 
 ![Import Strategies](images/import-strategies.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Strategy 1: Incremental Import  [Recommended]                  │
+│                                                                 │
+│  ┌─────┐    ┌─────┐    ┌─────┐    ┌─────┐                      │
+│  │ VPC │ ─▶ │ EC2 │ ─▶ │ RDS │ ─▶ │ S3  │                      │
+│  │Phase1│   │Phase2│   │Phase3│   │Phase4│                      │
+│  └─────┘    └─────┘    └─────┘    └─────┘                      │
+│                                                                 │
+│  Advantages:                                                    │
+│  • Risk controlled - handle one part at a time                  │
+│  • Easy to locate issues                                        │
+│  • Team can work in parallel                                    │
+│                                                                 │
+│  Best for: Production systems currently in operation            │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  Strategy 2: Full Import  [Use with caution]                    │
+│                                                                 │
+│  ┌─────────────────────────────────────────┐                    │
+│  │  VPC + EC2 + RDS + S3 + IAM + ...       │                    │
+│  │          Import all at once             │                    │
+│  └─────────────────────────────────────────┘                    │
+│                                                                 │
+│  Advantages: Fast completion, suitable for small environments   │
+│  Risks: Hard to locate issues, difficult to rollback            │
+│                                                                 │
+│  Best for: Dev/Test environments, projects with few resources   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 ### 6.2 导入优先级
 
@@ -568,6 +671,28 @@ rm -rf .terraform terraform.tfstate* generated.tf
 **Import 流程核心步骤**：
 
 ![Import Summary Workflow](images/import-summary.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+                    Import Complete Workflow
+
+┌─────────┐   ┌─────────┐   ┌──────────┐   ┌─────────┐
+│ 1. Plan │ → │2.Declare│ → │3.Generate│ → │4.Review │
+│  Scope  │   │ import  │   │   plan   │   │  Code   │
+│& strategy│   │  block  │   │-generate │   │optimize │
+└─────────┘   └─────────┘   └──────────┘   └────┬────┘
+                                                │
+                                                ▼
+┌──────────┐   ┌─────────┐   ┌──────────┐   ┌─────────┐
+│8.Document│ ← │ 7. Test │ ← │6. Verify │ ← │5. Apply │
+│  Update  │   │  Ensure │   │  plan    │   │ Execute │
+│  README  │   │ no drift│   │  no diff │   │ import  │
+└──────────┘   └─────────┘   └──────────┘   └─────────┘
+```
+
+</details>
 
 **最佳实践**：
 

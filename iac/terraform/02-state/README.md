@@ -101,6 +101,35 @@ cat terraform.tfstate | head -30
 
 ![Local State Conflict](images/local-state-conflict.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌─────────────────┐          ┌─────────────────┐
+│    开发者 A      │          │    开发者 B      │
+│                 │          │                 │
+│  ┌───────────┐  │          │  ┌───────────┐  │
+│  │  tfstate  │  │          │  │  tfstate  │  │
+│  │(version 1)│  │          │  │(version 1)│  │
+│  └───────────┘  │          │  └───────────┘  │
+└────────┬────────┘          └────────┬────────┘
+         │                            │
+         ▼                            ▼
+      apply                        apply
+       同时                          同时
+         │                            │
+         └──────────┬─────────────────┘
+                    ▼
+         ┌─────────────────────┐
+         │        AWS          │
+         │                     │
+         │  谁的修改会生效?     │
+         │  谁的 State 会被覆盖? │
+         └─────────────────────┘
+```
+
+</details>
+
 **Local State 的致命问题**：
 
 | 问题 | 后果 |
@@ -242,6 +271,35 @@ aws s3 ls s3://tfstate-你的后缀/lesson-02/
 ### 4.1 远程后端架构
 
 ![Remote Backend Architecture](images/remote-backend.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌─────────────┐          ┌─────────────┐
+│ Developer A │          │ Developer B │
+└──────┬──────┘          └──────┬──────┘
+       │                        │
+       └───────────┬────────────┘
+                   ▼
+    ┌─────────────────────────────────┐
+    │          S3 Bucket              │
+    │  ┌───────────────────────────┐  │
+    │  │ terraform.tfstate (shared)│  │
+    │  └───────────────────────────┘  │
+    │                                 │
+    │  ┌───────────────────────────┐  │
+    │  │  DynamoDB Lock Table      │  │
+    │  │  Only one can apply       │  │
+    │  └───────────────────────────┘  │
+    └────────────────┬────────────────┘
+                     ▼
+          ┌───────────────────┐
+          │   AWS Resources   │
+          └───────────────────┘
+```
+
+</details>
 
 ### 4.2 State Locking 机制
 

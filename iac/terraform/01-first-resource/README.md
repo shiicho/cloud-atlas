@@ -123,6 +123,25 @@ aws s3 ls | grep my-first-terraform
 
 ![Terraform Workflow](images/terraform-workflow.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│  terraform init  │      │  terraform plan  │      │ terraform apply  │
+│                  │ ───▶ │                  │ ───▶ │                  │
+│  下载 Provider   │      │  对比代码与      │      │  调用 AWS API    │
+│  准备工作目录    │      │  当前状态        │      │  创建资源        │
+└──────────────────┘      └────────┬─────────┘      └────────┬─────────┘
+                                   │                         │
+                                   ▼                         │
+                          ┌──────────────────┐               │
+                          │terraform.tfstate │ ◀─── 更新状态 ─┘
+                          └──────────────────┘
+```
+
+</details>
+
 ### 3.2 新生成的文件
 
 ```bash

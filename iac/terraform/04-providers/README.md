@@ -134,6 +134,39 @@ required_providers {
 
 ![terraform init 流程](images/init-flow.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+                    ┌─────────────────┐
+                    │  terraform init │
+                    └────────┬────────┘
+                             ▼
+                ┌────────────────────────┐
+                │       Step 1           │
+                │  required_providers    │
+                │  (version constraints) │
+                └────────────┬───────────┘
+                             ▼
+                ┌────────────────────────┐
+                │       Step 2           │
+                │  .terraform.lock.hcl   │
+                │   (locked version)     │
+                └─────┬──────┬──────┬────┘
+                      │      │      │
+          ┌───────────┘      │      └───────────┐
+          ▼                  ▼                  ▼
+  ┌───────────────┐  ┌──────────────┐  ┌────────────────┐
+  │lock.hcl exists│  │ No lock file │  │Version mismatch│
+  └───────┬───────┘  └──────┬───────┘  └───────┬────────┘
+          ▼                  ▼                  ▼
+  ┌───────────────┐  ┌──────────────┐  ┌────────────────┐
+  │Use locked ver │  │Download latest│  │-upgrade needed │
+  └───────────────┘  └──────────────┘  └────────────────┘
+```
+
+</details>
+
 ### 3.3 锁文件的 Git 策略
 
 | 文件 | Git 提交？ | 原因 |

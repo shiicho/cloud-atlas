@@ -133,6 +133,26 @@ Terraform 告诉你：
 
 ![Drift Concept](images/drift-concept.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+┌─────────────────────┐              ┌─────────────────────┐
+│  Terraform 代码 (.tf)│   ← → →     │   AWS 真实资源状态   │
+│                     │              │                     │
+│  Environment=dev    │  Drift (不匹配!)  │Environment=production│
+└──────────┬──────────┘              └──────────┬──────────┘
+           │                                    │
+           └──────────────┬─────────────────────┘
+                          ▼
+               ┌─────────────────────┐
+               │     State 文件      │
+               │   (最后已知状态)    │
+               └─────────────────────┘
+```
+
+</details>
+
 **Drift 的定义**：Terraform 代码定义的状态与 AWS 实际资源状态不一致。
 
 ### 2.2 Drift 产生的常见原因
@@ -509,6 +529,32 @@ terraform destroy -auto-approve
 ### Drift 处理策略
 
 ![Drift Decision Tree](images/drift-decision-tree.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+                ┌─────────────────┐
+                │   检测到 Drift   │
+                └────────┬────────┘
+                         │
+                         ▼
+              ┌─────────────────────┐
+              │ 手动修改是否正确?    │
+              └──────────┬──────────┘
+                         │
+           ┌─────────────┴─────────────┐
+           ▼                           ▼
+         [是]                        [否]
+           │                           │
+           ▼                           ▼
+    ┌─────────────┐            ┌──────────────────┐
+    │  更新代码    │            │ terraform apply  │
+    │  接受现实    │            │   恢复代码定义    │
+    └─────────────┘            └──────────────────┘
+```
+
+</details>
 
 ### 核心理念
 

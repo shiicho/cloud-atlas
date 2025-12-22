@@ -116,6 +116,46 @@ Result #2 MEDIUM State file contains sensitive data
 
 ![Secrets in Terraform Lifecycle](images/secrets-lifecycle.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+                 Secrets in Terraform Lifecycle
+
+  ┌───────────────────────────────────────────────────────────┐
+  │ ✗ Anti-Pattern: Hardcoded Secrets                         │
+  ├───────────────────────────────────────────────────────────┤
+  │                                                           │
+  │  main.tf                    terraform.tfstate             │
+  │  ┌─────────────────┐        ┌─────────────────┐           │
+  │  │ password =      │  plan  │ "password":     │           │
+  │  │ "Secret123!"    │ ─────▶ │ "Secret123!"    │           │
+  │  └─────────────────┘  apply └─────────────────┘           │
+  │        ▲                           ▲                      │
+  │        │                           │                      │
+  │   ⚠️ In Git!                  ⚠️ In S3!                   │
+  │                                                           │
+  └───────────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────┐
+  │ ✓ Best Practice: Dynamic Secrets via Data Source          │
+  ├───────────────────────────────────────────────────────────┤
+  │                                                           │
+  │  main.tf                    SSM Parameter Store           │
+  │  ┌─────────────────┐        ┌─────────────────┐           │
+  │  │ data "aws_ssm"  │  API   │ /myapp/db/pass  │           │
+  │  │ { name = "..." }│ ─────▶ │ SecureString    │           │
+  │  └─────────────────┘        └─────────────────┘           │
+  │        │                           │                      │
+  │        │                           │                      │
+  │   ✓ No secrets                ✓ KMS encrypted             │
+  │     in code                     + IAM access              │
+  │                                                           │
+  └───────────────────────────────────────────────────────────┘
+```
+
+</details>
+
 ### sensitive = true 的真相
 
 ```hcl
@@ -148,6 +188,41 @@ terraform state pull | grep -A 5 "password"
 ### 1. 动态获取密钥：SSM Parameter Store
 
 ![SSM Parameter Store Integration](images/ssm-integration.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+           SSM Parameter Store Integration
+
+  ┌─────────────┐                              ┌─────────────┐
+  │  Ops Team   │                              │     AWS     │
+  │  (人間)      │                              │             │
+  └──────┬──────┘                              └──────▲──────┘
+         │                                            │
+       1 │ aws ssm put-parameter                      │
+         │ --name "/app/db/pass"                      │
+         │ --type SecureString                        │
+         ▼                                            │
+  ┌─────────────────────────────────────────────────────────┐
+  │                  SSM Parameter Store                     │
+  │  ┌─────────────────────────────────────────────────┐    │
+  │  │ /myapp/prod/db/password  [SecureString, KMS]    │    │
+  │  │ /myapp/prod/db/username  [String]               │    │
+  │  │ /myapp/prod/api/key      [SecureString, KMS]    │    │
+  │  └─────────────────────────────────────────────────┘    │
+  └─────────────────────────────────────────────────────────┘
+         ▲                                            │
+       2 │ data "aws_ssm_parameter"                   │
+         │ with_decryption = true                   3 │
+         │                                            │
+  ┌──────┴──────┐                              ┌──────┴──────┐
+  │  Terraform  │──── terraform apply ────────▶│  RDS / EC2  │
+  │   (CI/CD)   │         (runtime)            │  (resources)│
+  └─────────────┘                              └─────────────┘
+```
+
+</details>
 
 **SSM Parameter Store vs Secrets Manager**：
 
@@ -218,6 +293,46 @@ checkov -d . --check CKV_AWS_18,CKV_AWS_19
 ### 3. IAM 最小权限原则
 
 ![IAM Least Privilege Design](images/iam-least-privilege.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+                IAM Least Privilege Design
+
+  ┌───────────────────────────────────────────────────────────┐
+  │ ✗ Anti-Pattern: Admin Role for Terraform                  │
+  ├───────────────────────────────────────────────────────────┤
+  │                                                           │
+  │  ┌─────────────┐     ┌─────────────────────────────────┐  │
+  │  │  Terraform  │────▶│  AdministratorAccess            │  │
+  │  │   (CI/CD)   │     │  ⚠️ Full AWS access             │  │
+  │  └─────────────┘     │  ⚠️ Can do anything             │  │
+  │                      └─────────────────────────────────┘  │
+  │                                                           │
+  └───────────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────┐
+  │ ✓ Best Practice: Separate Plan vs Apply Roles             │
+  ├───────────────────────────────────────────────────────────┤
+  │                                                           │
+  │  ┌─────────────┐     ┌─────────────────────────────────┐  │
+  │  │  Plan Job   │────▶│  TerraformPlanRole              │  │
+  │  │   (PR)      │     │  ✓ ReadOnlyAccess               │  │
+  │  └─────────────┘     │  ✓ s3:GetObject (state)         │  │
+  │                      └─────────────────────────────────┘  │
+  │                                                           │
+  │  ┌─────────────┐     ┌─────────────────────────────────┐  │
+  │  │  Apply Job  │────▶│  TerraformApplyRole             │  │
+  │  │  (main)     │     │  ✓ Scoped write access          │  │
+  │  └─────────────┘     │  ✓ Only needed services         │  │
+  │                      │  ✓ MFA required (optional)      │  │
+  │                      └─────────────────────────────────┘  │
+  │                                                           │
+  └───────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 ### 4. State 文件安全
 

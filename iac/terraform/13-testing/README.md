@@ -135,6 +135,44 @@ Pre-commit 自动完成了：
 
 ![Pre-commit Flow](images/pre-commit-flow.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+                    Pre-commit Flow
+
+  Developer                           Git Repository
+      │                                     │
+    1 │ Edit files                          │
+      │                                     │
+    2 │ git add .                           │
+      │                                     │
+    3 │ git commit -m "..."                 │
+      │                                     │
+      ▼                                     │
+  ┌────────────────────────────────────┐    │
+  │         Pre-commit Hooks           │    │
+  │  ┌──────────────────────────────┐  │    │
+  │  │ terraform fmt    [auto-fix]  │──┼──▶ Modified files
+  │  │ terraform validate  [check]  │  │    │
+  │  │ tflint             [check]   │  │    │
+  │  │ tfsec              [check]   │  │    │
+  │  └──────────────────────────────┘  │    │
+  │                                    │    │
+  │  ┌──────────┐    ┌──────────────┐  │    │
+  │  │ ✓ Passed │    │ ✗ Failed     │  │    │
+  │  └────┬─────┘    └───────┬──────┘  │    │
+  └───────┼──────────────────┼─────────┘    │
+          │                  │              │
+          ▼                  ▼              │
+    Commit created     Commit blocked       │
+          │                  │              │
+          ▼                  │              │
+  ────────┴──────────────────┴──────────────┘
+```
+
+</details>
+
 ### 3.2 质量保证分层模型
 
 | 工具 | 检查类型 | 运行时机 | 自动修复 |
@@ -327,6 +365,46 @@ rm aws-check.tf
 
 ![Terraform Test Flow](images/terraform-test-flow.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+                  Terraform Test Flow
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  tests/                                                 │
+  │  └── s3_bucket.tftest.hcl                               │
+  │      ┌─────────────────────────────────────────────┐    │
+  │      │ run "test_name" {                           │    │
+  │      │   command = plan | apply                    │    │
+  │      │   variables { ... }                         │    │
+  │      │   assert { condition = ... }                │    │
+  │      │ }                                           │    │
+  │      └─────────────────────────────────────────────┘    │
+  └────────────────────────┬────────────────────────────────┘
+                           │
+                           ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │                  terraform test                          │
+  │  ┌─────────────────────────────────────────────────┐    │
+  │  │ 1. Init module                                  │    │
+  │  │ 2. For each "run" block:                        │    │
+  │  │    ├─ Set variables                             │    │
+  │  │    ├─ Execute command (plan/apply)              │    │
+  │  │    └─ Evaluate assertions                       │    │
+  │  │ 3. Cleanup (destroy if apply mode)              │    │
+  │  └─────────────────────────────────────────────────┘    │
+  └────────────────────────┬────────────────────────────────┘
+                           │
+                           ▼
+  ┌──────────────────┐    ┌──────────────────┐
+  │ ✓ All passed     │    │ ✗ Failures       │
+  │   Exit code: 0   │    │   Exit code: 1   │
+  └──────────────────┘    └──────────────────┘
+```
+
+</details>
+
 ### 6.2 查看测试文件
 
 ```bash
@@ -452,6 +530,43 @@ run "test_name" {
 ### 7.1 什么是 Policy as Code？
 
 ![Policy as Code](images/policy-as-code.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+                    Policy as Code
+
+  ┌─────────────────────────────────────────────────────────┐
+  │ Traditional: Manual Compliance Check                     │
+  ├─────────────────────────────────────────────────────────┤
+  │                                                          │
+  │  Developer ─▶ PR ─▶ Manual Review ─▶ [Approved?] ─▶ Merge│
+  │                      (Human reads                        │
+  │                       policy docs)                       │
+  │                                                          │
+  │  ⚠️ Slow, error-prone, inconsistent                      │
+  └─────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────┐
+  │ Policy as Code: Automated Enforcement                    │
+  ├─────────────────────────────────────────────────────────┤
+  │                                                          │
+  │  Developer ─▶ PR ─▶ terraform plan ─▶ OPA/Sentinel      │
+  │                          │                 │             │
+  │                          ▼                 ▼             │
+  │                     plan.json ──▶ Policy Evaluation      │
+  │                                       │                  │
+  │                          ┌────────────┴────────────┐     │
+  │                          ▼                         ▼     │
+  │                    ✓ Compliant              ✗ Denied     │
+  │                    (Auto-merge OK)         (Block PR)    │
+  │                                                          │
+  │  ✓ Fast, consistent, auditable                           │
+  └─────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 ### 7.2 OPA vs Sentinel
 

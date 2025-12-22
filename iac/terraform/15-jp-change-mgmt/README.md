@@ -28,6 +28,55 @@
 
 ![Japan IT Change Management Flow](images/japan-change-flow.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+           Japan IT Change Management Flow (変更管理フロー)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                                                                 │
+  │  Developer           Team Lead          Infra Manager          │
+  │     │                   │                    │                  │
+  │   1 │ Create PR         │                    │                  │
+  │     │ (変更申請)         │                    │                  │
+  │     ▼                   │                    │                  │
+  │  ┌──────────┐           │                    │                  │
+  │  │terraform │           │                    │                  │
+  │  │  plan    │           │                    │                  │
+  │  └────┬─────┘           │                    │                  │
+  │       │                 │                    │                  │
+  │     2 │ Plan 結果        │                    │                  │
+  │       ├────────────────▶│                    │                  │
+  │       │                 │ 3 コードレビュー     │                  │
+  │       │                 │   (Code Review)    │                  │
+  │       │                 ▼                    │                  │
+  │       │           ┌──────────┐               │                  │
+  │       │           │ Approve  │               │                  │
+  │       │           └────┬─────┘               │                  │
+  │       │                │                     │                  │
+  │       │              4 │ 本番承認             │                  │
+  │       │                ├────────────────────▶│                  │
+  │       │                │                     │ 5 承認 or 却下    │
+  │       │                │                     ▼                  │
+  │       │                │              ┌──────────────┐          │
+  │       │                │              │ Environment  │          │
+  │       │                │              │  Approval    │          │
+  │       │                │              └───────┬──────┘          │
+  │       │                │                      │                 │
+  │     6 │◀────────────────┴──────────────────────┘                 │
+  │       │ Merge to main                                           │
+  │       ▼                                                         │
+  │  ┌──────────┐                                                   │
+  │  │terraform │                                                   │
+  │  │  apply   │                                                   │
+  │  └──────────┘                                                   │
+  │                                                                 │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+</details>
+
 ### 快速体验：查看示例代码
 
 ```bash
@@ -86,6 +135,49 @@ code/
 
 ![Segregation of Duties](images/segregation-of-duties.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+            Segregation of Duties (権限分離)
+
+  ┌───────────────────────────────────────────────────────────────┐
+  │ ✗ Anti-Pattern: Same Role for Plan and Apply                  │
+  ├───────────────────────────────────────────────────────────────┤
+  │                                                               │
+  │  Developer ──▶ AdministratorAccess ──▶ terraform plan/apply   │
+  │                                                               │
+  │  ⚠️ Developer can modify production without approval          │
+  │  ⚠️ No audit trail of who approved                            │
+  │  ⚠️ Single point of failure                                   │
+  │                                                               │
+  └───────────────────────────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────────┐
+  │ ✓ Best Practice: Separate Roles for Plan and Apply            │
+  ├───────────────────────────────────────────────────────────────┤
+  │                                                               │
+  │  PR (feature branch)              main branch                 │
+  │       │                               │                       │
+  │       ▼                               ▼                       │
+  │  ┌──────────────┐                ┌──────────────┐             │
+  │  │  Plan Role   │                │  Apply Role  │             │
+  │  │  (ReadOnly)  │                │  (Write)     │             │
+  │  └───────┬──────┘                └───────┬──────┘             │
+  │          │                               │                    │
+  │          ▼                               ▼                    │
+  │    terraform plan              terraform apply                │
+  │    (safe, no changes)          (requires approval)            │
+  │                                                               │
+  │  ✓ Four-eyes principle (四つ目の原則)                          │
+  │  ✓ Clear audit trail                                          │
+  │  ✓ Compliant with J-SOX, ISMS, ISMAP                          │
+  │                                                               │
+  └───────────────────────────────────────────────────────────────┘
+```
+
+</details>
+
 **为什么需要权限分离？**
 
 1. **防止误操作**：开发者不能直接修改生产环境
@@ -102,6 +194,46 @@ code/
 使用 GitHub Actions OIDC，根据分支名授予不同权限：
 
 ![OIDC Branch-Based Role Selection](images/oidc-branch-roles.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+          OIDC Branch-Based Role Selection
+
+  GitHub Actions                              AWS IAM
+       │                                         │
+       │  ┌─────────────────────────────────┐    │
+       │  │ Pull Request (feature branch)   │    │
+       │  │ sub: repo:org/repo:pull_request │    │
+       │  └────────────────┬────────────────┘    │
+       │                   │                     │
+       │                   │ OIDC Token          │
+       │                   ▼                     │
+       │            ┌──────────────┐             │
+       │            │ Trust Policy │             │
+       │            │ Condition:   │             │
+       │            │ pull_request │─────────────▶ Plan Role
+       │            └──────────────┘             │  (ReadOnly)
+       │                                         │
+       │  ┌─────────────────────────────────┐    │
+       │  │ Push to main                    │    │
+       │  │ sub: repo:org/repo:ref:refs/    │    │
+       │  │      heads/main                 │    │
+       │  └────────────────┬────────────────┘    │
+       │                   │                     │
+       │                   │ OIDC Token          │
+       │                   ▼                     │
+       │            ┌──────────────┐             │
+       │            │ Trust Policy │             │
+       │            │ Condition:   │             │
+       │            │ refs/heads/  │─────────────▶ Apply Role
+       │            │ main         │             │  (Write)
+       │            └──────────────┘             │
+       │                                         │
+```
+
+</details>
 
 ### 2. 変更凍結期間（Change Freeze）
 
@@ -165,6 +297,52 @@ code/
 **Break-glass**（ブレークグラス）是紧急变更的特殊流程：
 
 ![Break-glass Emergency Change Flow](images/break-glass-flow.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+           Break-glass Emergency Change Flow (緊急変更手順)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                     Normal Flow (通常フロー)                      │
+  │                                                                 │
+  │  PR ─▶ Plan ─▶ Review ─▶ Approve ─▶ Merge ─▶ Apply              │
+  │                                                                 │
+  │  ⛔ BLOCKED during Change Freeze (変更凍結中)                    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                 Break-glass Flow (緊急変更フロー)                 │
+  ├─────────────────────────────────────────────────────────────────┤
+  │                                                                 │
+  │  1. 障害発生 (Incident)                                          │
+  │       │                                                         │
+  │       ▼                                                         │
+  │  2. 緊急連絡 (Slack/電話)                                        │
+  │       │ Contact: infra-manager@company.com                      │
+  │       ▼                                                         │
+  │  3. 承認取得 (Verbal Approval)                                   │
+  │       │ Record: Time, Approver, Reason                          │
+  │       ▼                                                         │
+  │  4. Emergency Role 有効化                                        │
+  │       │ Manager enables temporary access                        │
+  │       ▼                                                         │
+  │  5. 変更実施 (terraform apply)                                   │
+  │       │ With full audit logging                                 │
+  │       ▼                                                         │
+  │  6. 事後報告書作成                                               │
+  │       │ templates/emergency-change.md                           │
+  │       ▼                                                         │
+  │  7. 通常 PR で記録を残す                                         │
+  │       │ Document the change in Git                              │
+  │       ▼                                                         │
+  │  8. レビュー会議 (Post-mortem)                                   │
+  │                                                                 │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 ---
 

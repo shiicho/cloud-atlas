@@ -105,6 +105,25 @@ terraform graph | grep -E "(vpc|subnet|security)"
 
 ![HCL Block Structure](images/hcl-block-structure.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+    ● Block Type   ● Labels        ● Arguments    ● Nested Block
+    ──────────────────────────────────────────────────────────────
+
+    resource "aws_instance" "web" {
+      ami           = "ami-0c55b159cbfafe1f0"
+      instance_type = "t2.micro"
+
+      tags {
+        Name = "HelloWorld"
+      }
+    }
+```
+
+</details>
+
 ### 3.2 资源块解剖
 
 ```hcl
@@ -125,6 +144,31 @@ resource "aws_vpc" "main" {
 ### 3.3 依赖关系可视化
 
 ![Resource Dependencies](images/resource-dependencies.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+        ┌─────────────────────┐
+        │    aws_vpc.main     │
+        └──────────┬──────────┘
+                   │
+                   ▼
+          subnet 引用 vpc.id
+                   │
+        ┌──────────┴──────────┐
+        │  aws_subnet.public  │
+        └──────────┬──────────┘
+                   │
+                   ▼
+       security_group 引用 vpc.id
+                   │
+        ┌──────────┴──────────┐
+        │aws_security_group.web│
+        └─────────────────────┘
+```
+
+</details>
 
 Terraform 通过引用（如 `aws_vpc.main.id`）自动建立**隐式依赖**。
 

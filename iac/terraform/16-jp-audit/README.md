@@ -90,6 +90,49 @@ log_bucket_arn = "arn:aws:s3:::tfstate-logs-myproject-abc123"
 
 ![Terraform Audit Log Architecture](images/terraform-audit-architecture.png)
 
+<details>
+<summary>View ASCII source</summary>
+
+```
+              Terraform Audit Log Architecture
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                        CI/CD Pipeline                           │
+  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+  │  │   PR Plan   │───▶│   Approve   │───▶│   Apply     │          │
+  │  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘          │
+  │         │                  │                  │                 │
+  └─────────┼──────────────────┼──────────────────┼─────────────────┘
+            │                  │                  │
+            ▼                  ▼                  ▼
+  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+  │   GitHub Logs   │  │   Git History   │  │   CloudTrail    │
+  │   (plan output) │  │   (approvers)   │  │   (API calls)   │
+  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+           │                    │                    │
+           └────────────────────┼────────────────────┘
+                                ▼
+                    ┌───────────────────────┐
+                    │    S3 State Bucket    │
+                    │  ┌─────────────────┐  │
+                    │  │  Versioning ✓   │  │
+                    │  │  Access Logs ✓  │  │
+                    │  │  Encryption ✓   │  │
+                    │  └─────────────────┘  │
+                    └───────────────────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │   監査証跡（Evidence）  │
+                    │   - 変更履歴           │
+                    │   - アクセス記録        │
+                    │   - API 操作記録        │
+                    │   - 承認フロー          │
+                    └───────────────────────┘
+```
+
+</details>
+
 ### 監査要件と Terraform 対応
 
 | 監査要件 | Terraform での対応 | 証跡（エビデンス） |
@@ -107,6 +150,40 @@ log_bucket_arn = "arn:aws:s3:::tfstate-logs-myproject-abc123"
 ### 1. S3 Versioning for State（変更履歴保持）
 
 ![S3 Versioning for Terraform State](images/s3-versioning-state.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+           S3 Versioning for Terraform State
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    S3 State Bucket                          │
+  │                                                             │
+  │  terraform.tfstate                                          │
+  │  ┌─────────────────────────────────────────────────────┐    │
+  │  │                                                     │    │
+  │  │  Version 1 (2025-01-10)  ← 初期構築                 │    │
+  │  │    │                                                │    │
+  │  │    ▼                                                │    │
+  │  │  Version 2 (2025-01-12)  ← EC2 追加                 │    │
+  │  │    │                                                │    │
+  │  │    ▼                                                │    │
+  │  │  Version 3 (2025-01-15)  ← RDS 設定変更            │    │
+  │  │    │                                                │    │
+  │  │    ▼                                                │    │
+  │  │  Version 4 (Current)     ← 最新                    │    │
+  │  │                                                     │    │
+  │  └─────────────────────────────────────────────────────┘    │
+  │                                                             │
+  │  ✓ 全バージョンを自動保持                                   │
+  │  ✓ 任意のバージョンにリストア可能                            │
+  │  ✓ 監査要件を満たす変更履歴                                  │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 **Terraform コード（Versioning 有効化）**：
 
@@ -140,6 +217,42 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
 S3 Access Logs は「誰が、いつ、State ファイルにアクセスしたか」を記録します。
 
 ![S3 Access Logs Flow](images/s3-access-logs.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+                  S3 Access Logs Flow
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   CI/CD          Developer       Admin                      │
+  │     │               │              │                        │
+  │     │ terraform     │ aws s3       │ aws s3api              │
+  │     │ apply         │ cp           │ get-object             │
+  │     ▼               ▼              ▼                        │
+  │  ┌──────────────────────────────────────────────────────┐   │
+  │  │                S3 State Bucket                       │   │
+  │  │               (terraform.tfstate)                    │   │
+  │  └───────────────────────┬──────────────────────────────┘   │
+  │                          │                                  │
+  │                          │ Access Logs                      │
+  │                          ▼                                  │
+  │  ┌──────────────────────────────────────────────────────┐   │
+  │  │              S3 Access Logs Bucket                   │   │
+  │  │  ┌────────────────────────────────────────────────┐  │   │
+  │  │  │ Timestamp: 2025-01-15T10:00:00Z               │  │   │
+  │  │  │ Requester: arn:aws:iam::123456789:role/CI     │  │   │
+  │  │  │ Operation: REST.GET.OBJECT                     │  │   │
+  │  │  │ Key: prod/terraform.tfstate                    │  │   │
+  │  │  │ HTTP Status: 200                               │  │   │
+  │  │  └────────────────────────────────────────────────┘  │   │
+  │  └──────────────────────────────────────────────────────┘   │
+  │                                                             │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 **Terraform コード（Access Logs 有効化）**：
 
@@ -205,6 +318,42 @@ resource "aws_cloudtrail" "terraform" {
 日本 IT 企業では、設計書（せっけいしょ）は非常に重視されます。
 
 ![Design Document Culture in Japan IT](images/design-doc-culture.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+        Design Document Culture in Japan IT (設計書文化)
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   Traditional Approach                      │
+  │                                                             │
+  │  設計書 (Word/Excel)      パラメータ一覧 (Excel)             │
+  │  ┌─────────────────┐     ┌─────────────────┐                │
+  │  │ ■ 基本情報       │     │ リソース│パラメータ│              │
+  │  │ ■ 構成図         │     │ EC2    │t3.micro │              │
+  │  │ ■ リソース一覧   │     │ RDS    │db.t3    │              │
+  │  │ ■ セキュリティ   │     │ ...    │...      │              │
+  │  └─────────────────┘     └─────────────────┘                │
+  │        ⚠️ 手動更新、乖離リスク                               │
+  └─────────────────────────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   IaC + Auto-Generation                      │
+  │                                                             │
+  │  Terraform Code           terraform-docs                    │
+  │  ┌─────────────────┐     ┌─────────────────┐                │
+  │  │ variables.tf    │────▶│ README.md       │                │
+  │  │ main.tf         │     │ (自動生成)       │                │
+  │  │ outputs.tf      │     │ - Inputs        │                │
+  │  └─────────────────┘     │ - Outputs       │                │
+  │                          │ - Resources     │                │
+  │                          └─────────────────┘                │
+  │        ✓ コードと常に同期、乖離なし                          │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 ### ISMS / ISMAP / SOC2 対応
 
@@ -336,6 +485,57 @@ cat README.md
 日本 IT 現場で最も恐れられる障害シナリオの一つです。
 
 ![State Disaster Recovery Flow](images/state-recovery-flow.png)
+
+<details>
+<summary>View ASCII source</summary>
+
+```
+           State Disaster Recovery Flow (障害復旧フロー)
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    障害発生 (Incident)                       │
+  │  ┌───────────────────────────────────────────────────────┐  │
+  │  │ ⚠️ State ファイル破損                                  │  │
+  │  │ ⚠️ terraform plan で予期しないエラー                   │  │
+  │  │ ⚠️ Lock が解除できない                                 │  │
+  │  └───────────────────────────────────────────────────────┘  │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   Step 1: 影響範囲確認                       │
+  │  $ terraform state list                                     │
+  │  $ aws s3api list-object-versions --bucket tfstate-bucket   │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   Step 2: 正常な Version を特定              │
+  │  $ aws s3api get-object --version-id GOOD_VERSION           │
+  │      --bucket tfstate-bucket state-backup.json              │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   Step 3: Lock 解除（必要に応じて）          │
+  │  $ terraform force-unlock LOCK_ID                           │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   Step 4: リストア + 確認                    │
+  │  $ aws s3 cp state-backup.json s3://bucket/terraform.tfstate│
+  │  $ terraform plan  # 差分なしを確認                          │
+  └──────────────────────────┬──────────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────────┐
+  │                   Step 5: インシデントレポート作成            │
+  │  - 発生日時、影響範囲、原因、対応内容、再発防止策            │
+  └─────────────────────────────────────────────────────────────┘
+```
+
+</details>
 
 ### 復旧スクリプトを実行（演習）
 
