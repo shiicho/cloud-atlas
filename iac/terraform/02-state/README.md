@@ -221,10 +221,10 @@ Do you want to copy existing state to the new backend?
 ### 3.4 验证远程 State
 
 ```bash
-# 本地 State 文件应该不存在了
-ls terraform.tfstate 2>/dev/null || echo "Local state removed (expected)"
+# 本地 State 文件可能仍存在，但已被清空（只剩空对象）
+cat terraform.tfstate
 
-# 验证远程 State
+# 验证远程 State 已创建
 aws s3 ls s3://你的bucket名称/lesson-02/
 ```
 
