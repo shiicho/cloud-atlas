@@ -200,6 +200,12 @@ terraform {
 }
 ```
 
+切换到远程后端示例目录：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
+```
+
 查看 `main.tf` 中的模板：
 
 ```bash
