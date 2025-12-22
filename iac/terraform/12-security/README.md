@@ -593,6 +593,25 @@ terraform apply -target=aws_db_instance.main
 
 ---
 
+## 清理资源
+
+> ⚠️ **本课创建了 SSM Parameter 和 KMS Key**，请务必清理：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/12-security/code
+
+# 删除安全相关资源
+terraform destroy -auto-approve
+
+# 确认 SSM Parameter 已删除
+aws ssm describe-parameters --query "Parameters[?contains(Name, 'demo')]"
+
+# 确认 KMS Key 已计划删除（有 7-30 天等待期）
+aws kms list-aliases --query "Aliases[?contains(AliasName, 'demo')]"
+```
+
+---
+
 ## 系列导航
 
-[11 - CI/CD 集成](../11-cicd/) | [Home](../) | [13 - 测试与质量保证 ->](../13-testing/)
+← [11 · CI/CD](../11-cicd/) | [Home](../) | [13 · 测试 →](../13-testing/)

@@ -310,7 +310,7 @@ Resources:
           ║  AWS CLI:   $(aws --version | cut -d' ' -f1 | cut -d'/' -f2)                                           ║
           ║                                                               ║
           ║  Quick Start:                                                 ║
-          ║    cd ~/terraform-examples/lesson-01-first-resource/code      ║
+          ║    cd ~/cloud-atlas/iac/terraform/01-first-resource/code      ║
           ║    terraform init                                             ║
           ║    terraform plan                                             ║
           ║                                                               ║

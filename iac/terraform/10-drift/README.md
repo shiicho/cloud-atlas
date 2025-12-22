@@ -591,4 +591,4 @@ A: コードで移動を宣言できるため、全環境で plan/apply 時に�
 
 ## 系列导航
 
-[09 - Import](../09-import/) | [Home](../) | [11 - CI/CD](../11-cicd/)
+← [09 · Import](../09-import/) | [Home](../) | [11 · CI/CD →](../11-cicd/)

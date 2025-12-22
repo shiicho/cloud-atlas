@@ -730,4 +730,4 @@ Error: AccessDenied: User is not authorized to perform: ec2:RunInstances
 
 ## 系列导航
 
-[14 - 实战项目](../14-capstone/) | [Home](../) | [16 - 日本 IT：監査対応 ->](../16-jp-audit/)
+← [14 · 实战项目](../14-capstone/) | [Home](../) | [16 · 監査対応 →](../16-jp-audit/)

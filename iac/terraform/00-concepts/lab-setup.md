@@ -35,7 +35,7 @@ aws sts get-caller-identity
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
 cd ~/cloud-atlas
 git sparse-checkout set iac/terraform
-cd iac/terraform/01-first-resource/cfn
+cd iac/terraform/00-concepts/cfn
 ```
 
 ### Step 2 — 部署 Stack
@@ -180,9 +180,10 @@ ls terraform-examples/
 ```
 
 ```
-lesson-01-first-resource/
-lesson-02-state/
-lesson-03-variables/
+00-concepts/
+01-first-resource/
+02-state/
+03-hcl/
 ...
 ```
 

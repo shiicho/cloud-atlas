@@ -471,7 +471,7 @@ terraform destroy -auto-approve
 
 State 安全存储了，但配置中还有硬编码的值。
 
-→ [03 · 变量系统](../03-variables/)
+→ [03 · HCL 语法与资源建模](../03-hcl/)
 
 ---
 
@@ -535,4 +535,4 @@ aws s3api get-bucket-policy --bucket tfstate-xxx
 
 ## 系列导航
 
-← [01 · 第一个资源](../01-first-resource/) | [Home](../) | [03 · 变量系统 →](../03-variables/)
+← [01 · 第一个资源](../01-first-resource/) | [Home](../) | [03 · HCL 语法 →](../03-hcl/)

@@ -690,4 +690,4 @@ Error: importing sg-xxx: security group rules must be imported separately
 
 ## 系列导航
 
-<-- [08 - 项目布局与多环境策略](../08-layout/) | [Home](../) | [10 - 漂移检测与状态操作 -->](../10-drift/)
+← [08 · 项目布局](../08-layout/) | [Home](../) | [10 · 漂移検知 →](../10-drift/)

@@ -390,6 +390,22 @@ Error: Error acquiring the state lock
 
 ---
 
+## 清理资源
+
+> ⚠️ **本课涉及 IAM Role 和 OIDC Provider**，请务必清理：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/11-cicd/code
+
+# 删除 OIDC Provider 和 IAM Role
+terraform destroy -auto-approve
+
+# 确认资源已删除
+aws iam list-open-id-connect-providers
+```
+
+---
+
 ## 系列导航
 
-[10 - 漂移检测](../10-drift/) | [Home](../) | [12 - 安全与机密管理 ->](../12-security/)
+← [10 · 漂移検知](../10-drift/) | [Home](../) | [12 · 安全管理 →](../12-security/)

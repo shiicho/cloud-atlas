@@ -520,4 +520,4 @@ aws dynamodb delete-item \
 
 ## 系列導航
 
-[15 - 日本 IT：変更管理と承認フロー](../15-jp-change-mgmt/) | [Home](../) | [Course Complete!]
+← [15 · 変更管理](../15-jp-change-mgmt/) | [Home](../) | 🎉 Course Complete!

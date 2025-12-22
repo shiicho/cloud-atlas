@@ -822,4 +822,4 @@ opa eval -i plan.json -d policy.rego "data.terraform.deny" --format pretty
 
 ## 系列导航
 
-<-- [12 - 安全与机密管理](../12-security/) | [Home](../) | [14 - 实战项目 -->](../14-capstone/)
+← [12 · 安全管理](../12-security/) | [Home](../) | [14 · 实战项目 →](../14-capstone/)
