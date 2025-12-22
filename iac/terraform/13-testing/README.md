@@ -772,7 +772,8 @@ rm -f sample-module/broken.tf
 rm -f sample-module/tfplan.binary
 rm -f sample-module/tfplan.json
 
-# 删除 git hooks（如果只是测试）
+# 删除本课创建的临时 git 仓库（仅限 code/ 目录内）
+# ⚠️ 确保当前目录是 13-testing/code，不要在主仓库执行！
 rm -rf .git
 ```
 
