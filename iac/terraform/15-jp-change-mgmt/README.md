@@ -1,8 +1,8 @@
 # 15 - 日本 IT：変更管理と承認フロー
 
-> **目标**：将 Terraform 工作流映射到日本 IT 企业的変更管理（Change Management）和稟議（承认）流程
-> **前置**：已完成 [14 - 实战项目](../14-capstone/) 或具备生产级 Terraform 经验
-> **时间**：60-90 分钟
+> **目标**：将 Terraform 工作流映射到日本 IT 企业的変更管理（Change Management）和稟議（承认）流程  
+> **前置**：已完成 [14 - 实战项目](../14-capstone/) 或具备生产级 Terraform 经验  
+> **时间**：60-90 分钟  
 > **费用**：GitHub Actions 免费额度内 + IAM Role（免费）
 
 ---

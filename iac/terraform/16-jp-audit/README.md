@@ -1,8 +1,8 @@
 # 16 - 日本 IT：監査対応とドキュメント
 
-> **目標**：掌握日本 IT 企業における監査対応の実践方法，包括証跡収集、設計書作成、障害復旧手順
-> **前置**：已完成 [15 - 日本 IT：変更管理と承認フロー](../15-jp-change-mgmt/)
-> **時間**：60-90 分
+> **目標**：掌握日本 IT 企業における監査対応の実践方法，包括証跡収集、設計書作成、障害復旧手順  
+> **前置**：已完成 [15 - 日本 IT：変更管理と承認フロー](../15-jp-change-mgmt/)  
+> **時間**：60-90 分  
 > **費用**：S3 + CloudTrail（極低成本），KMS（免費層内）
 
 ---
@@ -401,10 +401,10 @@ resource "aws_s3_bucket_object_lock_configuration" "cloudtrail" {
 }
 ```
 
-> **Object Lock モード**：
-> - `GOVERNANCE` — 特権ユーザー（s3:BypassGovernanceRetention 権限）は削除可能
-> - `COMPLIANCE` — **誰も削除不可**（期間満了まで。設定後の変更不可）
->
+> **Object Lock モード**：  
+> - `GOVERNANCE` — 特権ユーザー（s3:BypassGovernanceRetention 権限）は削除可能  
+> - `COMPLIANCE` — **誰も削除不可**（期間満了まで。設定後の変更不可）  
+>  
 > ISMAP/SOC2 で「絶対改竄不可」を求められる場合は `COMPLIANCE` を検討。ただし、誤設定時にも削除できないため、テスト環境で十分検証してから本番適用すること。
 
 ---

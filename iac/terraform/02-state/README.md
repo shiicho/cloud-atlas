@@ -1,8 +1,8 @@
 # 02 · 状态管理与远程后端
 
-> **目标**：理解 State 的作用，配置 S3 远程后端，体验团队协作场景
-> **前置**：已完成 [01 · 安装配置与第一个资源](../01-first-resource/)
-> **时间**：30-35 分钟
+> **目标**：理解 State 的作用，配置 S3 远程后端，体验团队协作场景  
+> **前置**：已完成 [01 · 安装配置与第一个资源](../01-first-resource/)  
+> **时间**：30-35 分钟  
 > **费用**：S3 Bucket（免费层）
 
 > **Note**: Terraform 1.10+ 使用 S3 原生锁定（`use_lockfile = true`），无需 DynamoDB。
@@ -167,9 +167,9 @@ tfstate-terraform-course-123456789012
 
 记下这个 bucket 名称！
 
-> **为什么用 CloudFormation 预置？**
->
-> 这是"鸡生蛋"问题的标准解法：State Bucket 本身不能用 Terraform 管理
+> **为什么用 CloudFormation 预置？**  
+>  
+> 这是"鸡生蛋"问题的标准解法：State Bucket 本身不能用 Terraform 管理  
 > （否则它的 State 存哪里？），所以用 CloudFormation 或手动创建。
 
 ### 3.2 配置远程后端
@@ -293,7 +293,7 @@ aws s3 ls s3://你的bucket名称/lesson-02/
    → 允许下一个操作
 ```
 
-> **技术细节**：S3 原生锁定使用 `If-None-Match` 条件写入创建 `.tflock` 文件，
+> **技术细节**：S3 原生锁定使用 `If-None-Match` 条件写入创建 `.tflock` 文件，  
 > 实现简洁的分布式锁机制。
 
 ### 4.3 State 文件内容解剖
@@ -476,17 +476,17 @@ terraform destroy -auto-approve
 - Bucket 由 `terraform-lab` CloudFormation 栈管理
 - 当你完成整个课程，删除 `terraform-lab` 栈时会一起删除
 
-> **注意**：如果 Bucket 中有 State 文件，需要先清空才能删除栈：
-> ```bash
-> # 获取 bucket 名称
-> BUCKET=$(aws cloudformation describe-stacks --stack-name terraform-lab \
->   --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' --output text)
->
-> # 清空 bucket（包括所有版本）
-> aws s3 rm s3://$BUCKET --recursive
-> aws s3api delete-objects --bucket $BUCKET \
->   --delete "$(aws s3api list-object-versions --bucket $BUCKET \
->   --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" 2>/dev/null || true
+> **注意**：如果 Bucket 中有 State 文件，需要先清空才能删除栈：  
+> ```bash  
+> # 获取 bucket 名称  
+> BUCKET=$(aws cloudformation describe-stacks --stack-name terraform-lab \  
+>   --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' --output text)  
+>  
+> # 清空 bucket（包括所有版本）  
+> aws s3 rm s3://$BUCKET --recursive  
+> aws s3api delete-objects --bucket $BUCKET \  
+>   --delete "$(aws s3api list-object-versions --bucket $BUCKET \  
+>   --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" 2>/dev/null || true  
 > ```
 
 ---

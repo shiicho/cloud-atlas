@@ -1,7 +1,7 @@
 # 环境准备 - Terraform 学习实验室
 
-> **目标**：部署一个预装 Terraform 的 EC2 实例，通过 SSM 或 VS Code Remote 连接
-> **时间**：15-20 分钟
+> **目标**：部署一个预装 Terraform 的 EC2 实例，通过 SSM 或 VS Code Remote 连接  
+> **时间**：15-20 分钟  
 > **费用**：t3.small 约 $0.02/小时（用完即删）
 
 ---

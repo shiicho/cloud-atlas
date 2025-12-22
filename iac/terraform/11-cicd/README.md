@@ -1,8 +1,8 @@
 # 11 - CI/CD 集成
 
-> **目标**：在 GitHub Actions 中实现 Terraform 自动化工作流，PR 自动 plan、人工审批后 apply
-> **前置**：已完成 [10 - 漂移检测](../10-drift/)
-> **时间**：45-60 分钟
+> **目标**：在 GitHub Actions 中实现 Terraform 自动化工作流，PR 自动 plan、人工审批后 apply  
+> **前置**：已完成 [10 - 漂移检测](../10-drift/)  
+> **时间**：45-60 分钟  
 > **费用**：GitHub Actions 免费额度内
 
 ---
@@ -355,12 +355,12 @@ jobs:
     runs-on: ubuntu-latest
 ```
 
-> **⚠️ Cross-Workflow Artifacts 注意点**：
->
-> 标准的 `actions/download-artifact` 只能下载**当前 workflow run** 的 artifacts。
-> 要在 Apply 工作流中使用 PR Plan 工作流生成的 plan 文件，需要使用 `dawidd6/action-download-artifact`
-> 这个第三方 action 支持跨 workflow 下载 artifacts。
->
+> **⚠️ Cross-Workflow Artifacts 注意点**：  
+>  
+> 标准的 `actions/download-artifact` 只能下载**当前 workflow run** 的 artifacts。  
+> 要在 Apply 工作流中使用 PR Plan 工作流生成的 plan 文件，需要使用 `dawidd6/action-download-artifact`  
+> 这个第三方 action 支持跨 workflow 下载 artifacts。  
+>  
 > 这也是为什么很多团队选择将 plan 文件存储在 S3 而不是 GitHub Artifacts。
 
 ---

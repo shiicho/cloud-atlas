@@ -1,6 +1,6 @@
 # 承認チェックリスト（Approval Checklist）
 
-> Terraform Apply 前に確認すべき項目のチェックリストです。
+> Terraform Apply 前に確認すべき項目のチェックリストです。  
 > レビュアー・承認者は以下の項目を確認してから承認してください。
 
 ---

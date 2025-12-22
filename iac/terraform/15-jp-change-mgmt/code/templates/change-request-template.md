@@ -1,6 +1,6 @@
 # 変更管理書（Change Request Template）
 
-> 本テンプレートは GitHub Pull Request の Description として使用します。
+> 本テンプレートは GitHub Pull Request の Description として使用します。  
 > Terraform 変更時は必ずこのフォーマットに従ってください。
 
 ---

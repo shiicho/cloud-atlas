@@ -1,8 +1,8 @@
 # 06 · 循环条件与表达式
 
-> **目标**：掌握 count、for_each、dynamic blocks 与常用函数
-> **前置**：已完成 [05 · 变量系统](../05-variables/)
-> **时间**：40-45 分钟
+> **目标**：掌握 count、for_each、dynamic blocks 与常用函数  
+> **前置**：已完成 [05 · 变量系统](../05-variables/)  
+> **时间**：40-45 分钟  
 > **费用**：S3 Bucket + IAM Users（免费层）
 
 ---

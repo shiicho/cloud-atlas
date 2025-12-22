@@ -1,8 +1,8 @@
 # 09 - 既存インフラ導入（Import）
 
-> **目标**：将手动创建的 AWS 资源导入 Terraform 管理
-> **前置**：已完成 [08 - 项目布局与多环境策略](../08-layout/)
-> **时间**：45-50 分钟
+> **目标**：将手动创建的 AWS 资源导入 Terraform 管理  
+> **前置**：已完成 [08 - 项目布局与多环境策略](../08-layout/)  
+> **时间**：45-50 分钟  
 > **费用**：EC2 t3.micro（免费层）
 
 ---
@@ -549,9 +549,9 @@ resource "aws_instance" "web_server" {
 terraformer import aws --resources=ec2_instance,s3 --regions=ap-northeast-1
 ```
 
-> terraformer 官方文档：https://github.com/GoogleCloudPlatform/terraformer
->
-> **注意**：本课程重点是 Terraform 原生 Import 功能。
+> terraformer 官方文档：https://github.com/GoogleCloudPlatform/terraformer  
+>  
+> **注意**：本课程重点是 Terraform 原生 Import 功能。  
 > terraformer 适合大规模迁移项目，建议单独学习。
 
 ### 7.4 日本企业导入检查清单

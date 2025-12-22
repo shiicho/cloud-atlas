@@ -1,8 +1,8 @@
 # 12 - 安全与机密管理
 
-> **目标**：掌握 Terraform 中的安全最佳实践，包括密钥管理、安全扫描、IAM 最小权限和 State 文件保护
-> **前置**：已完成 [11 - CI/CD 集成](../11-cicd/)
-> **时间**：45-60 分钟
+> **目标**：掌握 Terraform 中的安全最佳实践，包括密钥管理、安全扫描、IAM 最小权限和 State 文件保护  
+> **前置**：已完成 [11 - CI/CD 集成](../11-cicd/)  
+> **时间**：45-60 分钟  
 > **费用**：SSM Parameter Store（免费层）、S3 + KMS（极低成本）
 
 ---
@@ -77,7 +77,7 @@ scoop install trivy
 pip install checkov
 ```
 
-> **注意**: tfsec 已被 Aqua Security 合并到 Trivy 中。新项目推荐使用 Trivy。
+> **注意**: tfsec 已被 Aqua Security 合并到 Trivy 中。新项目推荐使用 Trivy。  
 > 迁移指南: https://github.com/aquasecurity/tfsec/blob/master/tfsec-to-trivy-migration-guide.md
 
 ### 扫描不安全的代码
@@ -247,7 +247,7 @@ terraform state pull | grep -A 5 "password"
 
 #### Trivy（静态安全分析）
 
-> **注意**：Trivy 是 Aqua Security 推出的统一安全扫描工具，已整合 tfsec 功能。
+> **注意**：Trivy 是 Aqua Security 推出的统一安全扫描工具，已整合 tfsec 功能。  
 > 新项目请使用 Trivy；tfsec 仍可用但不再积极开发。
 
 ```bash

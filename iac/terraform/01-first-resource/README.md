@@ -1,8 +1,8 @@
 # 01 · 安装配置与第一个资源
 
-> **目标**：5 分钟内创建你的第一个 AWS 资源，体验 Terraform 工作流
-> **前置**：已完成 [00 · 概念导入](../00-concepts/) 和 [环境准备](../00-concepts/lab-setup.md)
-> **时间**：25-30 分钟
+> **目标**：5 分钟内创建你的第一个 AWS 资源，体验 Terraform 工作流  
+> **前置**：已完成 [00 · 概念导入](../00-concepts/) 和 [环境准备](../00-concepts/lab-setup.md)  
+> **时间**：25-30 分钟  
 > **费用**：S3 Bucket（免费层）
 
 ---
@@ -243,8 +243,8 @@ aws s3api get-bucket-tagging --bucket $(terraform output -raw bucket_name)
 
 ### 4.5 思考题
 
-> ❓ 如果你直接在 AWS Console 修改标签，再运行 `terraform plan`，会发生什么？
->
+> ❓ 如果你直接在 AWS Console 修改标签，再运行 `terraform plan`，会发生什么？  
+>  
 > 试试看！这就是 **Drift（漂移）** — [Lesson 10](../10-drift/) 会深入讲解。
 
 ---
