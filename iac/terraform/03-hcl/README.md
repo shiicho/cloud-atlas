@@ -64,13 +64,19 @@ terraform init
 terraform plan
 ```
 
-观察 Plan 输出的创建顺序提示：
+观察 Plan 输出（按资源地址字母顺序排列）：
 
 ```
-# aws_vpc.main will be created
-# aws_subnet.public will be created
+# aws_security_group.lifecycle_demo will be created
 # aws_security_group.web will be created
+# aws_subnet.public will be created
+# aws_vpc.main will be created
+# null_resource.config_watcher will be created
+
+Plan: 5 to add, 0 to change, 0 to destroy.
 ```
+
+> **注意**：Plan 输出是**字母顺序**，不是创建顺序。Apply 时 Terraform 会根据依赖关系自动排序：VPC → Subnet → Security Group → null_resource
 
 创建资源：
 
