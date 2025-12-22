@@ -1,16 +1,17 @@
 #!/bin/bash
 # =============================================================================
-# Terraform State Lock 解除スクリプト
+# Terraform State Lock 解除スクリプト（S3 原生锁定版）
 # =============================================================================
 #
 # 概要:
 #   残留した Terraform State Lock を解除する
+#   Terraform 1.10+ の S3 原生锁定（use_lockfile = true）対応
 #
 # 使用方法:
-#   ./unlock.sh <lock-table> <state-bucket> <state-key>
+#   ./unlock.sh <state-bucket> <state-key>
 #
 # 例:
-#   ./unlock.sh myproject-terraform-locks myproject-tfstate env/prod/terraform.tfstate
+#   ./unlock.sh myproject-tfstate env/prod/terraform.tfstate
 #
 # 警告:
 #   このスクリプトは Lock を強制解除します。
@@ -23,17 +24,20 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 # 引数チェック
 # -----------------------------------------------------------------------------
-if [ $# -lt 3 ]; then
-    echo "Usage: $0 <lock-table> <state-bucket> <state-key>"
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <state-bucket> <state-key>"
     echo ""
     echo "Example:"
-    echo "  $0 myproject-terraform-locks myproject-tfstate env/prod/terraform.tfstate"
+    echo "  $0 myproject-tfstate env/prod/terraform.tfstate"
+    echo ""
+    echo "Note: Terraform 1.10+ uses S3 native locking (use_lockfile = true)"
+    echo "      Lock files are stored as <state-key>.tflock in S3"
     exit 1
 fi
 
-LOCK_TABLE="$1"
-STATE_BUCKET="$2"
-STATE_KEY="$3"
+STATE_BUCKET="$1"
+STATE_KEY="$2"
+LOCK_KEY="${STATE_KEY}.tflock"
 DATE=$(date +%Y%m%d-%H%M%S)
 
 # -----------------------------------------------------------------------------
@@ -62,45 +66,84 @@ log_step() {
 }
 
 # -----------------------------------------------------------------------------
-# Lock 情報の確認
+# Lock 情報の確認（S3 .tflock ファイル）
 # -----------------------------------------------------------------------------
 check_lock() {
     log_step "1/3: Lock 情報を確認中..."
 
-    # DynamoDB から Lock を検索
-    LOCK_ID="$STATE_BUCKET/$STATE_KEY"
-
-    log_info "検索する Lock ID パターン: $LOCK_ID"
+    log_info "State Bucket: $STATE_BUCKET"
+    log_info "State Key: $STATE_KEY"
+    log_info "Lock Key: $LOCK_KEY"
     echo ""
 
-    # Lock エントリを取得
-    LOCK_ITEMS=$(aws dynamodb scan \
-        --table-name "$LOCK_TABLE" \
-        --filter-expression "contains(LockID, :prefix)" \
-        --expression-attribute-values "{\":prefix\":{\"S\":\"$STATE_KEY\"}}" \
-        --query 'Items' \
-        --output json)
+    # S3 から .tflock ファイルを確認
+    if aws s3 ls "s3://$STATE_BUCKET/$LOCK_KEY" &>/dev/null; then
+        log_warn ".tflock ファイルが見つかりました"
+        echo ""
 
-    if [ "$LOCK_ITEMS" == "[]" ]; then
-        log_info "Lock が見つかりませんでした（正常な状態です）"
-        exit 0
+        # Lock ファイルの内容を表示
+        log_info "Lock ファイルの内容:"
+        aws s3 cp "s3://$STATE_BUCKET/$LOCK_KEY" - 2>/dev/null | jq '.' || cat
+        echo ""
+        return 0
+    else
+        log_info ".tflock ファイルは存在しません（正常な状態です）"
+        return 1
     fi
-
-    echo "$LOCK_ITEMS" | jq '.'
-
-    # Lock 数を取得
-    LOCK_COUNT=$(echo "$LOCK_ITEMS" | jq 'length')
-    log_warn "$LOCK_COUNT 件の Lock が見つかりました"
 }
 
 # -----------------------------------------------------------------------------
-# Lock 解除
+# terraform force-unlock での解除を試行
 # -----------------------------------------------------------------------------
-unlock() {
-    log_step "2/3: Lock 解除の確認..."
+try_terraform_unlock() {
+    log_step "2/3: terraform force-unlock を試行..."
+
+    if ! command -v terraform &> /dev/null; then
+        log_warn "terraform コマンドが見つかりません"
+        return 1
+    fi
+
+    # terraform plan を実行して Lock ID を取得
+    log_info "terraform plan で Lock ID を検出中..."
+    PLAN_OUTPUT=$(terraform plan 2>&1 || true)
+
+    if echo "$PLAN_OUTPUT" | grep -q "Error acquiring the state lock"; then
+        LOCK_ID=$(echo "$PLAN_OUTPUT" | grep "ID:" | head -1 | awk '{print $2}')
+
+        if [ -n "$LOCK_ID" ]; then
+            log_info "Lock ID を検出: $LOCK_ID"
+            echo ""
+            log_warn "================== 警告 =================="
+            log_warn "Lock を強制解除しようとしています"
+            log_warn "他の terraform 作業者がいないことを確認してください"
+            log_warn "=========================================="
+            echo ""
+
+            read -p "terraform force-unlock を実行しますか？ (yes/no): " confirm
+            if [ "$confirm" == "yes" ]; then
+                terraform force-unlock "$LOCK_ID"
+                log_info "Lock 解除完了"
+                return 0
+            else
+                log_info "キャンセルしました"
+                return 1
+            fi
+        fi
+    else
+        log_info "terraform による Lock は検出されませんでした"
+    fi
+
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# S3 から直接 .tflock ファイルを削除
+# -----------------------------------------------------------------------------
+delete_lock_file() {
+    log_step "3/3: S3 から .tflock ファイルを直接削除..."
     echo ""
     log_warn "================== 警告 =================="
-    log_warn "Lock を強制解除しようとしています"
+    log_warn ".tflock ファイルを S3 から直接削除します"
     log_warn "他の terraform 作業者がいないことを確認してください"
     log_warn "=========================================="
     echo ""
@@ -111,25 +154,13 @@ unlock() {
         exit 0
     fi
 
-    log_step "3/3: Lock を解除中..."
+    # バックアップを作成
+    log_info "バックアップを作成中: lock-backup-$DATE.json"
+    aws s3 cp "s3://$STATE_BUCKET/$LOCK_KEY" "lock-backup-$DATE.json" 2>/dev/null || true
 
-    # Lock エントリを取得
-    LOCK_ITEMS=$(aws dynamodb scan \
-        --table-name "$LOCK_TABLE" \
-        --filter-expression "contains(LockID, :prefix)" \
-        --expression-attribute-values "{\":prefix\":{\"S\":\"$STATE_KEY\"}}" \
-        --query 'Items[*].LockID.S' \
-        --output text)
-
-    for lock_id in $LOCK_ITEMS; do
-        log_info "Lock を削除: $lock_id"
-
-        aws dynamodb delete-item \
-            --table-name "$LOCK_TABLE" \
-            --key "{\"LockID\":{\"S\":\"$lock_id\"}}"
-
-        log_info "削除完了: $lock_id"
-    done
+    # .tflock ファイルを削除
+    log_info ".tflock ファイルを削除中..."
+    aws s3 rm "s3://$STATE_BUCKET/$LOCK_KEY"
 
     echo ""
     log_info "======================================"
@@ -143,60 +174,49 @@ unlock() {
 }
 
 # -----------------------------------------------------------------------------
-# terraform コマンドでの解除を試行
-# -----------------------------------------------------------------------------
-try_terraform_unlock() {
-    log_info "terraform force-unlock を試行中..."
-
-    # terraform plan を実行して Lock ID を取得
-    PLAN_OUTPUT=$(terraform plan 2>&1 || true)
-
-    if echo "$PLAN_OUTPUT" | grep -q "Error acquiring the state lock"; then
-        LOCK_ID=$(echo "$PLAN_OUTPUT" | grep "ID:" | head -1 | awk '{print $2}')
-
-        if [ -n "$LOCK_ID" ]; then
-            log_info "Lock ID を検出: $LOCK_ID"
-            echo ""
-            read -p "terraform force-unlock を実行しますか？ (yes/no): " confirm
-            if [ "$confirm" == "yes" ]; then
-                terraform force-unlock "$LOCK_ID"
-                return 0
-            fi
-        fi
-    else
-        log_info "Lock は検出されませんでした"
-        return 0
-    fi
-
-    return 1
-}
-
-# -----------------------------------------------------------------------------
 # メイン処理
 # -----------------------------------------------------------------------------
 main() {
     log_info "Terraform State Lock 解除スクリプト"
-    log_info "Lock Table: $LOCK_TABLE"
-    log_info "State Bucket: $STATE_BUCKET"
-    log_info "State Key: $STATE_KEY"
+    log_info "（S3 原生锁定 use_lockfile = true 対応）"
     echo ""
 
-    # まず terraform コマンドでの解除を試行
-    if command -v terraform &> /dev/null; then
-        log_info "terraform コマンドが利用可能です"
-        echo ""
-        read -p "terraform force-unlock を先に試しますか？ (yes/no): " try_tf
-        if [ "$try_tf" == "yes" ]; then
-            if try_terraform_unlock; then
-                exit 0
-            fi
-            echo ""
-            log_info "DynamoDB からの直接削除に進みます"
-        fi
+    # Lock ファイルの存在確認
+    if ! check_lock; then
+        exit 0
     fi
 
-    check_lock
-    unlock
+    echo ""
+    log_info "解除方法を選択してください:"
+    echo "  1) terraform force-unlock（推奨）"
+    echo "  2) S3 から .tflock ファイルを直接削除"
+    echo "  3) キャンセル"
+    echo ""
+
+    read -p "選択 (1/2/3): " choice
+
+    case $choice in
+        1)
+            try_terraform_unlock || {
+                log_warn "terraform force-unlock が失敗しました"
+                read -p "S3 からの直接削除を試しますか？ (yes/no): " try_s3
+                if [ "$try_s3" == "yes" ]; then
+                    delete_lock_file
+                fi
+            }
+            ;;
+        2)
+            delete_lock_file
+            ;;
+        3)
+            log_info "キャンセルしました"
+            exit 0
+            ;;
+        *)
+            log_error "無効な選択です"
+            exit 1
+            ;;
+    esac
 }
 
 main "$@"

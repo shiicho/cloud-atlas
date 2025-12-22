@@ -153,7 +153,7 @@ aws s3api put-bucket-versioning \
   --versioning-configuration Status=Enabled
 ```
 
-> **Note**: Terraform 1.10+ 支持原生 S3 锁定 (`use_lockfile = true`)，无需创建 DynamoDB 表。
+> **Note**: Terraform 1.10+ 支持原生 S3 锁定 (`use_lockfile = true`)，通过 `.tflock` 文件实现锁机制。
 
 ### 1.3 配置后端（environments/dev/backend.tf）
 
@@ -376,14 +376,14 @@ moved {
 ```yaml
 # .github/workflows/terraform-plan.yml
 - name: Run Trivy
-  uses: aquasecurity/trivy-action@master
+  uses: aquasecurity/trivy-action@0.33.1
   with:
     scan-type: 'config'
     scan-ref: 'environments/dev'
     severity: 'HIGH,CRITICAL'
 
 - name: Run tflint
-  uses: terraform-linters/setup-tflint@v3
+  uses: terraform-linters/setup-tflint@v6
   with:
     tflint_version: latest
 ```
@@ -394,11 +394,20 @@ moved {
 
 ```yaml
 # .github/workflows/infracost.yml
-- name: Run Infracost
-  uses: infracost/actions/comment@v1
+- name: Setup Infracost
+  uses: infracost/actions/setup@v3
   with:
-    path: environments/dev
-    behavior: update
+    api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+- name: Post Infracost comment
+  run: |
+    infracost diff --path=environments/dev \
+      --format=json --out-file=/tmp/infracost.json
+    infracost comment github --path=/tmp/infracost.json \
+      --repo=$GITHUB_REPOSITORY \
+      --github-token=${{ github.token }} \
+      --pull-request=${{ github.event.pull_request.number }} \
+      --behavior=update
 ```
 
 ### 3.5 验证检查点

@@ -47,17 +47,17 @@ data "aws_iam_policy_document" "terraform_plan" {
     ]
   }
 
-  # State Locking（plan 时需要获取锁）
+  # State Locking（S3 原生锁定 - .tflock 文件）
+  # Terraform 1.10+ 使用 use_lockfile = true
   statement {
     sid    = "StateLocking"
     effect = "Allow"
     actions = [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:DeleteItem"
+      "s3:PutObject",
+      "s3:DeleteObject"
     ]
     resources = [
-      aws_dynamodb_table.tflock.arn
+      "${aws_s3_bucket.tfstate.arn}/*.tflock"
     ]
   }
 
@@ -135,17 +135,17 @@ data "aws_iam_policy_document" "terraform_apply" {
     ]
   }
 
-  # State Locking
+  # State Locking（S3 原生锁定 - .tflock 文件）
+  # Terraform 1.10+ 使用 use_lockfile = true
   statement {
     sid    = "StateLocking"
     effect = "Allow"
     actions = [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:DeleteItem"
+      "s3:PutObject",
+      "s3:DeleteObject"
     ]
     resources = [
-      aws_dynamodb_table.tflock.arn
+      "${aws_s3_bucket.tfstate.arn}/*.tflock"
     ]
   }
 

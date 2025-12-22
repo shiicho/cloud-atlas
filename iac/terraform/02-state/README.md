@@ -241,7 +241,7 @@ aws s3 ls s3://tfstate-你的后缀/lesson-02/
 ```
 
 ```
-2024-xx-xx xx:xx:xx     xxxx terraform.tfstate
+2025-xx-xx xx:xx:xx     xxxx terraform.tfstate
 ```
 
 ---
@@ -382,7 +382,7 @@ Lock Info:
   Operation: OperationTypeApply
   Who:       ec2-user@ip-10-0-1-xxx
   Version:   1.14.x
-  Created:   2024-xx-xx xx:xx:xx.xxx UTC
+  Created:   2025-xx-xx xx:xx:xx.xxx UTC
 ```
 
 **State Locking 生效了！** 第二个 apply 被阻止。

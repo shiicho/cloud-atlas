@@ -40,11 +40,9 @@ variable "state_bucket" {
   type        = string
 }
 
-variable "lock_table" {
-  description = "Terraform State Lock 用の DynamoDB テーブル名"
-  type        = string
-  default     = "terraform-locks"
-}
+# Note: lock_table 変数は削除されました
+# Terraform 1.10+ では S3 原生锁定（use_lockfile = true）を使用
+# .tflock ファイルで锁机制を実現
 
 # -----------------------------------------------------------------------------
 # プロジェクト設定

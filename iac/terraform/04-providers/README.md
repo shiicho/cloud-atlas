@@ -354,7 +354,7 @@ Error: Unsupported Terraform Core version
   on providers.tf line 2, in terraform:
    2:   required_version = "~> 1.14"
 
-This configuration does not support Terraform version 1.10.0.
+This configuration does not support Terraform version 1.9.0.
 ```
 
 ### 6.3 最佳实践

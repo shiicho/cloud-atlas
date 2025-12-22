@@ -8,11 +8,11 @@
 
 # terraform {
 #   backend "s3" {
-#     bucket         = "your-tfstate-bucket"
-#     key            = "myapp/${terraform.workspace}/terraform.tfstate"
-#     region         = "ap-northeast-1"
-#     dynamodb_table = "terraform-lock"
-#     encrypt        = true
-#     kms_key_id     = "alias/terraform-state-key"
+#     bucket       = "your-tfstate-bucket"
+#     key          = "myapp/${terraform.workspace}/terraform.tfstate"
+#     region       = "ap-northeast-1"
+#     encrypt      = true
+#     kms_key_id   = "alias/terraform-state-key"
+#     use_lockfile = true  # Terraform 1.10+ S3 原生锁定
 #   }
 # }

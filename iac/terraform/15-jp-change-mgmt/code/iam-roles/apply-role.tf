@@ -318,18 +318,18 @@ resource "aws_iam_role_policy" "terraform_apply" {
       },
 
       # -----------------------------------------------------------------------
-      # Terraform Lock Table の読み書き権限
+      # Terraform State Locking（S3 原生锁定 - .tflock 文件）
+      # Terraform 1.10+ 使用 use_lockfile = true
       # -----------------------------------------------------------------------
       {
         Sid    = "TerraformLockReadWrite"
         Effect = "Allow"
         Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:DescribeTable"
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
         ]
-        Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.lock_table}"
+        Resource = "arn:aws:s3:::${var.state_bucket}/*.tflock"
       }
     ]
   })

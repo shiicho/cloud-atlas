@@ -13,15 +13,8 @@ output "state_bucket_arn" {
   value       = aws_s3_bucket.tfstate.arn
 }
 
-output "lock_table_name" {
-  description = "Name of the DynamoDB table for state locking"
-  value       = aws_dynamodb_table.tflock.name
-}
-
-output "lock_table_arn" {
-  description = "ARN of the DynamoDB table for state locking"
-  value       = aws_dynamodb_table.tflock.arn
-}
+# Note: Using S3 native locking (use_lockfile = true)
+# Terraform 1.10+ supports native S3 locking via .tflock files
 
 output "kms_key_arn" {
   description = "ARN of the KMS key for state encryption"
@@ -51,12 +44,12 @@ output "backend_config_example" {
 
     terraform {
       backend "s3" {
-        bucket         = "${aws_s3_bucket.tfstate.id}"
-        key            = "your-project/terraform.tfstate"
-        region         = "${data.aws_region.current.name}"
-        dynamodb_table = "${aws_dynamodb_table.tflock.name}"
-        encrypt        = true
-        kms_key_id     = "${aws_kms_alias.tfstate.name}"
+        bucket       = "${aws_s3_bucket.tfstate.id}"
+        key          = "your-project/terraform.tfstate"
+        region       = "${data.aws_region.current.name}"
+        encrypt      = true
+        kms_key_id   = "${aws_kms_alias.tfstate.name}"
+        use_lockfile = true  # Terraform 1.10+ S3 原生锁定
       }
     }
 

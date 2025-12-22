@@ -241,13 +241,18 @@ resource "aws_iam_role_policy" "terraform_emergency" {
       },
 
       # -----------------------------------------------------------------------
-      # Terraform Lock Table の完全な権限
+      # Terraform State Locking（S3 原生锁定 - .tflock 文件）
+      # Terraform 1.10+ 使用 use_lockfile = true
       # -----------------------------------------------------------------------
       {
-        Sid      = "TerraformLockFullAccess"
-        Effect   = "Allow"
-        Action   = "dynamodb:*"
-        Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.lock_table}"
+        Sid    = "TerraformLockFullAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "arn:aws:s3:::${var.state_bucket}/*.tflock"
       }
     ]
   })

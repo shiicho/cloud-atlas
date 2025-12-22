@@ -52,17 +52,10 @@ output "cloudtrail_arn" {
 }
 
 # -----------------------------------------------------------------------------
-# DynamoDB Lock テーブル情報
+# State Locking 情報
+# Terraform 1.10+ では S3 原生锁定（use_lockfile = true）を使用
+# .tflock ファイルで锁机制を実現
 # -----------------------------------------------------------------------------
-output "lock_table_name" {
-  description = "State Lock 用 DynamoDB テーブル名"
-  value       = aws_dynamodb_table.tfstate_lock.name
-}
-
-output "lock_table_arn" {
-  description = "State Lock 用 DynamoDB テーブル ARN"
-  value       = aws_dynamodb_table.tfstate_lock.arn
-}
 
 # -----------------------------------------------------------------------------
 # KMS キー情報
@@ -83,11 +76,11 @@ output "kms_key_alias" {
 output "backend_config" {
   description = "Terraform backend 設定（他プロジェクトで使用）"
   value = {
-    bucket         = aws_s3_bucket.tfstate.id
-    region         = aws_s3_bucket.tfstate.region
-    dynamodb_table = aws_dynamodb_table.tfstate_lock.name
-    encrypt        = true
-    kms_key_id     = aws_kms_key.tfstate.arn
+    bucket       = aws_s3_bucket.tfstate.id
+    region       = aws_s3_bucket.tfstate.region
+    encrypt      = true
+    kms_key_id   = aws_kms_key.tfstate.arn
+    use_lockfile = true  # Terraform 1.10+ S3 原生锁定
   }
 }
 

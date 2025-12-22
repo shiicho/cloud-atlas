@@ -7,7 +7,7 @@
 # - S3 Bucket（加密、版本控制、访问日志）
 # - KMS 密钥（客户管理加密）
 # - 严格的 Bucket Policy
-# - 使用 S3 原生锁定 (use_lockfile = true)，无需 DynamoDB
+# - 使用 S3 原生锁定 (use_lockfile = true)
 #
 # =============================================================================
 
@@ -246,7 +246,7 @@ resource "aws_s3_bucket_logging" "tfstate" {
 # State Locking - 使用 S3 原生锁定
 # =============================================================================
 # Terraform 1.10+ 支持原生 S3 锁定 (use_lockfile = true)
-# 无需创建 DynamoDB 表，降低成本和复杂度
+# .tflock 文件实现锁机制，降低成本和复杂度
 #
 # 使用方式（在 backend 配置中）：
 #   backend "s3" {

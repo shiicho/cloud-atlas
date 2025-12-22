@@ -104,12 +104,18 @@ jobs:
       # -------------------------------------------------------------------------
       # Step 5: 尝试下载已保存的 Plan（如果指定了 PR 号）
       # -------------------------------------------------------------------------
+      # 注意：actions/download-artifact 只能下载当前 run 的 artifacts
+      # 要下载其他 workflow run 的 artifacts，需要使用第三方 action
+      # dawidd6/action-download-artifact 支持跨 workflow 下载
       - name: Download Plan Artifact
         if: github.event.inputs.pr_number != ''
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v11
         with:
+          workflow: terraform-plan.yml
+          pr: ${{ github.event.inputs.pr_number }}
           name: tfplan-${{ github.event.inputs.pr_number }}
           path: ${{ env.TF_WORKING_DIR }}
+          if_no_artifact_found: warn
         continue-on-error: true
         id: download-plan
 

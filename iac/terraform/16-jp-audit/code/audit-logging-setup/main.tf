@@ -9,7 +9,9 @@
 # 1. State 保存用 S3 バケット（Versioning + 暗号化）
 # 2. ログ保存用 S3 バケット
 # 3. CloudTrail（API 呼び出し記録）
-# 4. DynamoDB（State Lock テーブル）
+# 4. KMS キー（State 暗号化）
+#
+# Note: Terraform 1.10+ は S3 原生锁定（use_lockfile = true）を使用
 #
 # =============================================================================
 
@@ -257,7 +259,7 @@ resource "aws_cloudtrail" "terraform" {
   is_multi_region_trail         = var.multi_region_trail
   enable_log_file_validation    = true # ログ改竄検知
 
-  # S3 と DynamoDB のデータイベントも記録（State アクセス追跡）
+  # S3 のデータイベントも記録（State アクセス追跡）
   event_selector {
     read_write_type           = "All"
     include_management_events = true
@@ -276,26 +278,19 @@ resource "aws_cloudtrail" "terraform" {
 }
 
 # -----------------------------------------------------------------------------
-# DynamoDB Lock テーブル
-# State の同時変更を防止
+# State Locking - S3 原生锁定
+# Terraform 1.10+ 使用 use_lockfile = true
 # -----------------------------------------------------------------------------
-resource "aws_dynamodb_table" "tfstate_lock" {
-  name         = "${var.project}-terraform-locks"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  # ポイントインタイムリカバリ（35日間のバックアップ）
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  tags = merge(var.tags, {
-    Name    = "${var.project}-terraform-locks"
-    Purpose = "terraform-state-lock"
-  })
-}
+# .tflock ファイルで锁机制を実現します。
+# backend "s3" で use_lockfile = true を設定することで、
+# S3 上に .tflock ファイルが作成され、ロック機能が実現されます。
+#
+# 使用方式：
+#   backend "s3" {
+#     bucket       = "..."
+#     key          = "..."
+#     region       = "..."
+#     encrypt      = true
+#     use_lockfile = true  # S3 原生锁定
+#   }
+# -----------------------------------------------------------------------------

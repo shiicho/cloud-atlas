@@ -2,7 +2,7 @@
 # 创建远程后端基础设施
 #
 # 本文件创建 S3 Bucket 用于存储 Terraform State。
-# Terraform 1.10+ 使用原生 S3 锁定 (use_lockfile = true)，无需 DynamoDB。
+# Terraform 1.10+ 使用原生 S3 锁定 (use_lockfile = true)。
 #
 # 注意：这些资源本身使用 Local State（鸡生蛋问题）
 # 在生产环境中，通常使用 CloudFormation 或手动创建这些资源。

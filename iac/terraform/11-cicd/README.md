@@ -118,7 +118,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'terraform/**'
+      - '**/*.tf'
       - '.github/workflows/terraform-*.yml'
 ```
 
@@ -354,6 +354,14 @@ jobs:
     environment: production  # 需要审批
     runs-on: ubuntu-latest
 ```
+
+> **⚠️ Cross-Workflow Artifacts 注意点**：
+>
+> 标准的 `actions/download-artifact` 只能下载**当前 workflow run** 的 artifacts。
+> 要在 Apply 工作流中使用 PR Plan 工作流生成的 plan 文件，需要使用 `dawidd6/action-download-artifact`
+> 这个第三方 action 支持跨 workflow 下载 artifacts。
+>
+> 这也是为什么很多团队选择将 plan 文件存储在 S3 而不是 GitHub Artifacts。
 
 ---
 
