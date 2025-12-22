@@ -437,24 +437,11 @@ terraform apply
 
 模拟 Lock 卡住的场景：
 
-**使用原生 S3 锁定（Terraform 1.10+，推荐）**：
-
 ```bash
-# 查看 .tflock 文件
+# 查看 .tflock 文件（S3 原生锁定）
 aws s3 ls s3://tfstate-capstone-YOUR_ACCOUNT_ID/dev/
 
 # 强制解锁（谨慎！确认无其他操作进行中）
-terraform force-unlock LOCK_ID
-```
-
-**使用 DynamoDB 锁定（旧版，TF 1.11 已弃用）**：
-
-```bash
-# ⚠️ DynamoDB 锁定已在 Terraform 1.11 弃用，将在未来版本移除
-# 查看当前锁
-aws dynamodb scan --table-name tfstate-lock-capstone
-
-# 强制解锁
 terraform force-unlock LOCK_ID
 ```
 
@@ -522,7 +509,7 @@ git commit -m "chore: upgrade AWS provider to x.y.z"
 - Terraform (v1.x)
 - AWS (VPC, ALB, EC2, RDS)
 - GitHub Actions (CI/CD)
-- tfsec, tflint (Policy as Code)
+- Trivy, tflint (Policy as Code)
 
 成果:
 - 4 つの再利用可能なモジュールを作成
@@ -543,7 +530,7 @@ git commit -m "chore: upgrade AWS provider to x.y.z"
 
 ```
 課題: terraform apply 中に State Lock がタイムアウトで残留
-原因: ネットワーク切断により apply が中断、DynamoDB のロックが残った
+原因: ネットワーク切断により apply が中断、S3 の .tflock ファイルが残った
 解決策: terraform force-unlock で手動解除後、正常に apply 完了
 学び: CI 環境でのタイムアウト設定見直し、ロック監視アラート追加を検討
 ```
@@ -561,7 +548,6 @@ terraform destroy -auto-approve
 
 # 清理远程后端（可选，如果不再需要）
 aws s3 rb s3://tfstate-capstone-YOUR_ACCOUNT_ID --force
-aws dynamodb delete-table --table-name tfstate-lock-capstone
 ```
 
 ---

@@ -488,21 +488,24 @@ Host gcp-vm
 
 ### AI Custom Instructions（2025 新特性）
 
-VS Code 1.100+ 支持在 `devcontainer.json` 中定义 AI 助手的自定义指令：
+VS Code 1.100+ 支持通过 `.instructions.md` 文件定义 AI 助手的自定义指令：
 
 ```json
 {
   "customizations": {
     "vscode": {
       "settings": {
-        "chat.instructionsFilesEnabled": true
+        "chat.instructionsFilesLocations": {
+          ".github": true,
+          ".vscode": true
+        }
       }
     }
   }
 }
 ```
 
-配合 `.github/copilot-instructions.md` 文件，AI 助手会遵循项目特定规则。
+创建 `.github/copilot-instructions.md` 或 `.instructions.md` 文件，AI 助手会遵循项目特定规则。
 
 ### 本地 vs Codespaces
 
@@ -511,7 +514,7 @@ VS Code 1.100+ 支持在 `devcontainer.json` 中定义 AI 助手的自定义指�
 | 运行位置 | 你的电脑 | GitHub 云端 |
 | 配置文件 | 相同的 `devcontainer.json` | 相同 |
 | 启动速度 | 首次慢（拉镜像） | 秒开（预构建） |
-| 费用 | 免费（自己的电脑） | 120 小时/月免费 |
+| 费用 | 免费（自己的电脑） | 120 小时/月免费（GitHub Free 个人账户） |
 | 离线 | 可以 | 不行 |
 
 ### 日本企业导入事例
@@ -762,7 +765,7 @@ code serve-web --socket-path /tmp/vscode-$(whoami).sock
 
 | 平台 | 托管方式 | 价格 | 特点 |
 |------|----------|------|------|
-| **GitHub Codespaces** | GitHub 托管 | 120h/月免费 | 零配置，与 GitHub 深度集成 |
+| **GitHub Codespaces** | GitHub 托管 | 120h/月免费（Free 个人账户）| 零配置，与 GitHub 深度集成 |
 | **DevPod** | 自托管/本地 | 免费开源 | 无供应商锁定，支持多云 |
 | **Gitpod (→ Ona)** | SaaS 重构中 | TBD | 转向 AI Agent 方向 |
 
@@ -793,10 +796,10 @@ devpod up github.com/your/repo --provider aws
 
 | 服务 | 状态 | 时间 | 替代方案 |
 |------|------|------|----------|
-| **AWS Cloud9** | 停止新用户注册 | 2024.07 | Codespaces / 自建环境 |
+| **AWS Cloud9** | 停止新用户注册 | 2024.07.25 | Codespaces / 自建环境 |
 | **AWS CodeCatalyst Dev Environments** | 停止新用户 | 2024 | Codespaces / DevPod |
-| **Microsoft Dev Box** | 迁移到 Windows 365 | 2025.11 | Windows 365 Dev |
-| **Gitpod** | 重构为 Ona | 2025 | 等待新产品 / DevPod |
+| **Microsoft Dev Box** | 新客户停止注册，现有客户继续 | 2025.11.01 | Windows 365 Dev |
+| **Gitpod** | 重构为 Ona | 2025.09 | 等待新产品 / DevPod |
 
 **建议**：
 - 避免依赖即将废弃的服务

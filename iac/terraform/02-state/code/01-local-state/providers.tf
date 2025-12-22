@@ -5,7 +5,7 @@
 # 这是一个反模式演示，展示为什么团队协作不应使用 Local State。
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = "~> 1.14"
 
   # 注意：没有 backend 配置
   # Terraform 默认使用 Local State（当前目录的 terraform.tfstate）

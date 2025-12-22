@@ -878,8 +878,8 @@ mkdir -p ~/.tflint.d/plugins
 terraform version
 
 # 必要に応じてアップグレード
-tfenv install 1.9.0
-tfenv use 1.9.0
+tfenv install 1.14.3
+tfenv use 1.14.3
 ```
 
 **OPA eval が空の結果を返す**

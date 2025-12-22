@@ -6,8 +6,7 @@
 # 使用东京区域 (ap-northeast-1)，适合日本 IT 现场的学习场景。
 
 terraform {
-  # Terraform CLI 版本约束
-  required_version = ">= 1.0.0"
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {

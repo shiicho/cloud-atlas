@@ -44,7 +44,8 @@ code/
 │   ├── main.tf              # S3 + CloudTrail 構成
 │   ├── variables.tf
 │   ├── outputs.tf
-│   └── backend.tf
+│   ├── backend.tf
+│   └── provider.tf
 ├── templates/               # 日本企業向け設計書テンプレート
 │   ├── 設計書-template.md
 │   ├── パラメータ一覧.md
@@ -464,7 +465,7 @@ cat README.md
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.13 |
+| terraform | ~> 1.14 |
 | aws | ~> 5.0 |
 
 ## Providers
@@ -579,26 +580,6 @@ aws s3 ls s3://your-tfstate-bucket/path/
 terraform force-unlock LOCK_ID_HERE
 ```
 
-**DynamoDB ロック（旧版、TF 1.11 で非推奨）**：
-
-> ⚠️ DynamoDB によるロックは Terraform 1.11 で非推奨となり、将来のバージョンで削除予定です。
-> 新規プロジェクトでは `use_lockfile = true` による S3 原生ロックを使用してください。
-
-```bash
-# DynamoDB のロックを確認
-aws dynamodb scan \
-  --table-name terraform-locks \
-  --query 'Items[*].{LockID:LockID.S,Info:Info.S}'
-
-# ロック解除（強制）
-terraform force-unlock LOCK_ID_HERE
-
-# または DynamoDB から直接削除
-aws dynamodb delete-item \
-  --table-name terraform-locks \
-  --key '{"LockID":{"S":"your-lock-id"}}'
-```
-
 ---
 
 ## 職場小貼士：監査対応の実践
@@ -636,7 +617,7 @@ A: State は S3 に保存し、Versioning で変更履歴を保持していま�
 
 **Q: State ファイルが破損した場合、どう対応しますか？**
 
-A: まず S3 Versioning から過去の正常なバージョンを特定し、リストアします。DynamoDB のロックが残っている場合は force-unlock します。復旧後は terraform plan で想定外の差分がないか確認し、インシデントレポートを作成します。
+A: まず S3 Versioning から過去の正常なバージョンを特定し、リストアします。ロックが残っている場合は force-unlock します。復旧後は terraform plan で想定外の差分がないか確認し、インシデントレポートを作成します。
 
 ---
 
@@ -720,11 +701,6 @@ terraform plan 2>&1 | grep "Lock Info"
 
 # 強制解除
 terraform force-unlock LOCK_ID
-
-# それでも解除できない場合は DynamoDB を直接操作
-aws dynamodb delete-item \
-  --table-name terraform-locks \
-  --key '{"LockID":{"S":"your-lock-id"}}'
 ```
 
 ---

@@ -3,8 +3,7 @@
 # =============================================================================
 
 terraform {
-  # moved blocks 需要 Terraform 1.1+
-  required_version = ">= 1.1.0"
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {

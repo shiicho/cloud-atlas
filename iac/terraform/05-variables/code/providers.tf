@@ -2,7 +2,7 @@
 # Provider 配置
 
 terraform {
-  required_version = ">= 1.5.0, < 2.0.0"
+  required_version = "~> 1.14"
 
   required_providers {
     # Note: AWS Provider 6.x available with breaking changes

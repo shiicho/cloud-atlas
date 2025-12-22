@@ -350,10 +350,6 @@ code/
 
 ### Step 1：Plan Role の作成
 
-> **Note**: 以下の IAM ポリシーは DynamoDB によるロック機構を想定しています。
-> Terraform 1.10+ では `use_lockfile = true` による S3 原生ロックが推奨されており、
-> DynamoDB は不要です。DynamoDB ロックは Terraform 1.11 で非推奨となり、将来削除予定です。
-
 Plan Role は**読み取り専用**で、誰でも安全に `terraform plan` を実行可能：
 
 ```bash
@@ -446,20 +442,14 @@ resource "aws_iam_role_policy" "terraform_plan" {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:PutObject",    # S3 原生ロック用（.tflock ファイル）
+          "s3:DeleteObject"  # S3 原生ロック解除用
         ]
         Resource = [
           "arn:aws:s3:::${var.state_bucket}",
           "arn:aws:s3:::${var.state_bucket}/*"
         ]
-      },
-      {
-        Sid    = "TerraformLockRead"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem"
-        ]
-        Resource = "arn:aws:dynamodb:*:*:table/${var.lock_table}"
       }
     ]
   })
@@ -554,23 +544,13 @@ resource "aws_iam_role_policy" "terraform_apply" {
         Action = [
           "s3:GetObject",
           "s3:PutObject",
-          "s3:DeleteObject",
+          "s3:DeleteObject",  # S3 原生ロック用
           "s3:ListBucket"
         ]
         Resource = [
           "arn:aws:s3:::${var.state_bucket}",
           "arn:aws:s3:::${var.state_bucket}/*"
         ]
-      },
-      {
-        Sid    = "TerraformLockWrite"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem"
-        ]
-        Resource = "arn:aws:dynamodb:*:*:table/${var.lock_table}"
       }
     ]
   })

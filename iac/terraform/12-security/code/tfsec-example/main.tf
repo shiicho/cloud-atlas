@@ -1,15 +1,22 @@
 # =============================================================================
-# tfsec 安全扫描演示
-# tfsec Security Scanning Demo
+# 安全扫描演示（Security Scanning Demo）
 # =============================================================================
 #
-# 这个文件包含多种安全问题，用于演示 tfsec 如何检测它们。
-# 运行: tfsec . 查看所有问题
+# ⚠️  注意: tfsec 已被 Aqua Security 合并到 Trivy 中，不再积极开发。
+# ⚠️  Note: tfsec has been merged into Trivy and is no longer actively developed.
+#
+# 推荐使用 Trivy（同样能检测这些问题）：
+#   trivy config .
+#
+# 旧版 tfsec 命令（仍可用于遗留项目）：
+#   tfsec .
+#
+# 这个文件包含多种安全问题，用于演示安全扫描工具如何检测它们。
 #
 # =============================================================================
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {

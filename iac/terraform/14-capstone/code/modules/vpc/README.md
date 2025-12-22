@@ -59,7 +59,7 @@ module "vpc" {
 
 | Name | Version |
 |------|---------|
-| terraform | >= 1.5.0 |
+| terraform | ~> 1.14 |
 | aws | >= 5.0 |
 
 ## Inputs

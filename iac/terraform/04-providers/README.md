@@ -330,7 +330,7 @@ aws s3api get-bucket-location --bucket $(terraform output -raw osaka_bucket)
 ```hcl
 terraform {
   # Terraform CLI 版本约束
-  required_version = ">= 1.5.0, < 2.0.0"
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {
@@ -352,17 +352,17 @@ terraform init
 Error: Unsupported Terraform Core version
 
   on providers.tf line 2, in terraform:
-   2:   required_version = ">= 1.5.0, < 2.0.0"
+   2:   required_version = "~> 1.14"
 
-This configuration does not support Terraform version 1.4.0.
+This configuration does not support Terraform version 1.10.0.
 ```
 
 ### 6.3 最佳实践
 
 ```hcl
 terraform {
-  # 推荐：设置上下限，避免跨大版本
-  required_version = ">= 1.5.0, < 2.0.0"
+  # 推荐：使用 ~> 允许 minor 更新
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {

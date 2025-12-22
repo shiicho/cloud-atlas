@@ -5,7 +5,7 @@
 
 terraform {
   # 使用 replace_triggered_by 需要 Terraform 1.2+
-  required_version = ">= 1.9.0, < 2.0.0"
+  required_version = "~> 1.14"
 
   required_providers {
     # Note: AWS Provider 6.x available with breaking changes

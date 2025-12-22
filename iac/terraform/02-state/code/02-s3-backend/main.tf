@@ -14,25 +14,14 @@
 # 3. 取消下面其中一个 backend 块的注释并填入 bucket 名称
 # 4. 运行 terraform init -migrate-state
 #
-# 【推荐】方式一：原生 S3 锁定（Terraform 1.10+）
+# S3 后端配置（Terraform 1.10+ 原生锁定）
 # terraform {
 #   backend "s3" {
 #     bucket       = "tfstate-你的后缀"      # 替换为实际值
 #     key          = "lesson-02/terraform.tfstate"
 #     region       = "ap-northeast-1"
 #     encrypt      = true
-#     use_lockfile = true                   # 原生 S3 锁定，无需 DynamoDB
-#   }
-# }
-#
-# 【旧版】方式二：DynamoDB 锁定（已弃用，仅供旧项目参考）
-# terraform {
-#   backend "s3" {
-#     bucket         = "tfstate-你的后缀"      # 替换为实际值
-#     key            = "lesson-02/terraform.tfstate"
-#     region         = "ap-northeast-1"
-#     dynamodb_table = "terraform-lock"       # 已弃用
-#     encrypt        = true
+#     use_lockfile = true                   # 原生 S3 锁定
 #   }
 # }
 
@@ -80,5 +69,5 @@ resource "time_sleep" "wait" {
 #
 # 5. 等待终端 1 完成后，终端 2 可以重试
 #
-# 无论使用原生 S3 锁定还是 DynamoDB 锁定，锁机制都能有效防止并发冲突！
+# S3 原生锁定能有效防止并发冲突！
 # -----------------------------------------------------------------------------

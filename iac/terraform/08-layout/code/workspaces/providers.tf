@@ -6,8 +6,7 @@
 # =============================================================================
 
 terraform {
-  # Terraform 版本要求
-  required_version = ">= 1.9.0, < 2.0.0"
+  required_version = "~> 1.14"
 
   # Provider 版本要求
   required_providers {

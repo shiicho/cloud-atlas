@@ -1,7 +1,11 @@
 # =============================================================================
-# tfsec 配置文件
-# tfsec Configuration
+# tfsec 配置文件（遗留参考）
+# tfsec Configuration (Legacy Reference)
 # =============================================================================
+#
+# ⚠️  注意: tfsec 已被合并到 Trivy 中，不再积极开发。
+# ⚠️  新项目请使用 Trivy: trivy config .
+# ⚠️  迁移指南: https://github.com/aquasecurity/tfsec/blob/master/tfsec-to-trivy-migration-guide.md
 #
 # 用法: tfsec . --config-file .tfsec/config.yml
 # 或者: tfsec 会自动检测 .tfsec/config.yml

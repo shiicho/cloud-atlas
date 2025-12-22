@@ -5,14 +5,14 @@
 #
 # 这个配置创建一个安全的 Terraform State 存储环境：
 # - S3 Bucket（加密、版本控制、访问日志）
-# - DynamoDB 表（State Locking）
 # - KMS 密钥（客户管理加密）
 # - 严格的 Bucket Policy
+# - 使用 S3 原生锁定 (use_lockfile = true)，无需 DynamoDB
 #
 # =============================================================================
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {
@@ -243,32 +243,17 @@ resource "aws_s3_bucket_logging" "tfstate" {
 }
 
 # =============================================================================
-# DynamoDB 表 - State Locking
+# State Locking - 使用 S3 原生锁定
 # =============================================================================
-
-resource "aws_dynamodb_table" "tflock" {
-  name         = "terraform-lock-${var.project_name}"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  # 启用加密
-  server_side_encryption {
-    enabled     = true
-    kms_key_arn = aws_kms_key.tfstate.arn
-  }
-
-  # 启用时间点恢复
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  tags = {
-    Name    = "Terraform State Lock Table"
-    Purpose = "terraform-state-lock"
-  }
-}
+# Terraform 1.10+ 支持原生 S3 锁定 (use_lockfile = true)
+# 无需创建 DynamoDB 表，降低成本和复杂度
+#
+# 使用方式（在 backend 配置中）：
+#   backend "s3" {
+#     bucket       = "..."
+#     key          = "..."
+#     region       = "..."
+#     encrypt      = true
+#     use_lockfile = true  # 原生 S3 锁定
+#   }
+# =============================================================================

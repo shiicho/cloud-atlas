@@ -3,16 +3,9 @@
 > **目标**：理解 State 的作用，配置 S3 远程后端，体验团队协作场景
 > **前置**：已完成 [01 · 安装配置与第一个资源](../01-first-resource/)
 > **时间**：30-35 分钟
-> **费用**：S3 Bucket（免费层）；DynamoDB 仅旧版需要
+> **费用**：S3 Bucket（免费层）
 
----
-
-> **重要更新 (2024年12月)**
->
-> Terraform 1.10 起，S3 后端支持**原生状态锁定**（`use_lockfile = true`），无需 DynamoDB。
-> Terraform 1.11 正式**弃用** DynamoDB 锁定方式，并将在未来版本移除。
->
-> **新项目请使用原生 S3 锁定**。本课程保留 DynamoDB 内容供维护旧项目参考。
+> **Note**: Terraform 1.10+ 使用 S3 原生锁定（`use_lockfile = true`），无需 DynamoDB。
 
 ---
 
@@ -20,7 +13,7 @@
 
 1. 理解 State 文件的作用与重要性
 2. 体验 Local State 在团队场景中的问题
-3. 配置 S3 远程后端（原生锁定 vs DynamoDB 锁定）
+3. 配置 S3 远程后端（原生 S3 锁定）
 4. 理解 State Locking 机制
 5. 完成 Local → Remote 状态迁移
 
@@ -91,7 +84,7 @@ cat terraform.tfstate | head -30
 ```json
 {
   "version": 4,
-  "terraform_version": "1.9.x",
+  "terraform_version": "1.14.x",
   "resources": [
     {
       "type": "aws_s3_bucket",
@@ -195,8 +188,6 @@ terraform init && terraform apply -auto-approve
 
 现在，让我们创建一个使用远程后端的新项目。
 
-**推荐方式（Terraform 1.10+）- 原生 S3 锁定：**
-
 ```hcl
 terraform {
   backend "s3" {
@@ -204,21 +195,7 @@ terraform {
     key          = "lesson-02/terraform.tfstate"
     region       = "ap-northeast-1"
     encrypt      = true
-    use_lockfile = true  # 原生 S3 锁定，无需 DynamoDB
-  }
-}
-```
-
-**旧版方式（Terraform < 1.10 或维护旧项目）：**
-
-```hcl
-terraform {
-  backend "s3" {
-    bucket         = "tfstate-你的后缀"
-    key            = "lesson-02/terraform.tfstate"
-    region         = "ap-northeast-1"
-    dynamodb_table = "terraform-lock"  # 已弃用，但仍支持
-    encrypt        = true
+    use_lockfile = true  # 原生 S3 锁定
   }
 }
 ```
@@ -235,8 +212,7 @@ cat main.tf
 vim main.tf   # 或使用 VS Code
 ```
 
-> **提示**：如果你使用 Terraform 1.10+，推荐使用 `use_lockfile = true` 方式。
-> 检查版本：`terraform version`
+> **提示**：检查 Terraform 版本：`terraform version`（需要 1.10+）
 
 ### 3.3 迁移到远程后端
 
@@ -295,14 +271,10 @@ aws s3 ls s3://tfstate-你的后缀/lesson-02/
     │                                 │
     │  ┌───────────────────────────┐  │
     │  │ terraform.tfstate.tflock  │  │
-    │  │ (原生锁文件, TF 1.10+)    │  │
+    │  │ (原生锁文件)               │  │
     │  └───────────────────────────┘  │
     └────────────────┬────────────────┘
                      │
-    ┌────────────────┴────────────────┐
-    │   Legacy: DynamoDB Lock Table   │
-    │   (已弃用, 仍支持旧项目)         │
-    └────────────────┬────────────────┘
                      ▼
           ┌───────────────────┐
           │   AWS Resources   │
@@ -313,8 +285,6 @@ aws s3 ls s3://tfstate-你的后缀/lesson-02/
 </details>
 
 ### 4.2 State Locking 机制
-
-**原生 S3 锁定（Terraform 1.10+，推荐）：**
 
 当你运行 `terraform apply`：
 
@@ -335,20 +305,8 @@ aws s3 ls s3://tfstate-你的后缀/lesson-02/
    → 允许下一个操作
 ```
 
-**DynamoDB 锁定（旧版）：**
-
-```
-1. 获取锁（DynamoDB 条件写入）
-   → 如果已锁定，等待或失败
-
-2-4. 同上
-
-5. 释放锁（删除 DynamoDB 记录）
-   → 允许下一个操作
-```
-
-> **技术细节**：原生 S3 锁定使用 S3 的 `If-None-Match` 条件写入，
-> 创建 `.tflock` 文件。这避免了 DynamoDB 的额外成本和复杂性。
+> **技术细节**：S3 原生锁定使用 `If-None-Match` 条件写入创建 `.tflock` 文件，
+> 实现简洁的分布式锁机制。
 
 ### 4.3 State 文件内容解剖
 
@@ -409,7 +367,7 @@ terraform apply -auto-approve
 terraform apply -auto-approve
 ```
 
-**终端 2 输出（原生 S3 锁定）：**
+**终端 2 输出：**
 
 ```
 Error: Error acquiring the state lock
@@ -423,22 +381,7 @@ Lock Info:
   Path:      tfstate-xxx/lesson-02/terraform.tfstate
   Operation: OperationTypeApply
   Who:       ec2-user@ip-10-0-1-xxx
-  Version:   1.11.x
-  Created:   2024-xx-xx xx:xx:xx.xxx UTC
-```
-
-**终端 2 输出（DynamoDB 锁定，旧版）：**
-
-```
-Error: Error acquiring the state lock
-
-Error message: ConditionalCheckFailedException: The conditional request failed
-Lock Info:
-  ID:        xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-  Path:      tfstate-xxx/lesson-02/terraform.tfstate
-  Operation: OperationTypeApply
-  Who:       ec2-user@ip-10-0-1-xxx
-  Version:   1.9.x
+  Version:   1.14.x
   Created:   2024-xx-xx xx:xx:xx.xxx UTC
 ```
 
@@ -446,21 +389,11 @@ Lock Info:
 
 ### 5.3 查看锁状态
 
-**原生 S3 锁定（TF 1.10+）- 查看锁文件：**
-
 ```bash
 aws s3 ls s3://tfstate-你的后缀/lesson-02/
 ```
 
 运行中会看到 `.tflock` 文件；完成后锁文件会被删除。
-
-**DynamoDB 锁定（旧版）- 查看锁表：**
-
-```bash
-aws dynamodb scan --table-name terraform-lock
-```
-
-运行中会看到锁记录；完成后锁会释放。
 
 ---
 
@@ -567,13 +500,6 @@ terraform destroy -auto-approve
 | **Remote Backend** | S3 存储 + 锁定机制 |
 | **State Locking** | 防止并发修改冲突 |
 
-**锁定方式对比**：
-
-| 方式 | Terraform 版本 | 优点 | 状态 |
-|------|----------------|------|------|
-| 原生 S3 锁定 (`use_lockfile`) | 1.10+ | 简单、无额外成本 | **推荐** |
-| DynamoDB 锁定 | 全版本 | 兼容旧版 | 已弃用 (1.11+) |
-
 **反模式警告**：
 
 | 不要这样做 | 为什么 |
@@ -582,7 +508,6 @@ terraform destroy -auto-approve
 | 团队使用 Local State | 状态覆盖风险 |
 | 共享 .terraform 目录 | 环境污染 |
 | 不启用 State Locking | 并发冲突 |
-| 新项目使用 DynamoDB 锁定 | 已弃用，增加复杂度 |
 
 ---
 
@@ -606,9 +531,9 @@ A: Terraform が管理するリソースの現在状態を記録するファイ�
 
 A: 同時 apply による競合防止。排他ロックを実現し、一人が apply 中は他の apply をブロック。
 
-**Q: DynamoDB を使わない State Locking は？**
+**Q: State Locking の実装方法は？**
 
-A: Terraform 1.10 以降、S3 バックエンドで `use_lockfile = true` を設定すると、S3 の条件付き書き込み機能を使った native locking が利用可能。DynamoDB は不要になり、コスト削減とアーキテクチャ簡素化が実現。1.11 で正式に DynamoDB は deprecated となった。
+A: S3 バックエンドで `use_lockfile = true` を設定。S3 の条件付き書き込み機能を使い、`.tflock` ファイルで排他ロックを実現。シンプルで追加コストなし。
 
 **Q: なぜ State を Git にコミットしない？**
 
@@ -626,21 +551,9 @@ A: S3 Versioning で過去バージョンに復旧。または terraform state p
 
 **State Lock が解放されない**
 
-原生 S3 锁定（TF 1.10+）：
-
 ```bash
 # 锁文件を確認
 aws s3 ls s3://tfstate-xxx/lesson-02/ | grep tflock
-
-# 強制解除（危険！他に apply 中でないことを確認）
-terraform force-unlock <LOCK_ID>
-```
-
-DynamoDB 锁定（旧版）：
-
-```bash
-# ロック情報を確認
-aws dynamodb scan --table-name terraform-lock
 
 # 強制解除（危険！他に apply 中でないことを確認）
 terraform force-unlock <LOCK_ID>
@@ -654,17 +567,6 @@ terraform init -reconfigure
 
 # または migrate（State を新しい場所にコピー）
 terraform init -migrate-state
-```
-
-**从 DynamoDB 迁移到原生 S3 锁定**
-
-```bash
-# 1. 更新 backend 配置：删除 dynamodb_table，添加 use_lockfile = true
-# 2. 重新初始化
-terraform init -reconfigure
-
-# 3. 可选：清理旧的 DynamoDB 表
-aws dynamodb delete-table --table-name terraform-lock
 ```
 
 **S3 Access Denied**

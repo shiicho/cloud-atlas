@@ -8,9 +8,7 @@
 # =============================================================================
 
 terraform {
-  # 最低版本要求 - Import blocks 需要 1.5+
-  # 推荐使用最新版本以获得最佳的代码生成支持
-  required_version = ">= 1.5.0"
+  required_version = "~> 1.14"
 
   required_providers {
     aws = {

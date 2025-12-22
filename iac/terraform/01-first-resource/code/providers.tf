@@ -6,7 +6,7 @@
 
 terraform {
   # Terraform CLI 版本约束
-  required_version = ">= 1.9.0, < 2.0.0"
+  required_version = "~> 1.14"
 
   # Provider 版本约束
   required_providers {

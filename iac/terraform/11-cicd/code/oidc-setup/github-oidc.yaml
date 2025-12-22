@@ -143,16 +143,6 @@ Resources:
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}/*
 
-          # State Lock 访问
-          - Sid: TerraformLockAccess
-            Effect: Allow
-            Action:
-              - dynamodb:GetItem
-              - dynamodb:PutItem
-              - dynamodb:DeleteItem
-            Resource:
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/terraform-locks
-
           # EC2 操作（示例）
           - Sid: EC2Access
             Effect: Allow
@@ -245,16 +235,6 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}/*
-
-          # Lock 表访问（plan 也需要）
-          - Sid: TerraformLockAccess
-            Effect: Allow
-            Action:
-              - dynamodb:GetItem
-              - dynamodb:PutItem
-              - dynamodb:DeleteItem
-            Resource:
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/terraform-locks
 
           # 所有资源只读
           - Sid: ReadOnlyAccess

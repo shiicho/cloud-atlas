@@ -159,7 +159,7 @@ fi
 
 ### 3.1 什么是 State Lock
 
-Terraform 使用 DynamoDB 实现 State Lock，防止并发 apply。
+Terraform 使用 S3 原生锁定（`.tflock` 文件）防止并发 apply。
 
 Lock 卡住的常见原因：
 - apply 过程中网络中断
@@ -169,18 +169,11 @@ Lock 卡住的常见原因：
 ### 3.2 查看当前 Lock
 
 ```bash
-# 查看 DynamoDB 锁表
-aws dynamodb scan --table-name tfstate-lock-capstone
+# 查看 S3 中的锁文件
+aws s3 ls s3://tfstate-capstone-YOUR_ACCOUNT_ID/dev/ | grep tflock
 
-# 输出示例：
-# {
-#   "Items": [
-#     {
-#       "LockID": {"S": "tfstate-capstone-xxx/dev/terraform.tfstate"},
-#       "Info": {"S": "{\"ID\":\"...\",\"Operation\":\"apply\",...}"}
-#     }
-#   ]
-# }
+# 输出示例（有锁时）：
+# 2025-01-15 10:00:00        256 terraform.tfstate.tflock
 ```
 
 ### 3.3 解锁流程
@@ -197,7 +190,8 @@ aws dynamodb scan --table-name tfstate-lock-capstone
 ```bash
 # 从 terraform 错误信息获取
 # Error: Error acquiring the state lock
-# Lock ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# Lock Info:
+#   ID:        xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 **Step 3: 强制解锁**
@@ -301,9 +295,6 @@ terraform destroy -auto-approve
 ```bash
 # 删除 S3 Bucket
 aws s3 rb s3://tfstate-capstone-YOUR_ACCOUNT_ID --force
-
-# 删除 DynamoDB 表
-aws dynamodb delete-table --table-name tfstate-lock-capstone
 ```
 
 ### 5.4 检查残留资源
