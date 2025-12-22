@@ -5,6 +5,7 @@ Description: |
   - SSM Session Manager access (no SSH key needed)
   - VS Code Remote-SSH compatible
   - IAM Role with scoped permissions for learning exercises
+  - S3 bucket for Terraform remote state (with versioning)
 
 Parameters:
   InstanceType:
@@ -109,6 +110,31 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${Project}-sg
+
+  # ===========================================================================
+  # S3 Bucket for Terraform State
+  # ===========================================================================
+
+  TfStateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'tfstate-${Project}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${Project}-tfstate
+        - Key: Purpose
+          Value: terraform-state
 
   # ===========================================================================
   # IAM Role for EC2 (SSM + Terraform permissions)
@@ -322,3 +348,20 @@ Outputs:
         HostName ${Instance}
         User ec2-user
         ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p' --region ${AWS::Region}
+
+  TfStateBucketName:
+    Description: S3 bucket for Terraform remote state (use with use_lockfile=true)
+    Value: !Ref TfStateBucket
+
+  TfBackendConfig:
+    Description: Backend configuration for your Terraform projects
+    Value: !Sub |
+      terraform {
+        backend "s3" {
+          bucket       = "${TfStateBucket}"
+          key          = "your-project/terraform.tfstate"
+          region       = "${AWS::Region}"
+          encrypt      = true
+          use_lockfile = true
+        }
+      }
