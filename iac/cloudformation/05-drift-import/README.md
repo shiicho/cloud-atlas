@@ -112,7 +112,7 @@ Tags.ModifiedBy  (not set)         console-user
 ![Drift Concept](images/drift-concept.png)
 
 <details>
-<summary>📝 ASCII 源码（点击展开）</summary>
+<summary>View ASCII source</summary>
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -224,7 +224,7 @@ Resources:
 ![Drift Decision Tree](images/drift-decision-tree.png)
 
 <details>
-<summary>📝 ASCII 源码（点击展开）</summary>
+<summary>View ASCII source</summary>
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -267,7 +267,7 @@ Resources:
 ![Import Concept](images/import-concept.png)
 
 <details>
-<summary>📝 ASCII 源码（点击展开）</summary>
+<summary>View ASCII source</summary>
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -455,7 +455,7 @@ Import          ImportedBucket  my-legacy-bucket-123456789012  AWS::S3::Bucket
 ![Deletion Policy Import Workflow](images/deletion-policy-import-workflow.png)
 
 <details>
-<summary>📝 ASCII 源码（点击展开）</summary>
+<summary>View ASCII source</summary>
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐

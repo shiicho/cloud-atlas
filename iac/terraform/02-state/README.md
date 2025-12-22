@@ -153,59 +153,43 @@ cat terraform.tfstate | head -30
 
 > 现在让我们看看正确的做法。
 
-### 3.1 准备远程后端基础设施
+### 3.1 获取远程后端 Bucket
 
-首先，我们需要创建存储 State 的 S3 Bucket。
+好消息！在 [环境准备](../00-concepts/lab-setup.md) 时，CloudFormation 已经为你创建了 S3 State Bucket。
+
+获取 bucket 名称：
+
+```bash
+# 从 CloudFormation 输出获取
+aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text
+```
+
+```
+tfstate-terraform-course-123456789012
+```
+
+记下这个 bucket 名称！
+
+> **为什么用 CloudFormation 预置？**
+>
+> 这是"鸡生蛋"问题的标准解法：State Bucket 本身不能用 Terraform 管理
+> （否则它的 State 存哪里？），所以用 CloudFormation 或手动创建。
+
+<details>
+<summary>（可选）手动创建 State Bucket</summary>
+
+如果你没有使用 terraform-lab 栈，可以手动创建：
 
 ```bash
 cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
-
-# 查看后端配置
-cat backend-setup.tf
+cat backend-setup.tf  # 查看模板
+terraform init && terraform apply -auto-approve
 ```
 
-```hcl
-# 这个文件创建远程后端需要的基础设施
-# 注意：这些资源本身使用 local state（鸡生蛋问题）
-
-resource "aws_s3_bucket" "tfstate" {
-  bucket = "tfstate-${random_id.suffix.hex}"
-
-  tags = {
-    Name    = "Terraform State Bucket"
-    Purpose = "terraform-state"
-  }
-}
-
-# [Legacy] DynamoDB Table - 仅 Terraform < 1.10 需要
-# Terraform 1.10+ 可使用原生 S3 锁定，无需此表
-resource "aws_dynamodb_table" "tflock" {
-  name         = "terraform-lock"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
-```
-
-创建后端基础设施：
-
-```bash
-terraform init
-terraform apply -auto-approve
-```
-
-```
-Outputs:
-
-bucket_name   = "tfstate-a1b2c3d4"
-dynamodb_table = "terraform-lock"   # Legacy，新项目可忽略
-```
-
-记下 bucket 名称！
+</details>
 
 ### 3.2 配置使用远程后端
 
@@ -545,41 +529,32 @@ S3 Versioning 提供 State 的历史记录，可用于：
 
 ## Step 7 — 清理资源（3 分钟）
 
-> 完成学习后，立即清理！
+> 完成学习后，立即清理本课创建的资源！
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
-
-# 先删除使用远程后端的资源
-terraform destroy -auto-approve
-
-# 回到 01-local-state，清理那里的资源
-cd ../01-local-state
+# 清理 01-local-state 中的演示资源
+cd ~/cloud-atlas/iac/terraform/02-state/code/01-local-state
 terraform destroy -auto-approve
 ```
 
-**保留还是删除后端基础设施？**
+**S3 State Bucket 怎么办？**
 
-- **保留**：后续课程继续使用（推荐）
-- **删除**：如果要彻底清理
+- **保留**：后续课程继续使用（**推荐**）
+- Bucket 由 `terraform-lab` CloudFormation 栈管理
+- 当你完成整个课程，删除 `terraform-lab` 栈时会一起删除
 
-```bash
-# 如果要删除后端基础设施
-# 警告：会删除所有 State 历史！
-
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
-
-# Step 1: 注释掉 main.tf 中的 backend "s3" 块
-# 编辑 main.tf，将 backend 块注释掉
-
-# Step 2: 迁移 State 回本地
-terraform init -migrate-state
-# 选择 yes 将 State 从 S3 复制到本地
-
-# Step 3: 清空并删除后端基础设施
-aws s3 rm s3://tfstate-你的后缀 --recursive
-terraform destroy -auto-approve
-```
+> **注意**：如果 Bucket 中有 State 文件，需要先清空才能删除栈：
+> ```bash
+> # 获取 bucket 名称
+> BUCKET=$(aws cloudformation describe-stacks --stack-name terraform-lab \
+>   --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' --output text)
+>
+> # 清空 bucket（包括所有版本）
+> aws s3 rm s3://$BUCKET --recursive
+> aws s3api delete-objects --bucket $BUCKET \
+>   --delete "$(aws s3api list-object-versions --bucket $BUCKET \
+>   --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}')" 2>/dev/null || true
+> ```
 
 ---
 

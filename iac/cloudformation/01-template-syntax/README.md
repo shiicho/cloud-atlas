@@ -186,7 +186,7 @@ CREATE_COMPLETE     dev-web-server (Stack)
 ![CloudFormation Template 结构](images/template-sections.png)
 
 <details>
-<summary>📝 ASCII 源码（点击展开）</summary>
+<summary>View ASCII source</summary>
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -228,7 +228,7 @@ CREATE_COMPLETE     dev-web-server (Stack)
 ![数据流向](images/template-data-flow.png)
 
 <details>
-<summary>📝 ASCII 源码（点击展开）</summary>
+<summary>View ASCII source</summary>
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
