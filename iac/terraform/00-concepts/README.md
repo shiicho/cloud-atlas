@@ -80,8 +80,8 @@
 │  [Az]  ARM / Bicep          │  [P]  Pulumi                  │
 │        Azure 专属 / DSL     │       编程语言 / TS,Python,Go  │
 │                             │                               │
-│  [GCP] Deployment Manager   │  [A]  Ansible                 │
-│        GCP 专属 / YAML      │       配置管理 / YAML Playbook │
+│  [GCP] Infrastructure Mgr   │  [A]  Ansible                 │
+│        GCP / Terraform-based│       配置管理 / YAML Playbook │
 │                             │                               │
 └─────────────────────────────┴───────────────────────────────┘
 ```

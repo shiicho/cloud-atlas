@@ -11,7 +11,7 @@
 
 1. 理解 `sensitive = true` 的**局限性**（仍在 State 中明文存储）
 2. 使用 SSM Parameter Store / Secrets Manager 动态获取密钥
-3. 使用 tfsec 和 checkov 进行安全扫描
+3. 使用 Trivy 和 checkov 进行安全扫描
 4. 设计最小权限 IAM Role
 5. 保护 State 文件（加密、访问控制、审计日志）
 
@@ -246,30 +246,36 @@ terraform state pull | grep -A 5 "password"
 
 ### 2. 安全扫描工具
 
-#### tfsec（静态安全分析）
+#### Trivy（静态安全分析）
+
+> **注意**：Trivy 是 Aqua Security 推出的统一安全扫描工具，已整合 tfsec 功能。
+> 新项目请使用 Trivy；tfsec 仍可用但不再积极开发。
 
 ```bash
-# 基本扫描
-tfsec .
+# 基本扫描（IaC 配置文件）
+trivy config .
 
 # 输出 JSON 格式（CI/CD 集成）
-tfsec . --format json
+trivy config . --format json
 
-# 排除特定检查
-tfsec . --exclude aws-s3-enable-versioning
+# 只显示 HIGH 和 CRITICAL
+trivy config . --severity HIGH,CRITICAL
 
 # 使用配置文件
-tfsec . --config-file .tfsec/config.yml
+trivy config . --config trivy.yaml
+
+# 旧版 tfsec 命令（仍可用）
+# tfsec .
 ```
 
 **常见检查项**：
 
 | 检查 ID | 严重性 | 说明 |
 |---------|--------|------|
-| `aws-ssm-secret-use-customer-key` | MEDIUM | SSM 使用客户管理密钥 |
-| `aws-s3-enable-versioning` | LOW | S3 启用版本控制 |
-| `aws-s3-encryption-customer-key` | HIGH | S3 使用 KMS 加密 |
-| `aws-iam-no-policy-wildcards` | HIGH | IAM 不使用通配符 |
+| `AVD-AWS-0057` | MEDIUM | SSM 使用客户管理密钥 |
+| `AVD-AWS-0090` | LOW | S3 启用版本控制 |
+| `AVD-AWS-0088` | HIGH | S3 使用 KMS 加密 |
+| `AVD-AWS-0057` | HIGH | IAM 不使用通配符 |
 
 #### checkov（合规性检查）
 
@@ -427,13 +433,13 @@ resource "aws_db_instance" "main" {
 ```bash
 # 扫描 bad 代码
 cd ~/cloud-atlas/iac/terraform/12-security/code/bad
-tfsec .
+trivy config .
 
 # 输出：3 issues (HIGH: 1, MEDIUM: 2)
 
 # 扫描 good 代码
 cd ~/cloud-atlas/iac/terraform/12-security/code/good
-tfsec .
+trivy config .
 
 # 输出：0 issues
 ```
@@ -586,7 +592,7 @@ A: S3 Bucket Policy + IAM で制限し、アクセスログを有効化。
    KMS で暗号化し、バージョニングで履歴を保持しています。
 
 Q: 脆弱性スキャンは実施していますか？
-A: CI/CD で tfsec と checkov を実行し、
+A: CI/CD で Trivy と checkov を実行し、
    HIGH/CRITICAL の issue がある場合は PR をブロックします。
 ```
 
@@ -619,7 +625,7 @@ aws s3api list-object-versions \
 
 - [ ] 理解 `sensitive = true` 的局限性（值仍在 State 中）
 - [ ] 能使用 SSM Parameter Store 动态获取密钥
-- [ ] 能运行 tfsec 并解读输出
+- [ ] 能运行 Trivy 并解读输出
 - [ ] 能运行 checkov 并解读输出
 - [ ] 理解 IAM 最小权限原则（Plan Role vs Apply Role）
 - [ ] 能配置 S3 State Bucket 安全设置（KMS、版本控制、访问日志）
@@ -633,9 +639,9 @@ aws s3api list-object-versions \
 
 A: コードに平文で書かない。SSM Parameter Store または Secrets Manager から data source で取得。sensitive = true は出力抑制のみで、State には平文で残るので注意。State は必ず暗号化。
 
-**Q: tfsec と checkov の違いは？**
+**Q: Trivy と checkov の違いは？**
 
-A: tfsec は Aqua Security のオープンソース、Terraform 特化の静態分析。checkov は Bridgecrew（Palo Alto）製で、マルチフレームワーク対応（Terraform、CloudFormation、K8s）。どちらも CI/CD に統合可能。
+A: Trivy は Aqua Security のオープンソース、Terraform + コンテナ + IaC の統合スキャナ（tfsec を統合）。checkov は Bridgecrew（Palo Alto）製で、マルチフレームワーク対応（Terraform、CloudFormation、K8s）。どちらも CI/CD に統合可能。
 
 **Q: Terraform 用 IAM Role の設計方針は？**
 
@@ -675,19 +681,23 @@ aws ssm get-parameter --name "/myapp/prod/db/password" --with-decryption
 }
 ```
 
-### tfsec の False Positive
+### Trivy の False Positive
 
 ```bash
 # 特定のチェックを無視（コード内コメント）
 resource "aws_s3_bucket" "logs" {
-  # tfsec:ignore:aws-s3-enable-versioning
+  # trivy:ignore:AVD-AWS-0090
   bucket = "access-logs-bucket"
 }
 
 # 設定ファイルで無視
-# .tfsec/config.yml
-exclude:
-  - aws-s3-enable-versioning
+# trivy.yaml
+misconfiguration:
+  scanners:
+    - config
+  terraform:
+    exclude-rules:
+      - avd_id: AVD-AWS-0090  # S3 versioning
 ```
 
 ### State に機密情報が残っている
@@ -709,7 +719,7 @@ terraform apply -target=aws_db_instance.main
 
 - [Terraform Sensitive Variables](https://developer.hashicorp.com/terraform/language/values/variables#suppressing-values-in-cli-output)
 - [AWS SSM Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
-- [tfsec Documentation](https://aquasecurity.github.io/tfsec/)
+- [Trivy Documentation](https://aquasecurity.github.io/trivy/)
 - [checkov Documentation](https://www.checkov.io/1.Welcome/What%20is%20Checkov.html)
 - [AWS S3 Security Best Practices](https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html)
 - [13 - 测试与质量保证](../13-testing/) - 下一课
