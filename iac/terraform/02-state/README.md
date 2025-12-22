@@ -51,17 +51,18 @@ terraform destroy -auto-approve
 ### 2.1 创建资源（使用 Local State）
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/01-local-state
+cd ~/cloud-atlas/iac/terraform/02-state/code
 terraform init
 terraform apply -auto-approve
 ```
 
 ```
-Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-bucket_name = "state-demo-local-a1b2c3d4"
+bucket_arn = "arn:aws:s3:::state-demo-a1b2c3d4"
+bucket_name = "state-demo-a1b2c3d4"
 ```
 
 ### 2.2 检查 State 文件
@@ -171,51 +172,32 @@ tfstate-terraform-course-123456789012
 > 这是"鸡生蛋"问题的标准解法：State Bucket 本身不能用 Terraform 管理
 > （否则它的 State 存哪里？），所以用 CloudFormation 或手动创建。
 
-<details>
-<summary>（可选）手动创建 State Bucket</summary>
+### 3.2 配置远程后端
 
-如果你没有使用 terraform-lab 栈，可以手动创建：
+现在，让我们把刚才创建的 Local State 迁移到 S3 远程后端。
+
+查看 `providers.tf` 中的后端配置模板：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
-cat backend-setup.tf  # 查看模板
-terraform init && terraform apply -auto-approve
+cat providers.tf
 ```
 
-</details>
-
-### 3.2 配置使用远程后端
-
-现在，让我们创建一个使用远程后端的新项目。
+你会看到被注释的 backend 块：
 
 ```hcl
-terraform {
-  backend "s3" {
-    bucket       = "tfstate-你的后缀"
-    key          = "lesson-02/terraform.tfstate"
-    region       = "ap-northeast-1"
-    encrypt      = true
-    use_lockfile = true  # 原生 S3 锁定
-  }
-}
+# backend "s3" {
+#   bucket       = "tfstate-terraform-course-你的账户ID"  # 替换为实际值
+#   key          = "lesson-02/terraform.tfstate"
+#   region       = "ap-northeast-1"
+#   encrypt      = true
+#   use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
+# }
 ```
 
-切换到远程后端示例目录：
+编辑并取消注释，填入你的 bucket 名称：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
-```
-
-查看 `main.tf` 中的模板：
-
-```bash
-cat main.tf
-```
-
-编辑并取消 backend 块的注释，填入你的 bucket 名称：
-
-```bash
-vim main.tf   # 或使用 VS Code
+vim providers.tf   # 或使用 VS Code
 ```
 
 > **提示**：检查 Terraform 版本：`terraform version`（需要 1.10+）
@@ -243,7 +225,7 @@ Do you want to copy existing state to the new backend?
 ls terraform.tfstate 2>/dev/null || echo "Local state removed (expected)"
 
 # 验证远程 State
-aws s3 ls s3://tfstate-你的后缀/lesson-02/
+aws s3 ls s3://你的bucket名称/lesson-02/
 ```
 
 ```
@@ -317,7 +299,8 @@ aws s3 ls s3://tfstate-你的后缀/lesson-02/
 ### 4.3 State 文件内容解剖
 
 ```bash
-aws s3 cp s3://tfstate-你的后缀/lesson-02/terraform.tfstate - | head -50
+# 从 S3 下载查看（替换为你的 bucket 名称）
+aws s3 cp s3://你的bucket名称/lesson-02/terraform.tfstate - | head -50
 ```
 
 State 文件包含：
@@ -337,29 +320,32 @@ State 文件包含：
 
 > 亲自感受 State Locking 如何防止冲突。
 
-### 5.1 打开两个终端
+### 5.1 修改配置启用延时
 
-**终端 1**：
-
-```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
-```
-
-**终端 2**（新开一个 SSH/VS Code 终端）：
+编辑 `main.tf`，将 `time_sleep` 的 `create_duration` 改为 `"30s"`：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
+vim main.tf
 ```
 
-### 5.2 模拟并发 Apply
-
-在 `main.tf` 中添加一个需要时间创建的资源（如果没有的话）：
+找到这行并修改：
 
 ```hcl
 resource "time_sleep" "wait" {
-  create_duration = "30s"
+  create_duration = "30s"  # 从 "0s" 改为 "30s"
+  ...
 }
 ```
+
+### 5.2 打开两个终端
+
+**终端 1** 和 **终端 2** 都进入同一目录：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/02-state/code
+```
+
+### 5.3 模拟并发 Apply
 
 **终端 1**：
 
@@ -393,23 +379,30 @@ Lock Info:
 
 **State Locking 生效了！** 第二个 apply 被阻止。
 
-### 5.3 查看锁状态
+### 5.4 查看锁状态
 
 ```bash
-aws s3 ls s3://tfstate-你的后缀/lesson-02/
+# 替换为你的 bucket 名称
+aws s3 ls s3://你的bucket名称/lesson-02/
 ```
 
 运行中会看到 `.tflock` 文件；完成后锁文件会被删除。
+
+### 5.5 恢复配置
+
+演示完成后，记得将 `create_duration` 改回 `"0s"`：
+
+```bash
+vim main.tf
+# 将 "30s" 改回 "0s"
+terraform apply -auto-approve
+```
 
 ---
 
 ## Step 6 — 深入理解 State（8 分钟）
 
 ### 6.1 为什么不能 commit State 到 Git？
-
-```bash
-cat terraform.tfstate | grep -A 5 "sensitive"
-```
 
 State 文件可能包含：
 
@@ -452,9 +445,9 @@ terraform state show aws_s3_bucket.demo
 ### 6.3 State 版本控制（S3 Versioning）
 
 ```bash
-# 查看 State 历史版本
+# 查看 State 历史版本（替换为你的 bucket 名称）
 aws s3api list-object-versions \
-  --bucket tfstate-你的后缀 \
+  --bucket 你的bucket名称 \
   --prefix lesson-02/terraform.tfstate
 ```
 
@@ -471,8 +464,7 @@ S3 Versioning 提供 State 的历史记录，可用于：
 > 完成学习后，立即清理本课创建的资源！
 
 ```bash
-# 清理 01-local-state 中的演示资源
-cd ~/cloud-atlas/iac/terraform/02-state/code/01-local-state
+cd ~/cloud-atlas/iac/terraform/02-state/code
 terraform destroy -auto-approve
 ```
 
@@ -558,8 +550,8 @@ A: S3 Versioning で過去バージョンに復旧。または terraform state p
 **State Lock が解放されない**
 
 ```bash
-# 锁文件を確認
-aws s3 ls s3://tfstate-xxx/lesson-02/ | grep tflock
+# 锁文件を確認（替换为你的 bucket 名称）
+aws s3 ls s3://你的bucket名称/lesson-02/ | grep tflock
 
 # 強制解除（危険！他に apply 中でないことを確認）
 terraform force-unlock <LOCK_ID>
