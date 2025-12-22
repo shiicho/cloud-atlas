@@ -28,7 +28,7 @@ resource "aws_s3_bucket" "demo" {
   tags = {
     Name        = "State Demo - Local"
     Environment = "learning"
-    Warning     = "This uses local state - NOT for production!"
+    Warning     = "This uses local state - NOT for production"
   }
 }
 
