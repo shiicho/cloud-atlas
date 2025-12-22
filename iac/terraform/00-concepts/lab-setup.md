@@ -180,11 +180,9 @@ git version 2.x.x
 ## 克隆课程示例代码
 
 ```bash
-cd ~
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
 cd ~/cloud-atlas && git sparse-checkout set iac/terraform
-ln -s ~/cloud-atlas/iac/terraform ~/terraform-examples
-ls terraform-examples/
+ls ~/cloud-atlas/iac/terraform/
 ```
 
 ```
@@ -193,6 +191,12 @@ ls terraform-examples/
 02-state/
 03-hcl/
 ...
+```
+
+每个课程直接进入对应目录即可：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/01-first-resource/code
 ```
 
 ---

@@ -53,14 +53,13 @@ ls -la
 │       ├── variables.tf
 │       ├── outputs.tf
 │       └── README.md
-├── environments/
-│   ├── dev/                 # 开发环境
-│   │   ├── main.tf
-│   │   └── terraform.tfvars
-│   └── prod/                # 生产环境
-│       ├── main.tf
-│       └── terraform.tfvars
-└── providers.tf
+└── environments/
+    ├── dev/                 # 开发环境（含 provider 配置）
+    │   ├── main.tf
+    │   └── terraform.tfvars
+    └── prod/                # 生产环境
+        ├── main.tf
+        └── terraform.tfvars
 ```
 
 ### 2.2 部署开发环境

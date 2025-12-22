@@ -24,7 +24,7 @@ fi
 if [ ! -f "main.tf" ]; then
     echo "❌ 错误：当前目录没有 main.tf 文件"
     echo "   请切换到课程代码目录后再运行"
-    echo "   cd ~/terraform-examples/lesson-01-first-resource/code"
+    echo "   cd ~/cloud-atlas/iac/terraform/01-first-resource/code"
     exit 1
 fi
 

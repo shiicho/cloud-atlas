@@ -718,6 +718,35 @@ aws dynamodb delete-item \
 
 ---
 
+## 清理资源
+
+> ⚠️ **本课涉及多个 AWS 资源**，请务必清理以避免费用：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/16-jp-audit/code/audit-logging-setup
+
+# 1. 清空 S3 Bucket 内容（必须先清空才能删除）
+TFSTATE_BUCKET=$(terraform output -raw state_bucket_name 2>/dev/null || echo "")
+LOG_BUCKET=$(terraform output -raw log_bucket_name 2>/dev/null || echo "")
+
+if [ -n "$TFSTATE_BUCKET" ]; then
+  aws s3 rm s3://$TFSTATE_BUCKET --recursive
+fi
+
+if [ -n "$LOG_BUCKET" ]; then
+  aws s3 rm s3://$LOG_BUCKET --recursive
+fi
+
+# 2. 删除 Terraform 管理的资源
+terraform destroy -auto-approve
+
+# 3. 确认资源已删除
+aws s3 ls | grep tfstate
+aws cloudtrail describe-trails --query 'trailList[*].Name'
+```
+
+---
+
 ## 系列導航
 
 ← [15 · 変更管理](../15-jp-change-mgmt/) | [Home](../) | 🎉 Course Complete!

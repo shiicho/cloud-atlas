@@ -50,7 +50,7 @@ on linux_amd64
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/terraform-examples/lesson-01-first-resource/code
+cd ~/cloud-atlas/iac/terraform/01-first-resource/code
 ls -la
 ```
 
@@ -268,6 +268,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"              # 5.x，不超过 6.0
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -276,7 +280,7 @@ provider "aws" {
 }
 ```
 
-**要点**：声明需要 AWS Provider，版本 5.x。
+**要点**：声明需要 AWS Provider 和 Random Provider。
 
 ### 5.2 main.tf — 创建什么资源？
 

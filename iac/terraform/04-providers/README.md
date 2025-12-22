@@ -55,8 +55,7 @@ ls -la
 ├── main.tf              # 简单 S3 资源
 ├── providers.tf         # Provider 配置（版本约束）
 ├── multi-region.tf      # 多区域 Provider alias
-├── outputs.tf           # 输出值
-└── versions-demo/       # 版本演示目录
+└── outputs.tf           # 输出值
 ```
 
 ### 2.2 初始化并观察锁文件

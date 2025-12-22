@@ -30,7 +30,7 @@ aws ssm start-session --target i-你的实例ID --region ap-northeast-1
 确认上一课的资源已清理：
 
 ```bash
-cd ~/terraform-examples/01-first-resource/code
+cd ~/cloud-atlas/iac/terraform/01-first-resource/code
 terraform state list
 ```
 
@@ -49,7 +49,7 @@ terraform destroy -auto-approve
 ### 2.1 创建资源（使用 Local State）
 
 ```bash
-cd ~/terraform-examples/02-state/code/01-local-state
+cd ~/cloud-atlas/iac/terraform/02-state/code/01-local-state
 terraform init
 terraform apply -auto-approve
 ```
@@ -149,7 +149,7 @@ cat terraform.tfstate | head -30
 首先，我们需要创建存储 State 的 S3 Bucket 和 DynamoDB Table。
 
 ```bash
-cd ~/terraform-examples/02-state/code/02-s3-backend
+cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
 
 # 查看后端配置
 cat backend-setup.tf
@@ -350,13 +350,13 @@ State 文件包含：
 **终端 1**：
 
 ```bash
-cd ~/terraform-examples/02-state/code/02-s3-backend
+cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
 ```
 
 **终端 2**（新开一个 SSH/VS Code 终端）：
 
 ```bash
-cd ~/terraform-examples/02-state/code/02-s3-backend
+cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
 ```
 
 ### 5.2 模拟并发 Apply
@@ -479,7 +479,7 @@ S3 Versioning 提供 State 的历史记录，可用于：
 > 完成学习后，立即清理！
 
 ```bash
-cd ~/terraform-examples/02-state/code/02-s3-backend
+cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
 
 # 先删除使用远程后端的资源
 terraform destroy -auto-approve
@@ -497,8 +497,17 @@ terraform destroy -auto-approve
 ```bash
 # 如果要删除后端基础设施
 # 警告：会删除所有 State 历史！
-cd ~/terraform-examples/02-state/code/02-s3-backend
-# 需要先清空 S3 bucket
+
+cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
+
+# Step 1: 注释掉 main.tf 中的 backend "s3" 块
+# 编辑 main.tf，将 backend 块注释掉
+
+# Step 2: 迁移 State 回本地
+terraform init -migrate-state
+# 选择 yes 将 State 从 S3 复制到本地
+
+# Step 3: 清空并删除后端基础设施
 aws s3 rm s3://tfstate-你的后缀 --recursive
 terraform destroy -auto-approve
 ```

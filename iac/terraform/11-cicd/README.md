@@ -483,10 +483,16 @@ Error: Error acquiring the state lock
 ```bash
 cd ~/cloud-atlas/iac/terraform/11-cicd/code
 
-# 删除 OIDC Provider 和 IAM Role
+# 1. 删除 Terraform 管理的资源（S3 Bucket 等）
 terraform destroy -auto-approve
 
-# 确认资源已删除
+# 2. 删除 OIDC Provider 和 IAM Role（CloudFormation 创建的）
+aws cloudformation delete-stack --stack-name github-oidc-terraform
+
+# 等待 stack 删除完成
+aws cloudformation wait stack-delete-complete --stack-name github-oidc-terraform
+
+# 3. 确认资源已删除
 aws iam list-open-id-connect-providers
 ```
 
