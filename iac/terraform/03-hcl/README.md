@@ -247,16 +247,16 @@ terraform output latest_ami_id
 vim lifecycle-demo.tf  # 或使用 VS Code
 ```
 
-找到 Security Group 规则，修改端口：
+找到 Security Group 名称，添加 `-v2` 后缀：
 
 ```hcl
-# 将 from_port 和 to_port 从 80 改为 8080
-ingress {
-  from_port   = 8080   # 原来是 80
-  to_port     = 8080   # 原来是 80
+resource "aws_security_group" "lifecycle_demo" {
+  name        = "lesson-03-sg-lifecycle-demo-v2"   # 添加 -v2
   ...
 }
 ```
+
+> **注意**：ingress 规则变更（如端口 80→8080）是 **in-place 更新**，不会触发替换。只有 `name` 或 `vpc_id` 等变更才会触发替换。
 
 预览变更：
 
@@ -265,8 +265,9 @@ terraform plan
 ```
 
 ```
-# aws_security_group.lifecycle_demo will be replaced
+# aws_security_group.lifecycle_demo must be replaced
 -/+ resource "aws_security_group" "lifecycle_demo" {
+      ~ name = "lesson-03-sg-lifecycle-demo" -> "lesson-03-sg-lifecycle-demo-v2" # forces replacement
       ...
     }
 
@@ -274,6 +275,8 @@ Plan: 1 to add, 0 to change, 1 to destroy.
 ```
 
 注意 `-/+`：这表示 **先创建新的，再删除旧的**（因为 `create_before_destroy = true`）。
+
+如果没有 `create_before_destroy`，符号会是 `+/-`（先删除，再创建）。
 
 ### 5.2 体验 prevent_destroy
 

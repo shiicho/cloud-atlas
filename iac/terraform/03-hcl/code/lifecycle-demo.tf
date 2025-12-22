@@ -14,16 +14,19 @@
 # 演示 create_before_destroy 和 prevent_destroy
 #
 # 实验步骤：
-# 1. 修改 ingress 规则（如端口 80 → 8080）
-# 2. 运行 terraform plan，观察 -/+ 符号
+# 1. 修改 name（如添加 -v2 后缀），观察 -/+ 替换行为
+# 2. 运行 terraform plan，观察 create_before_destroy 效果
 # 3. 取消 prevent_destroy 注释，尝试 terraform destroy
+#
+# 注意：ingress 规则变更是 in-place 更新，不会触发替换
+#       只有 name/vpc_id 等变更才会触发替换
 
 resource "aws_security_group" "lifecycle_demo" {
+  # 实验：将 name 改为 "lesson-03-sg-lifecycle-demo-v2"，观察替换行为
   name        = "lesson-03-sg-lifecycle-demo"
   description = "Lifecycle meta-arguments demo"
   vpc_id      = aws_vpc.main.id
 
-  # 实验：将 80 改为 8080，观察 create_before_destroy 效果
   ingress {
     description = "HTTP"
     from_port   = 80
