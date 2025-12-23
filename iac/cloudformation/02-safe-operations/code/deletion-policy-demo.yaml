@@ -1,38 +1,38 @@
 # =============================================================================
 # deletion-policy-demo.yaml
-# DeletionPolicy 和 UpdateReplacePolicy 演示模板
+# DeletionPolicy and UpdateReplacePolicy Demo Template
 # =============================================================================
 #
-# 本模板演示如何保护关键资源：
-#   - DeletionPolicy: Stack 删除时的资源处理
-#   - UpdateReplacePolicy: 更新导致 Replace 时的资源处理
+# This template demonstrates how to protect critical resources:
+#   - DeletionPolicy: Resource handling when Stack is deleted
+#   - UpdateReplacePolicy: Resource handling when update causes Replace
 #
-# 三种策略：
-#   - Delete (默认): 删除资源
-#   - Retain: 保留资源（需要后续手动管理）
-#   - Snapshot: 创建快照后删除（仅 RDS, EBS, Neptune, Redshift）
+# Three policies:
+#   - Delete (default): Delete resource
+#   - Retain: Keep resource (requires manual management afterward)
+#   - Snapshot: Create snapshot then delete (RDS, EBS, Neptune, Redshift only)
 #
-# 日本企业场景：
-#   - 本番データベースには必ず DeletionPolicy: Snapshot
-#   - 重要な S3 バケットには DeletionPolicy: Retain
-#   - 削除前にバックアップ確認必須
+# Japan enterprise scenarios:
+#   - Production databases must use DeletionPolicy: Snapshot
+#   - Important S3 buckets should use DeletionPolicy: Retain
+#   - Backup confirmation required before deletion
 #
-# 使用方法：
-#   1. 创建 Stack: deletion-policy-demo
-#   2. 确认两个 Bucket 都创建成功
-#   3. 删除 Stack
-#   4. 观察：TempBucket 被删除，ImportantBucket 保留
+# Usage:
+#   1. Create Stack: deletion-policy-demo
+#   2. Confirm both Buckets created successfully
+#   3. Delete Stack
+#   4. Observe: TempBucket deleted, ImportantBucket retained
 #
 # =============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
 
 Description: |
-  DeletionPolicy Demo - 演示如何保护关键资源
-  DeletionPolicy と UpdateReplacePolicy の動作確認用テンプレート
+  DeletionPolicy Demo - Demonstrates how to protect critical resources
+  Template for verifying DeletionPolicy and UpdateReplacePolicy behavior
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数
+# Parameters - Input parameters
 # -----------------------------------------------------------------------------
 
 Parameters:
@@ -44,30 +44,30 @@ Parameters:
       - development
       - staging
       - production
-    Description: 環境名
+    Description: Environment name
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 
 Resources:
 
   # ---------------------------------------------------------------------------
-  # TempBucket - 临时 Bucket（默认行为，会被删除）
+  # TempBucket - Temporary Bucket (default behavior, will be deleted)
   # ---------------------------------------------------------------------------
   #
-  # 这个 Bucket 使用默认的 DeletionPolicy: Delete
-  # 当 Stack 被删除时，这个 Bucket 也会被删除
+  # This Bucket uses default DeletionPolicy: Delete
+  # When Stack is deleted, this Bucket will also be deleted
   #
-  # 适用场景：
-  #   - 临时文件存储
-  #   - 构建产物
-  #   - 可重新生成的数据
-  #   - 学习/测试环境
+  # Use cases:
+  #   - Temporary file storage
+  #   - Build artifacts
+  #   - Regeneratable data
+  #   - Learning/testing environments
 
   TempBucket:
     Type: AWS::S3::Bucket
-    # DeletionPolicy: Delete  # 默认值，可以不写
+    # DeletionPolicy: Delete  # Default value, can be omitted
     Properties:
       BucketName: !Sub 'temp-bucket-${AWS::AccountId}'
       Tags:
@@ -81,10 +81,10 @@ Resources:
           Value: CloudFormation
         - Key: Description
           Value: |
-            このバケットはスタック削除時に削除されます。
-            一時ファイルや再生成可能なデータ用。
+            This bucket is deleted when stack is deleted.
+            For temporary files and regeneratable data.
 
-      # 安全配置
+      # Security configuration
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -92,27 +92,27 @@ Resources:
         RestrictPublicBuckets: true
 
   # ---------------------------------------------------------------------------
-  # ImportantBucket - 重要 Bucket（保护，不会被删除）
+  # ImportantBucket - Important Bucket (protected, will not be deleted)
   # ---------------------------------------------------------------------------
   #
-  # 这个 Bucket 设置了 DeletionPolicy: Retain
-  # 当 Stack 被删除时，这个 Bucket 会保留
+  # This Bucket has DeletionPolicy: Retain set
+  # When Stack is deleted, this Bucket will be retained
   #
-  # 【重要】
-  # - Bucket 会脱离 CloudFormation 管理
-  # - 需要后续手动管理或重新导入
-  # - 会继续产生存储费用
+  # [IMPORTANT]
+  # - Bucket will be detached from CloudFormation management
+  # - Requires manual management or re-import afterward
+  # - Will continue to incur storage costs
   #
-  # 适用场景：
-  #   - 生产数据
-  #   - 用户上传内容
-  #   - 日志归档
-  #   - 合规要求的数据保留
+  # Use cases:
+  #   - Production data
+  #   - User uploaded content
+  #   - Log archives
+  #   - Data retention for compliance
 
   ImportantBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain              # Stack 删除时保留
-    UpdateReplacePolicy: Retain         # 更新导致 Replace 时也保留
+    DeletionPolicy: Retain              # Retain when Stack deleted
+    UpdateReplacePolicy: Retain         # Also retain when update causes Replace
     Properties:
       BucketName: !Sub 'important-bucket-${AWS::AccountId}'
       Tags:
@@ -126,14 +126,14 @@ Resources:
           Value: CloudFormation
         - Key: Description
           Value: |
-            このバケットはスタック削除後も残ります。
-            重要なデータ保護用。削除後は手動管理が必要。
+            This bucket remains after stack deletion.
+            For important data protection. Manual management required after deletion.
 
-      # 版本控制（重要数据的最佳实践）
+      # Version control (best practice for important data)
       VersioningConfiguration:
         Status: Enabled
 
-      # 安全配置
+      # Security configuration
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -141,15 +141,15 @@ Resources:
         RestrictPublicBuckets: true
 
   # ---------------------------------------------------------------------------
-  # 演示注释：RDS 数据库的 DeletionPolicy: Snapshot
+  # Demo comment: DeletionPolicy: Snapshot for RDS databases
   # ---------------------------------------------------------------------------
   #
-  # 以下是生产环境 RDS 数据库的推荐配置：
+  # Recommended configuration for production RDS databases:
   #
   # ProductionDatabase:
   #   Type: AWS::RDS::DBInstance
-  #   DeletionPolicy: Snapshot           # 删除前创建快照
-  #   UpdateReplacePolicy: Snapshot      # Replace 前也创建快照
+  #   DeletionPolicy: Snapshot           # Create snapshot before deletion
+  #   UpdateReplacePolicy: Snapshot      # Also create snapshot before Replace
   #   Properties:
   #     DBInstanceIdentifier: prod-db
   #     DBInstanceClass: db.t3.micro
@@ -163,119 +163,117 @@ Resources:
   #       - Key: Protected
   #         Value: 'true'
   #
-  # 快照命名规则：
-  #   - 自动生成：{stack-name}-{resource-id}-{timestamp}
-  #   - 快照保留策略需要单独配置
+  # Snapshot naming convention:
+  #   - Auto-generated: {stack-name}-{resource-id}-{timestamp}
+  #   - Snapshot retention policy needs separate configuration
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值
+# Outputs - Output values
 # -----------------------------------------------------------------------------
 
 Outputs:
 
   TempBucketName:
     Description: |
-      临时 Bucket 名称（Stack 删除时会被删除）
-      一時バケット名（スタック削除時に削除される）
+      Temporary Bucket name (will be deleted when Stack deleted)
     Value: !Ref TempBucket
 
   TempBucketArn:
-    Description: 临时 Bucket ARN
+    Description: Temporary Bucket ARN
     Value: !GetAtt TempBucket.Arn
 
   ImportantBucketName:
     Description: |
-      重要 Bucket 名称（Stack 删除时会保留！）
-      重要バケット名（スタック削除後も残る！）
+      Important Bucket name (will be retained when Stack deleted!)
     Value: !Ref ImportantBucket
 
   ImportantBucketArn:
-    Description: 重要 Bucket ARN
+    Description: Important Bucket ARN
     Value: !GetAtt ImportantBucket.Arn
 
   ProtectionNote:
-    Description: 保护说明
+    Description: Protection explanation
     Value: |
       TempBucket: DeletionPolicy=Delete (default) - will be deleted with stack
       ImportantBucket: DeletionPolicy=Retain - will be retained after stack deletion
 
 # =============================================================================
-# DeletionPolicy 详细说明
+# DeletionPolicy Detailed Explanation
 # =============================================================================
 #
-# 1. Delete (默认)
-#    - Stack 删除时，资源也被删除
-#    - 适用于：临时资源、可重建的资源
-#    - 风险：数据永久丢失
+# 1. Delete (default)
+#    - Resource deleted when Stack deleted
+#    - Use for: Temporary resources, rebuildable resources
+#    - Risk: Permanent data loss
 #
 # 2. Retain
-#    - Stack 删除时，资源保留
-#    - 资源脱离 CloudFormation 管理
-#    - 需要后续手动管理或重新导入
-#    - 适用于：生产数据、重要日志
+#    - Resource retained when Stack deleted
+#    - Resource detached from CloudFormation management
+#    - Requires manual management or re-import afterward
+#    - Use for: Production data, important logs
 #
-# 3. Snapshot (仅部分资源类型支持)
-#    - Stack 删除时，先创建快照再删除资源
-#    - 支持的资源类型：
+# 3. Snapshot (only supported by some resource types)
+#    - Create snapshot before deleting resource when Stack deleted
+#    - Supported resource types:
 #      * AWS::RDS::DBInstance
 #      * AWS::RDS::DBCluster
 #      * AWS::EC2::Volume
 #      * AWS::Neptune::DBCluster
 #      * AWS::Redshift::Cluster
-#    - 适用于：数据库、需要备份的存储
+#    - Use for: Databases, storage requiring backup
 #
 # =============================================================================
-# UpdateReplacePolicy 详细说明
+# UpdateReplacePolicy Detailed Explanation
 # =============================================================================
 #
-# 当更新操作导致资源被 Replace 时的行为：
+# Behavior when update operation causes resource Replace:
 #
-# 1. 修改某些属性会触发 Replace
-#    - 例如：修改 S3 BucketName、RDS DBInstanceIdentifier
+# 1. Some property changes trigger Replace
+#    - Example: Changing S3 BucketName, RDS DBInstanceIdentifier
 #
-# 2. Replace 过程：
-#    - CloudFormation 创建新资源
-#    - 更新依赖关系
-#    - 根据 UpdateReplacePolicy 处理旧资源
+# 2. Replace process:
+#    - CloudFormation creates new resource
+#    - Updates dependencies
+#    - Handles old resource according to UpdateReplacePolicy
 #
-# 3. UpdateReplacePolicy 选项：
-#    - Delete: 删除旧资源（默认）
-#    - Retain: 保留旧资源
-#    - Snapshot: 创建快照后删除（RDS/EBS 等）
+# 3. UpdateReplacePolicy options:
+#    - Delete: Delete old resource (default)
+#    - Retain: Keep old resource
+#    - Snapshot: Create snapshot then delete (RDS/EBS etc.)
 #
 # =============================================================================
-# 日本企业最佳实践
+# Japan Enterprise Best Practices
 # =============================================================================
 #
-# 1. 生产环境数据库
+# 1. Production databases
 #    DeletionPolicy: Snapshot
 #    UpdateReplacePolicy: Snapshot
 #
-# 2. 用户数据 S3 Bucket
+# 2. User data S3 Buckets
 #    DeletionPolicy: Retain
 #    UpdateReplacePolicy: Retain
 #
-# 3. 日志归档
+# 3. Log archives
 #    DeletionPolicy: Retain
-#    (合规要求可能需要保留数年)
+#    (Compliance may require retention for years)
 #
-# 4. 临时/开发资源
-#    DeletionPolicy: Delete (默认)
-#    (成本管理，避免资源堆积)
+# 4. Temporary/development resources
+#    DeletionPolicy: Delete (default)
+#    (Cost management, avoid resource accumulation)
 #
 # =============================================================================
-# 清理保留资源的方法
+# How to Clean Up Retained Resources
 # =============================================================================
 #
-# Stack 删除后，Retain 的资源需要手动清理：
+# After Stack deletion, Retained resources need manual cleanup:
 #
 # S3 Bucket:
-#   # 先清空 Bucket
+#   # First empty the Bucket
 #   aws s3 rm s3://important-bucket-YOUR_ACCOUNT_ID --recursive
-#   # 再删除 Bucket
+#   # Then delete the Bucket
 #   aws s3 rb s3://important-bucket-YOUR_ACCOUNT_ID
 #
-# 或者使用 --force 一步完成：
+# Or use --force to do it in one step:
 #   aws s3 rb s3://important-bucket-YOUR_ACCOUNT_ID --force
 #
 # =============================================================================

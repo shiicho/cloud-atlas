@@ -1,0 +1,279 @@
+# =============================================================================
+# import-s3-complete.yaml
+# CloudFormation Resource Import Demo Template - S3 Bucket (Phase 2: Complete)
+# =============================================================================
+#
+# This template is used to import existing (manually created) S3 Bucket into
+# CloudFormation management.
+#
+# Prerequisite:
+#   Already manually created S3 Bucket named my-legacy-bucket-{account-id}
+#
+# Usage:
+#   1. AWS Console -> CloudFormation -> Create stack
+#   2. Select "With existing resources (import resources)"
+#   3. Upload this file
+#   4. On Identify resources page, fill in:
+#      - Logical ID: ImportedBucket
+#      - Resource type: AWS::S3::Bucket
+#      - Identifier property: BucketName
+#      - Identifier value: my-legacy-bucket-{your-account-id}
+#   5. Stack name: imported-bucket-stack
+#   6. Complete Import
+#   7. Run Detect drift to confirm IN_SYNC
+#
+# Cleanup:
+#   1. CloudFormation Console -> Select Stack -> Delete
+#   2. Due to DeletionPolicy: Retain, Bucket will not be deleted
+#   3. Manually delete Bucket: aws s3 rb s3://my-legacy-bucket-{account-id}
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+
+# -----------------------------------------------------------------------------
+# Description - Template description
+# -----------------------------------------------------------------------------
+
+Description: |
+  CloudFormation Resource Import Demo - S3 Bucket
+  Lesson 05 - Drift Detection and Resource Import Demo Template
+  Import existing S3 Bucket into CloudFormation management
+
+# -----------------------------------------------------------------------------
+# Metadata - Console UI enhancement
+# -----------------------------------------------------------------------------
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Import Configuration"
+        Parameters:
+          - ImportDate
+          - OriginalOwner
+    ParameterLabels:
+      ImportDate:
+        default: "Import Date"
+      OriginalOwner:
+        default: "Original Owner"
+
+# -----------------------------------------------------------------------------
+# Parameters - Input parameters
+# -----------------------------------------------------------------------------
+
+Parameters:
+  # Import date (for tag recording)
+  ImportDate:
+    Type: String
+    Default: "2025-01-01"
+    Description: |
+      Record the date when resource was imported (for traceability).
+
+  # Original creator (for tag recording)
+  OriginalOwner:
+    Type: String
+    Default: manual-creation
+    Description: |
+      Record the original creator of the resource.
+
+# -----------------------------------------------------------------------------
+# Resources - Resource definitions
+# -----------------------------------------------------------------------------
+
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # S3 Bucket - Existing resource to import
+  # ---------------------------------------------------------------------------
+  #
+  # Important configuration:
+  #
+  # 1. DeletionPolicy: Retain
+  #    - Keep Bucket when Stack is deleted
+  #    - Prevent accidental deletion of important data
+  #    - Required for production data storage resources
+  #
+  # 2. UpdateReplacePolicy: Retain
+  #    - Keep original resource when update causes replacement
+  #    - Example: Modifying BucketName causes replacement
+  #    - Protect data from loss
+  #
+  # 3. BucketName must exactly match
+  #    - Import requires exact physical ID match
+  #    - Use !Sub to auto-substitute account ID
+
+  ImportedBucket:
+    Type: AWS::S3::Bucket
+
+    # ---------------------------------------------------------------------------
+    # DeletionPolicy - Deletion policy (critical!)
+    # ---------------------------------------------------------------------------
+    #
+    # Options:
+    #   - Delete (default): Delete resource when Stack is deleted
+    #   - Retain: Keep resource when Stack is deleted
+    #   - Snapshot: Create snapshot before deletion (only for RDS, EBS, etc.)
+    #
+    # For imported resources, strongly recommend using Retain:
+    #   - These resources may contain important data
+    #   - Prevent data loss from accidental operations
+    #   - Can decide how to handle later
+    DeletionPolicy: Retain
+
+    # ---------------------------------------------------------------------------
+    # UpdateReplacePolicy - Update replacement policy
+    # ---------------------------------------------------------------------------
+    #
+    # Some property modifications cause resource replacement (not in-place update):
+    #   - S3 Bucket: BucketName modification -> replacement
+    #   - RDS: DBInstanceIdentifier modification -> replacement
+    #   - EC2: Some AMI property modifications -> replacement
+    #
+    # UpdateReplacePolicy: Retain ensures:
+    #   - Even if replacement occurs, original resource won't be deleted
+    #   - After new resource is created, original resource continues to exist
+    #   - Manual cleanup of original resource needed (but data is safe)
+    UpdateReplacePolicy: Retain
+
+    Properties:
+      # Bucket name - Must exactly match existing Bucket name
+      #
+      # Use !Sub to auto-substitute account ID
+      # Example: my-legacy-bucket-123456789012
+      BucketName: !Sub 'my-legacy-bucket-${AWS::AccountId}'
+
+      # Tags - Record import information
+      #
+      # Tags added after import (merged with existing tags):
+      #   - ManagedBy: Identifies now managed by CloudFormation
+      #   - ImportedOn: Records import date
+      #   - OriginalOwner: Records original creator
+      #
+      # Japan IT scenario:
+      #   These tags serve as evidence,
+      #   recording when resource transitioned from manual to IaC management
+      Tags:
+        - Key: Name
+          Value: Imported Legacy Bucket
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: ImportedOn
+          Value: !Ref ImportDate
+        - Key: OriginalOwner
+          Value: !Ref OriginalOwner
+        - Key: Course
+          Value: CloudFormation-Lesson05
+
+# -----------------------------------------------------------------------------
+# Outputs - Output values
+# -----------------------------------------------------------------------------
+
+Outputs:
+
+  # Bucket name
+  BucketName:
+    Description: Imported S3 Bucket Name
+    Value: !Ref ImportedBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+
+  # Bucket ARN
+  BucketArn:
+    Description: Imported S3 Bucket ARN
+    Value: !GetAtt ImportedBucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketArn'
+
+  # Bucket Domain Name
+  BucketDomainName:
+    Description: S3 Bucket Domain Name
+    Value: !GetAtt ImportedBucket.DomainName
+
+  # Bucket Regional Domain Name
+  BucketRegionalDomainName:
+    Description: S3 Bucket Regional Domain Name
+    Value: !GetAtt ImportedBucket.RegionalDomainName
+
+  # Import date (for traceability)
+  ImportDate:
+    Description: Date when this resource was imported to CloudFormation
+    Value: !Ref ImportDate
+
+# -----------------------------------------------------------------------------
+# Resource Import Notes
+# -----------------------------------------------------------------------------
+#
+# 1. Resource types that support Import
+#    Not all resource types support Import.
+#    Full list reference:
+#    https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resource-import-supported-resources.html
+#
+# 2. Resource identifiers
+#    Each resource type has different identifier properties:
+#      - S3 Bucket: BucketName
+#      - EC2 Instance: InstanceId (e.g., i-1234567890abcdef0)
+#      - RDS: DBInstanceIdentifier
+#      - Lambda: FunctionName
+#
+# 3. Import does not modify resources
+#    Import only establishes association between CloudFormation and existing resources.
+#    The resource itself is not modified.
+#    But first Update Stack will configure resource to template-defined state.
+#
+# 4. Post-import checks
+#    After import completes, must run Detect drift:
+#      - Confirm IN_SYNC (no differences)
+#      - If differences exist, decide to update template or update resource
+#
+# -----------------------------------------------------------------------------
+# DeletionPolicy + Import Workflow
+# -----------------------------------------------------------------------------
+#
+# Transfer resource from one Stack to another Stack:
+#
+# Step 1: Set DeletionPolicy: Retain in original Stack
+#         -> Ensure resource won't be deleted when Stack is deleted
+#
+# Step 2: Delete original Stack
+#         -> Stack is deleted, but resource retained
+#         -> Resource becomes "orphan" state
+#
+# Step 3: Import resource in new Stack
+#         -> Use this template to import resource
+#         -> Resource returns to CloudFormation management
+#
+# This workflow is useful in these scenarios:
+#   - Team splits, resources transfer to other teams
+#   - Architecture refactoring, reorganizing Stack structure
+#   - Stack merging or splitting
+#
+# -----------------------------------------------------------------------------
+# Japan IT Scenarios
+# -----------------------------------------------------------------------------
+#
+# IaC-izing existing systems
+#
+# Japanese enterprises often have many manually created "legacy" resources:
+#   - Historical systems migrated to AWS
+#   - Early adoption without using IaC
+#   - Emergency temporary resources
+#
+# Resource Import helps bring these resources under unified management:
+#
+# 1. Phased migration
+#    - Don't need to import all resources at once
+#    - Can import gradually by priority
+#    - Verify stability after each import
+#
+# 2. Unified change management
+#    - All changes through CloudFormation
+#    - ChangeSet provides change preview
+#    - Complete audit logs
+#
+# 3. Audit trail management
+#    - ImportedOn tag records import time
+#    - OriginalOwner tag records original creator
+#    - Meets compliance requirements
+#
+# =============================================================================

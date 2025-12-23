@@ -1,65 +1,65 @@
 # =============================================================================
 # drift-demo.yaml
-# CloudFormation Drift Detection 演示模板
+# CloudFormation Drift Detection Demo Template
 # =============================================================================
 #
-# 本模板创建一个简单的 EC2 实例，用于演示 Drift Detection 功能。
+# This template creates a simple EC2 instance to demonstrate Drift Detection.
 #
-# 使用方法：
-#   1. AWS Console → CloudFormation → Create stack
-#   2. 上传此文件
+# Usage:
+#   1. AWS Console -> CloudFormation -> Create stack
+#   2. Upload this file
 #   3. Stack name: drift-demo-stack
-#   4. 等待 CREATE_COMPLETE
+#   4. Wait for CREATE_COMPLETE
 #
-# Drift 演练：
-#   1. 在 EC2 Console 手动修改实例标签
-#   2. 返回 CloudFormation → Stack actions → Detect drift
-#   3. 查看 Drift 结果
-#   4. 选择修复方式（Update stack 或更新模板）
+# Drift exercise:
+#   1. Manually modify instance tags in EC2 Console
+#   2. Return to CloudFormation -> Stack actions -> Detect drift
+#   3. View Drift results
+#   4. Choose fix method (Update stack or update template)
 #
-# 清理方法：
-#   1. CloudFormation Console → 选择 Stack → Delete
-#   2. 等待 DELETE_COMPLETE
+# Cleanup:
+#   1. CloudFormation Console -> Select Stack -> Delete
+#   2. Wait for DELETE_COMPLETE
 #
 # =============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
 
 # -----------------------------------------------------------------------------
-# Description - 模板描述
+# Description - Template description
 # -----------------------------------------------------------------------------
 
 Description: |
   CloudFormation Drift Detection Demo
-  Lesson 05 - Drift 检测与资源导入 演示模板
-  创建一个带标签的 EC2 实例，用于演示 Drift Detection
+  Lesson 05 - Drift Detection and Resource Import Demo Template
+  Creates an EC2 instance with tags for demonstrating Drift Detection
 
 # -----------------------------------------------------------------------------
-# Metadata - Console 界面增强
+# Metadata - Console UI enhancement
 # -----------------------------------------------------------------------------
-# 使用 Metadata 让 Console 界面更友好
+# Use Metadata to make Console interface more user-friendly
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: "EC2 配置"
+          default: "EC2 Configuration"
         Parameters:
           - InstanceType
           - Environment
     ParameterLabels:
       InstanceType:
-        default: "实例类型"
+        default: "Instance Type"
       Environment:
-        default: "环境"
+        default: "Environment"
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数
+# Parameters - Input parameters
 # -----------------------------------------------------------------------------
 
 Parameters:
-  # EC2 实例类型
-  # 使用 t3.micro 保持在免费层范围内
+  # EC2 instance type
+  # Use t3.micro to stay within free tier
   InstanceType:
     Type: String
     Default: t3.micro
@@ -68,12 +68,11 @@ Parameters:
       - t3.small
       - t3.medium
     Description: |
-      EC2 实例类型。
-      t3.micro 属于免费层（每月 750 小时）。
-      日本语: インスタンスタイプ
+      EC2 instance type.
+      t3.micro is free tier eligible (750 hours per month).
 
-  # 环境标签
-  # 这个参数将用于演示 Drift
+  # Environment tag
+  # This parameter will be used to demonstrate Drift
   Environment:
     Type: String
     Default: dev
@@ -82,81 +81,79 @@ Parameters:
       - staging
       - production
     Description: |
-      环境类型（用于 Tag）。
-      演练时会手动修改这个标签来制造 Drift。
-      日本语: 環境
+      Environment type (for Tag).
+      During exercise, manually modify this tag to create Drift.
 
-  # 最新 Amazon Linux 2023 AMI (使用 SSM Parameter)
-  # 使用 SSM Parameter 而非硬编码 AMI ID，确保始终使用最新的 Amazon Linux 2023
-  # 这是 AWS 推荐的最佳实践，避免 AMI 过期导致 Stack 创建失败
+  # Latest Amazon Linux 2023 AMI (using SSM Parameter)
+  # Use SSM Parameter instead of hardcoded AMI ID to always get latest Amazon Linux 2023
+  # This is AWS recommended best practice, avoiding Stack creation failure due to expired AMI
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
     Description: |
-      最新的 Amazon Linux 2023 AMI ID（自动从 SSM Parameter Store 获取）。
-      AWS 会自动更新此参数，无需手动维护 AMI ID。
-      日本语: 最新 AMI ID（SSM パラメータから自動取得）
+      Latest Amazon Linux 2023 AMI ID (auto-resolved from SSM Parameter Store).
+      AWS automatically updates this parameter, no need to manually maintain AMI ID.
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 
 Resources:
 
   # ---------------------------------------------------------------------------
-  # EC2 Instance - 演示用实例
+  # EC2 Instance - Demo instance
   # ---------------------------------------------------------------------------
   #
-  # 这个 EC2 实例将用于演示 Drift Detection：
-  # 1. 创建时设置 Environment 标签为参数值
-  # 2. 手动在 Console 修改标签
-  # 3. 运行 Drift Detection 检测变更
-  # 4. 通过 Update Stack 修复或更新模板接受变更
+  # This EC2 instance will be used to demonstrate Drift Detection:
+  # 1. Set Environment tag to parameter value when created
+  # 2. Manually modify tag in Console
+  # 3. Run Drift Detection to detect changes
+  # 4. Fix via Update Stack or update template to accept changes
 
   DemoInstance:
     Type: AWS::EC2::Instance
     Properties:
-      # 实例类型（来自参数）
+      # Instance type (from parameter)
       InstanceType: !Ref InstanceType
 
-      # AMI ID（来自 SSM Parameter）
-      # 使用 SSM Parameter 自动获取最新 AMI，避免硬编码过期
+      # AMI ID (from SSM Parameter)
+      # Use SSM Parameter to auto-get latest AMI, avoid hardcoding expiration
       ImageId: !Ref LatestAmiId
 
-      # 标签 - Drift Detection 的主要检测对象
+      # Tags - Primary detection target for Drift Detection
       #
-      # 演练步骤：
-      # 1. 创建后在 EC2 Console 修改 Environment 标签
-      # 2. 添加新标签如 ModifiedBy: console-user
-      # 3. 运行 Detect drift 查看差异
+      # Exercise steps:
+      # 1. After creation, modify Environment tag in EC2 Console
+      # 2. Add new tag like ModifiedBy: console-user
+      # 3. Run Detect drift to view differences
       Tags:
-        # 实例名称
+        # Instance name
         - Key: Name
           Value: drift-demo-instance
 
-        # 环境标签（来自参数）
-        # 这是 Drift 演练的主要目标
+        # Environment tag (from parameter)
+        # This is the main target for Drift exercise
         - Key: Environment
           Value: !Ref Environment
 
-        # 管理标识
+        # Management identifier
         - Key: ManagedBy
           Value: CloudFormation
 
-        # 用途标识
+        # Purpose identifier
         - Key: Purpose
           Value: Drift Detection Demo
 
-        # 课程标识
+        # Course identifier
         - Key: Course
           Value: CloudFormation-Lesson05
 
   # ---------------------------------------------------------------------------
-  # Security Group - 安全组
+  # Security Group - Security group
   # ---------------------------------------------------------------------------
   #
-  # 创建一个空的安全组（无入站规则）
-  # 仅用于满足 EC2 实例的网络配置需求
+  # Create an empty security group (no inbound rules)
+  # Only for satisfying EC2 instance network configuration needs
 
   DemoSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -170,72 +167,72 @@ Resources:
           Value: CloudFormation
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值
+# Outputs - Output values
 # -----------------------------------------------------------------------------
-# 输出重要信息，方便后续操作和验证
+# Output important information for subsequent operations and verification
 
 Outputs:
 
-  # 实例 ID
+  # Instance ID
   InstanceId:
     Description: EC2 Instance ID
     Value: !Ref DemoInstance
     Export:
       Name: !Sub '${AWS::StackName}-InstanceId'
 
-  # 实例私有 IP
+  # Instance private IP
   PrivateIp:
     Description: EC2 Private IP Address
     Value: !GetAtt DemoInstance.PrivateIp
 
-  # 环境标签值（用于对比 Drift）
+  # Environment tag value (for comparing Drift)
   EnvironmentTag:
     Description: |
       Environment tag value (as defined in template).
       Compare this with actual EC2 tags after manual modification.
     Value: !Ref Environment
 
-  # 安全组 ID
+  # Security Group ID
   SecurityGroupId:
     Description: Security Group ID
     Value: !Ref DemoSecurityGroup
 
 # -----------------------------------------------------------------------------
-# Drift Detection 注意事项
+# Drift Detection Notes
 # -----------------------------------------------------------------------------
 #
-# CloudFormation Drift Detection 支持检测以下属性变更：
+# CloudFormation Drift Detection supports detecting the following property changes:
 #
 # EC2 Instance:
-#   - Tags (标签)
-#   - InstanceType (实例类型 - 需要停止实例)
-#   - SecurityGroupIds (安全组)
-#   - 其他部分属性
+#   - Tags
+#   - InstanceType (requires stopping instance)
+#   - SecurityGroupIds
+#   - Other partial properties
 #
-# 不支持检测的属性：
-#   - EBS 卷内容
-#   - 实例内部配置
-#   - CloudWatch 指标
+# Properties not supported for detection:
+#   - EBS volume content
+#   - Instance internal configuration
+#   - CloudWatch metrics
 #
-# 完整支持列表参考：
+# Full supported list reference:
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-stack-drift-resource-list.html
 #
 # -----------------------------------------------------------------------------
-# 日本 IT 场景
+# Japan IT Scenarios
 # -----------------------------------------------------------------------------
 #
-# Drift Detection 在日本企业的典型使用场景：
+# Typical use cases for Drift Detection in Japanese enterprises:
 #
-# 1. 障害対応（しょうがいたいおう）- 故障响应
-#    夜间紧急情况下直接在 Console 修改配置
-#    第二天通过 Drift Detection 追踪变更
+# 1. Incident Response (shougai taiou)
+#    Direct Console modifications during nighttime emergencies
+#    Track changes via Drift Detection the next day
 #
-# 2. 変更管理（へんこうかんり）- 变更管理
-#    Drift 记录作为变更证据（エビデンス）
-#    配合変更管理票使用
+# 2. Change Management (henkou kanri)
+#    Drift records as change evidence
+#    Used with change management tickets
 #
-# 3. 監査対応（かんさたいおう）- 审计应对
-#    定期 Drift 检测报告
-#    证明配置管理的有效性
+# 3. Audit Response (kansa taiou)
+#    Regular Drift detection reports
+#    Prove effectiveness of configuration management
 #
 # =============================================================================

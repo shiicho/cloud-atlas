@@ -2,21 +2,21 @@
 # Parent Stack - Nested Stacks Orchestration
 # =============================================================================
 #
-# 父栈模板 - 编排多个子栈，实现模块化部署
+# Parent stack template - Orchestrates multiple child stacks for modular deployment
 #
-# 什么是 Nested Stacks？
-#   - 父栈通过 AWS::CloudFormation::Stack 资源调用子栈
-#   - 子栈模板必须存放在 S3 上
-#   - 父子栈一起创建、一起删除、一起回滚
+# What are Nested Stacks?
+#   - Parent stack calls child stacks via AWS::CloudFormation::Stack resource
+#   - Child templates must be stored on S3
+#   - Parent and child stacks create, delete, and rollback together
 #
-# 使用步骤:
-#   1. 将 child-vpc.yaml 上传到 S3 bucket
-#   2. 通过 Console 创建此父栈
-#   3. 指定 TemplatesBucket 参数为你的 S3 bucket 名称
+# Usage steps:
+#   1. Upload child-vpc.yaml to S3 bucket
+#   2. Create this parent stack via Console
+#   3. Specify TemplatesBucket parameter as your S3 bucket name
 #
-# 与 Cross-Stack 的区别:
-#   - Nested: 父子关系，生命周期相同
-#   - Cross-Stack: 兄弟关系，独立生命周期
+# Difference from Cross-Stack:
+#   - Nested: Parent-child relationship, same lifecycle
+#   - Cross-Stack: Sibling relationship, independent lifecycle
 #
 # =============================================================================
 
@@ -26,33 +26,33 @@ Description: |
   Demonstrates modular architecture with AWS::CloudFormation::Stack.
 
 # -----------------------------------------------------------------------------
-# Metadata - 控制台参数分组
+# Metadata - Console parameter grouping
 # -----------------------------------------------------------------------------
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: 环境配置
+          default: Environment Configuration
         Parameters:
           - Environment
       - Label:
-          default: 模板存储
+          default: Template Storage
         Parameters:
           - TemplatesBucket
       - Label:
-          default: 网络配置
+          default: Network Configuration
         Parameters:
           - VpcCidr
     ParameterLabels:
       Environment:
-        default: 环境名称
+        default: Environment Name
       TemplatesBucket:
-        default: S3 Bucket（存放子栈模板）
+        default: S3 Bucket (for child stack templates)
       VpcCidr:
         default: VPC CIDR
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数
+# Parameters - Input parameters
 # -----------------------------------------------------------------------------
 Parameters:
   Environment:
@@ -62,40 +62,40 @@ Parameters:
       - dev
       - staging
       - prod
-    Description: 环境名称
+    Description: Environment name
 
   TemplatesBucket:
     Type: String
     Description: |
-      存放子栈模板的 S3 Bucket 名称。
-      例如: my-cfn-templates-bucket
-      子栈模板应上传到: s3://bucket-name/nested-stacks/child-vpc.yaml
+      S3 Bucket name where child stack templates are stored.
+      Example: my-cfn-templates-bucket
+      Child template should be uploaded to: s3://bucket-name/nested-stacks/child-vpc.yaml
 
   VpcCidr:
     Type: String
     Default: 10.0.0.0/16
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    AllowedPattern: '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$'
     Description: VPC CIDR block
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 Resources:
 
   # ---------------------------------------------------------------------------
   # Nested Stack: VPC Layer
   # ---------------------------------------------------------------------------
-  # 调用子栈创建 VPC 和相关网络资源
+  # Calls child stack to create VPC and related network resources
   VpcStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      # 子栈模板 URL（必须是 S3 HTTPS URL）
+      # Child template URL (must be S3 HTTPS URL)
       TemplateURL: !Sub 'https://${TemplatesBucket}.s3.${AWS::Region}.amazonaws.com/nested-stacks/child-vpc.yaml'
-      # 传递参数给子栈
+      # Pass parameters to child stack
       Parameters:
         Environment: !Ref Environment
         VpcCidr: !Ref VpcCidr
-      # 子栈的标签
+      # Child stack tags
       Tags:
         - Key: Name
           Value: !Sub '${Environment}-vpc-stack'
@@ -103,18 +103,18 @@ Resources:
           Value: !Ref Environment
         - Key: StackType
           Value: Nested
-      # 超时设置（分钟）
+      # Timeout setting (minutes)
       TimeoutInMinutes: 10
 
   # ---------------------------------------------------------------------------
-  # 使用子栈输出创建的资源
+  # Resources created using child stack outputs
   # ---------------------------------------------------------------------------
-  # 这个 Security Group 使用 VPC 子栈的输出
+  # This Security Group uses VPC child stack output
   ApplicationSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Application Security Group created by parent stack
-      # 获取子栈的 Outputs
+      # Get child stack Outputs
       VpcId: !GetAtt VpcStack.Outputs.VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -134,7 +134,7 @@ Resources:
           Value: CloudFormation-ParentStack
 
   # ---------------------------------------------------------------------------
-  # 另一个使用子栈输出的示例
+  # Another example using child stack output
   # ---------------------------------------------------------------------------
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -153,31 +153,31 @@ Resources:
           Value: !Ref Environment
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值
+# Outputs - Output values
 # -----------------------------------------------------------------------------
 Outputs:
 
-  # 父栈自己的 Stack ID
+  # Parent stack's own Stack ID
   ParentStackId:
     Description: Parent Stack ID
     Value: !Ref 'AWS::StackId'
 
-  # 子栈 Stack ID
+  # Child stack Stack ID
   VpcStackId:
     Description: VPC Nested Stack ID
     Value: !Ref VpcStack
 
-  # 从子栈获取的 VPC ID
+  # VPC ID from child stack
   VpcId:
     Description: VPC ID (from nested stack)
     Value: !GetAtt VpcStack.Outputs.VpcId
 
-  # 从子栈获取的子网
+  # Subnet from child stack
   PublicSubnetId:
     Description: Public Subnet ID (from nested stack)
     Value: !GetAtt VpcStack.Outputs.SubnetId
 
-  # 父栈创建的安全组
+  # Security groups created by parent stack
   ApplicationSecurityGroupId:
     Description: Application Security Group ID (created by parent)
     Value: !Ref ApplicationSecurityGroup
@@ -186,16 +186,16 @@ Outputs:
     Description: Database Security Group ID (created by parent)
     Value: !Ref DatabaseSecurityGroup
 
-  # 部署说明
+  # Deployment notes
   DeploymentNotes:
     Description: Important deployment information
     Value: !Sub |
-      Nested Stack 部署成功！
+      Nested Stack deployment successful!
 
-      注意事项：
-      1. 删除父栈会自动删除所有子栈
-      2. 更新父栈会检查所有子栈变更
-      3. 子栈的更改需要通过父栈进行
+      Important notes:
+      1. Deleting parent stack will automatically delete all child stacks
+      2. Updating parent stack will check all child stack changes
+      3. Child stack changes should be made through parent stack
 
-      查看子栈：
-      CloudFormation Console -> 选择父栈 -> Resources 标签页 -> 点击 VpcStack
+      View child stack:
+      CloudFormation Console -> Select parent stack -> Resources tab -> Click VpcStack

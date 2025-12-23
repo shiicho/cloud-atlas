@@ -1,40 +1,40 @@
 # =============================================================================
 # first-stack.yaml
-# CloudFormation 入门 - 第一个 Stack
+# CloudFormation Getting Started - Your First Stack
 # =============================================================================
 #
-# 本模板创建一个简单的 S3 Bucket，用于演示 CloudFormation 基础概念。
+# This template creates a simple S3 Bucket to demonstrate CloudFormation basics.
 #
-# 使用方法：
-#   1. AWS Console → CloudFormation → Create stack
-#   2. 上传此文件
+# Usage:
+#   1. AWS Console -> CloudFormation -> Create stack
+#   2. Upload this file
 #   3. Stack name: my-first-stack
-#   4. 等待 CREATE_COMPLETE
+#   4. Wait for CREATE_COMPLETE
 #
-# 清理方法：
-#   1. CloudFormation Console → 选择 Stack → Delete
-#   2. 等待 DELETE_COMPLETE
+# Cleanup:
+#   1. CloudFormation Console -> Select Stack -> Delete
+#   2. Wait for DELETE_COMPLETE
 #
 # =============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
 
 # -----------------------------------------------------------------------------
-# Description - 模板描述
+# Description - Template description
 # -----------------------------------------------------------------------------
-# 建议每个模板都写清晰的描述，方便团队理解和管理。
-# 在 Console 中会显示这个描述。
+# Best practice: Write clear descriptions for team understanding.
+# This text is displayed in the CloudFormation Console.
 
 Description: |
   My First CloudFormation Stack - S3 Bucket
-  CloudFormation 课程 Lesson 00 示例模板
-  创建一个带标签的 S3 Bucket
+  CloudFormation Course Lesson 00 Example Template
+  Creates an S3 Bucket with tags
 
 # -----------------------------------------------------------------------------
-# Metadata - 元数据（可选）
+# Metadata - Optional metadata section
 # -----------------------------------------------------------------------------
-# 用于向 Console 提供额外信息，如参数分组、标签等。
-# 本课暂不使用，后续课程会介绍。
+# Used to provide Console with extra info like parameter grouping.
+# Not used in this lesson, covered in later lessons.
 
 # Metadata:
 #   AWS::CloudFormation::Interface:
@@ -42,9 +42,10 @@ Description: |
 #       - ...
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数（可选）
+# Parameters - Input parameters (optional)
 # -----------------------------------------------------------------------------
-# 本课使用硬编码值，后续课程会介绍 Parameters 实现模板复用。
+# This lesson uses hardcoded values. Parameters for template reuse
+# will be covered in later lessons.
 
 # Parameters:
 #   BucketNamePrefix:
@@ -52,114 +53,114 @@ Description: |
 #     Default: my-first-cfn-bucket
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义（必须）
+# Resources - Resource definitions (REQUIRED)
 # -----------------------------------------------------------------------------
-# 这是模板的核心部分，定义要创建的 AWS 资源。
+# This is the core section defining AWS resources to create.
 #
-# 格式：
-#   LogicalID:              # 逻辑 ID（你定义的名称，在模板中唯一）
-#     Type: AWS::服务::资源  # 资源类型
-#     Properties:           # 资源属性
-#       属性名: 属性值
+# Format:
+#   LogicalID:              # Your defined name, unique in template
+#     Type: AWS::Service::Resource  # Resource type
+#     Properties:           # Resource properties
+#       PropertyName: PropertyValue
 
 Resources:
 
   # ---------------------------------------------------------------------------
-  # S3 Bucket - 主资源
+  # S3 Bucket - Main resource
   # ---------------------------------------------------------------------------
   #
-  # 资源类型: AWS::S3::Bucket
-  # 文档: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html
+  # Resource Type: AWS::S3::Bucket
+  # Docs: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html
   #
   # Logical ID: MyFirstBucket
-  #   - 这是你定义的名称，在模板中唯一
-  #   - 用于其他资源引用（如 !Ref MyFirstBucket）
-  #   - 不同于 Physical ID（AWS 实际创建的资源名称）
+  #   - Your defined name, unique within this template
+  #   - Used by other resources to reference (e.g., !Ref MyFirstBucket)
+  #   - Different from Physical ID (actual AWS resource name)
 
   MyFirstBucket:
     Type: AWS::S3::Bucket
     Properties:
-      # BucketName - S3 桶名称
+      # BucketName - S3 bucket name
       #
-      # !Sub 是内置函数，用于字符串替换
-      # ${AWS::AccountId} 是伪参数，自动替换为当前 AWS 账户 ID
+      # !Sub is an intrinsic function for string substitution
+      # ${AWS::AccountId} is a pseudo parameter, replaced with current AWS account ID
       #
-      # 结果示例: my-first-cfn-bucket-123456789012
+      # Result example: my-first-cfn-bucket-123456789012
       #
-      # 为什么用账户 ID？
-      #   - S3 桶名称必须全球唯一
-      #   - 使用账户 ID 避免命名冲突
+      # Why use account ID?
+      #   - S3 bucket names must be globally unique
+      #   - Using account ID avoids naming conflicts
       BucketName: !Sub 'my-first-cfn-bucket-${AWS::AccountId}'
 
-      # PublicAccessBlockConfiguration - 公共访问阻止（安全最佳实践）
+      # PublicAccessBlockConfiguration - Block public access (security best practice)
       #
-      # 2023 年起，AWS 默认阻止所有公共访问。
-      # 明确配置此项是企业安全合规的最佳实践。
+      # Since 2023, AWS blocks all public access by default.
+      # Explicitly configuring this is an enterprise security compliance best practice.
       #
-      # 日本 IT 场景：
-      #   - 金融/政府项目必须阻止公共访问
-      #   - cfn-guard 规则通常检查此配置
+      # Japan IT scenarios:
+      #   - Financial/government projects must block public access
+      #   - cfn-guard rules typically check this configuration
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-      # Tags - 资源标签
+      # Tags - Resource tags
       #
-      # 标签是键值对，用于：
-      #   - 资源分类和查找
-      #   - 成本分配（Cost Allocation）
-      #   - 访问控制（基于标签的 IAM 策略）
-      #   - 自动化处理
+      # Tags are key-value pairs used for:
+      #   - Resource classification and discovery
+      #   - Cost Allocation
+      #   - Access control (tag-based IAM policies)
+      #   - Automation
       #
-      # 日本 IT 场景：
-      #   - 環境 (Environment): dev/stg/prod
-      #   - プロジェクト (Project): 项目代号
-      #   - 担当者 (Owner): 负责人
+      # Japan IT scenarios:
+      #   - Environment: dev/stg/prod
+      #   - Project: project code
+      #   - Owner: responsible person
       Tags:
         - Key: Name
           Value: My First CloudFormation Bucket
         - Key: Environment
           Value: learning
         - Key: Purpose
-          Value: CloudFormation 课程练习
+          Value: CloudFormation Course Practice
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值（可选）
+# Outputs - Output values (optional)
 # -----------------------------------------------------------------------------
-# 输出值用于：
-#   - 在 Console 显示重要信息
-#   - 其他 Stack 引用（跨栈引用）
-#   - CLI/SDK 获取资源信息
+# Output values are used for:
+#   - Displaying important info in Console
+#   - Cross-stack references
+#   - CLI/SDK resource info retrieval
 #
-# 格式：
+# Format:
 #   OutputLogicalID:
-#     Description: 描述
-#     Value: 输出值
-#     Export:               # 可选：导出给其他 Stack 使用
-#       Name: 导出名称
+#     Description: Description text
+#     Value: Output value
+#     Export:               # Optional: export for other stacks
+#       Name: Export name
 
 Outputs:
 
-  # Bucket 名称
+  # Bucket Name
   BucketName:
     Description: S3 Bucket Name
     Value: !Ref MyFirstBucket
-    # !Ref 返回资源的物理 ID
-    # 对于 S3 Bucket，物理 ID 就是桶名称
+    # !Ref returns the physical ID of the resource
+    # For S3 Bucket, physical ID is the bucket name
 
   # Bucket ARN
   BucketArn:
     Description: S3 Bucket ARN
     Value: !GetAtt MyFirstBucket.Arn
-    # !GetAtt 获取资源的特定属性
-    # 语法: !GetAtt LogicalID.AttributeName
+    # !GetAtt retrieves a specific attribute of a resource
+    # Syntax: !GetAtt LogicalID.AttributeName
     #
-    # 常用属性：
+    # Common attributes:
     #   - Arn: Amazon Resource Name
-    #   - DomainName: 域名
-    #   - RegionalDomainName: 区域域名
+    #   - DomainName: Domain name
+    #   - RegionalDomainName: Regional domain name
 
   # Bucket Domain Name
   BucketDomainName:
@@ -167,39 +168,39 @@ Outputs:
     Value: !GetAtt MyFirstBucket.DomainName
 
 # -----------------------------------------------------------------------------
-# 关于内置函数
+# About Intrinsic Functions
 # -----------------------------------------------------------------------------
 #
-# 本模板使用了以下内置函数（Intrinsic Functions）：
+# This template uses the following intrinsic functions:
 #
 # !Sub (Fn::Sub)
-#   - 字符串替换
-#   - ${变量名} 会被替换为实际值
-#   - 支持伪参数和其他资源引用
+#   - String substitution
+#   - ${variable} is replaced with actual value
+#   - Supports pseudo parameters and resource references
 #
 # !Ref (Fn::Ref)
-#   - 返回资源的物理 ID 或参数值
-#   - 对于 S3 Bucket: 返回桶名称
-#   - 对于 EC2 Instance: 返回实例 ID
+#   - Returns physical ID of resource or parameter value
+#   - For S3 Bucket: returns bucket name
+#   - For EC2 Instance: returns instance ID
 #
 # !GetAtt (Fn::GetAtt)
-#   - 获取资源的特定属性
-#   - 每种资源支持的属性不同，参考文档
+#   - Gets specific attribute of a resource
+#   - Supported attributes vary by resource type, see docs
 #
-# 后续课程会详细介绍更多内置函数。
+# More intrinsic functions covered in later lessons.
 #
 # -----------------------------------------------------------------------------
-# 伪参数（Pseudo Parameters）
+# Pseudo Parameters
 # -----------------------------------------------------------------------------
 #
-# AWS 提供的内置参数，无需定义即可使用：
+# AWS built-in parameters, available without definition:
 #
-#   AWS::AccountId    - 当前 AWS 账户 ID (如 123456789012)
-#   AWS::Region       - 当前区域 (如 ap-northeast-1)
-#   AWS::StackName    - 当前 Stack 名称
-#   AWS::StackId      - 当前 Stack ID
-#   AWS::NoValue      - 条件中使用，表示不设置该属性
+#   AWS::AccountId    - Current AWS account ID (e.g., 123456789012)
+#   AWS::Region       - Current region (e.g., ap-northeast-1)
+#   AWS::StackName    - Current stack name
+#   AWS::StackId      - Current stack ID
+#   AWS::NoValue      - Used in conditions, means "don't set this property"
 #
-# 后续课程会详细介绍伪参数的使用场景。
+# Pseudo parameter use cases covered in later lessons.
 #
 # =============================================================================

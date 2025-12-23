@@ -1,48 +1,48 @@
 # =============================================================================
 # failure-demo.yaml
-# Failure Lab - 故意触发回滚演示
+# Failure Lab - Intentional Rollback Demonstration
 # =============================================================================
 #
-# 本模板故意包含一个会失败的资源，用于演示：
-#   1. CloudFormation 自动回滚机制
-#   2. Stack Events 的错误信息
-#   3. ROLLBACK_COMPLETE 状态
+# This template intentionally contains a failing resource to demonstrate:
+#   1. CloudFormation automatic rollback mechanism
+#   2. Error information in Stack Events
+#   3. ROLLBACK_COMPLETE state
 #
-# 【教学目的】
-#   - 观察 CloudFormation 如何处理失败
-#   - 理解自动回滚的价值（对比 Terraform）
-#   - 学会阅读 Stack Events 调试信息
+# [Teaching Purpose]
+#   - Observe how CloudFormation handles failures
+#   - Understand the value of automatic rollback (vs Terraform)
+#   - Learn to read Stack Events for debugging
 #
-# 日本企业场景：
-#   - 自動ロールバックは CloudFormation の大きな利点
-#   - 本番環境でのデプロイ失敗時も安全
-#   - 障害対応時の手動操作不要
+# Japan enterprise scenarios:
+#   - Automatic rollback is a major advantage of CloudFormation
+#   - Safe even when production deployment fails
+#   - No manual intervention required during incident response
 #
-# 使用方法：
-#   1. 创建 Stack: failure-lab
-#   2. 观察 Events: CREATE_IN_PROGRESS -> CREATE_FAILED -> ROLLBACK
-#   3. 最终状态: ROLLBACK_COMPLETE
+# Usage:
+#   1. Create Stack: failure-lab
+#   2. Observe Events: CREATE_IN_PROGRESS -> CREATE_FAILED -> ROLLBACK
+#   3. Final state: ROLLBACK_COMPLETE
 #
 # =============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
 
 Description: |
-  Failure Lab - 演示 CloudFormation 自动回滚机制
-  このテンプレートは意図的に失敗し、自動ロールバックを体験するためのものです
+  Failure Lab - Demonstrates CloudFormation automatic rollback mechanism
+  This template intentionally fails to demonstrate automatic rollback
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 
 Resources:
 
   # ---------------------------------------------------------------------------
-  # DemoBucket - 这个会成功创建
+  # DemoBucket - This will be created successfully
   # ---------------------------------------------------------------------------
   #
-  # S3 Bucket 创建很快，会先成功
-  # 但当后面的 EC2 失败时，这个 Bucket 也会被回滚删除
+  # S3 Bucket creation is fast and will succeed first
+  # But when EC2 fails later, this Bucket will also be rolled back (deleted)
 
   DemoBucket:
     Type: AWS::S3::Bucket
@@ -52,26 +52,26 @@ Resources:
         - Key: Name
           Value: Failure Lab Bucket (will be rolled back)
         - Key: Purpose
-          Value: 回滚演示 - 这个 Bucket 会在回滚时被删除
+          Value: Rollback demo - this bucket will be deleted during rollback
 
   # ---------------------------------------------------------------------------
-  # FailingInstance - 这个会失败（使用无效的 AMI ID）
+  # FailingInstance - This will fail (using invalid AMI ID)
   # ---------------------------------------------------------------------------
   #
-  # 【故意制造的错误】
-  # 使用一个不存在的 AMI ID，EC2 创建必定失败
+  # [Intentional Error]
+  # Using a non-existent AMI ID, EC2 creation will definitely fail
   #
-  # 观察点：
-  #   1. Events 显示错误: "AMI ami-invalid-id-12345 does not exist"
-  #   2. CloudFormation 自动开始 ROLLBACK
-  #   3. 已创建的 DemoBucket 被删除
-  #   4. 最终状态: ROLLBACK_COMPLETE
+  # Observation points:
+  #   1. Events show error: "AMI ami-invalid-id-12345 does not exist"
+  #   2. CloudFormation automatically starts ROLLBACK
+  #   3. Already created DemoBucket gets deleted
+  #   4. Final state: ROLLBACK_COMPLETE
 
   FailingInstance:
     Type: AWS::EC2::Instance
-    DependsOn: DemoBucket              # 确保 Bucket 先创建成功
+    DependsOn: DemoBucket              # Ensure Bucket is created first
     Properties:
-      # 无效的 AMI ID - 故意制造错误！
+      # Invalid AMI ID - intentional error!
       ImageId: ami-invalid-id-12345
       InstanceType: t2.micro
       Tags:
@@ -79,57 +79,57 @@ Resources:
           Value: This will fail
 
 # =============================================================================
-# 预期的 Stack Events 序列
+# Expected Stack Events Sequence
 # =============================================================================
 #
-# 时间     Logical ID           Status                  备注
-# ----     ----------           ------                  ----
-# T+0      failure-lab          CREATE_IN_PROGRESS      用户发起创建
-# T+1      DemoBucket           CREATE_IN_PROGRESS      开始创建 Bucket
-# T+3      DemoBucket           CREATE_COMPLETE         Bucket 创建成功
-# T+4      FailingInstance      CREATE_IN_PROGRESS      开始创建 EC2
-# T+5      FailingInstance      CREATE_FAILED           AMI 不存在，失败！
-# T+6      failure-lab          ROLLBACK_IN_PROGRESS    自动开始回滚
-# T+7      FailingInstance      DELETE_IN_PROGRESS      删除失败的实例
-# T+8      FailingInstance      DELETE_COMPLETE         完成
-# T+9      DemoBucket           DELETE_IN_PROGRESS      回滚删除 Bucket
-# T+11     DemoBucket           DELETE_COMPLETE         完成
-# T+12     failure-lab          ROLLBACK_COMPLETE       回滚完成
+# Time     Logical ID           Status                  Notes
+# ----     ----------           ------                  -----
+# T+0      failure-lab          CREATE_IN_PROGRESS      User initiates creation
+# T+1      DemoBucket           CREATE_IN_PROGRESS      Start creating Bucket
+# T+3      DemoBucket           CREATE_COMPLETE         Bucket created successfully
+# T+4      FailingInstance      CREATE_IN_PROGRESS      Start creating EC2
+# T+5      FailingInstance      CREATE_FAILED           AMI does not exist, failed!
+# T+6      failure-lab          ROLLBACK_IN_PROGRESS    Automatic rollback starts
+# T+7      FailingInstance      DELETE_IN_PROGRESS      Delete failed instance
+# T+8      FailingInstance      DELETE_COMPLETE         Done
+# T+9      DemoBucket           DELETE_IN_PROGRESS      Rollback deletes Bucket
+# T+11     DemoBucket           DELETE_COMPLETE         Done
+# T+12     failure-lab          ROLLBACK_COMPLETE       Rollback complete
 #
 # =============================================================================
-# 对比 Terraform 的行为
+# Comparison with Terraform Behavior
 # =============================================================================
 #
-# Terraform 遇到失败时：
-#   1. 停止执行
-#   2. 已创建的资源保留（不自动回滚）
-#   3. 需要手动 terraform destroy 或修复后重试
+# Terraform when encountering failure:
+#   1. Stops execution
+#   2. Already created resources are retained (no automatic rollback)
+#   3. Need manual terraform destroy or fix and retry
 #
-# CloudFormation 遇到失败时：
-#   1. 自动回滚
-#   2. 已创建的资源被删除
-#   3. 恢复到创建前状态
+# CloudFormation when encountering failure:
+#   1. Automatic rollback
+#   2. Already created resources are deleted
+#   3. Returns to pre-creation state
 #
-# 【结论】CloudFormation 的自动回滚是生产环境的重要保障！
+# [Conclusion] CloudFormation's automatic rollback is critical for production!
 #
 # =============================================================================
-# 其他触发失败的方法（供参考）
+# Other Methods to Trigger Failure (for reference)
 # =============================================================================
 #
-# 1. 无效的安全组 ID
+# 1. Invalid Security Group ID
 #    SecurityGroupIds:
 #      - sg-invalid-12345
 #
-# 2. 不存在的子网
+# 2. Non-existent Subnet
 #    SubnetId: subnet-invalid-12345
 #
-# 3. 权限不足
-#    # 使用需要特殊权限的资源，但 IAM 没有授权
+# 3. Insufficient Permissions
+#    # Use resources requiring special permissions, but IAM not authorized
 #
-# 4. 资源限制
-#    # 超过 VPC 数量限制、EIP 限制等
+# 4. Resource Limits
+#    # Exceed VPC count limit, EIP limit, etc.
 #
-# 5. 无效的 IAM Role
+# 5. Invalid IAM Role
 #    IamInstanceProfile: invalid-role-name
 #
 # =============================================================================

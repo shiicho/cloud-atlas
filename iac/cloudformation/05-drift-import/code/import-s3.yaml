@@ -1,280 +1,100 @@
 # =============================================================================
 # import-s3.yaml
-# CloudFormation Resource Import 演示模板 - S3 Bucket
+# CloudFormation Resource Import Demo Template - S3 Bucket (Phase 1: Import)
 # =============================================================================
 #
-# 本模板用于将现有（手动创建的）S3 Bucket 导入 CloudFormation 管理。
+# IMPORTANT: This is a minimal template for Import operation
 #
-# 使用前提：
-#   已手动创建名为 my-legacy-bucket-{账户ID} 的 S3 Bucket
+# AWS CloudFormation has the following limitations during Import:
+#   - Cannot have Outputs
+#   - Parameters cannot be modified during Import
+#   - Can only define resources to import
 #
-# 使用方法：
-#   1. AWS Console → CloudFormation → Create stack
-#   2. 选择 "With existing resources (import resources)"
-#   3. 上传此文件
-#   4. 在 Identify resources 页面填写：
+# Workflow (two phases):
+#   Phase 1: Use this template to import resources
+#   Phase 2: Use import-s3-complete.yaml to update Stack and add Outputs
+#
+# Usage:
+#   1. AWS Console -> CloudFormation -> Create stack
+#   2. Select "With existing resources (import resources)"
+#   3. Upload this file
+#   4. On Identify resources page, fill in:
 #      - Logical ID: ImportedBucket
 #      - Resource type: AWS::S3::Bucket
 #      - Identifier property: BucketName
-#      - Identifier value: my-legacy-bucket-{你的账户ID}
+#      - Identifier value: my-legacy-bucket-{your-account-id}
 #   5. Stack name: imported-bucket-stack
-#   6. 完成 Import
-#   7. 运行 Detect drift 确认 IN_SYNC
+#   6. Complete Import
+#   7. Run Detect drift to confirm IN_SYNC
+#   8. (Optional) Update Stack using import-s3-complete.yaml to add Outputs
 #
-# 清理方法：
-#   1. CloudFormation Console → 选择 Stack → Delete
-#   2. 由于 DeletionPolicy: Retain，Bucket 不会被删除
-#   3. 手动删除 Bucket: aws s3 rb s3://my-legacy-bucket-{账户ID}
+# CLI method:
+#   # Phase 1: Import
+#   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+#   aws cloudformation create-change-set \
+#     --stack-name imported-bucket-stack \
+#     --change-set-name import-legacy-bucket \
+#     --change-set-type IMPORT \
+#     --template-body file://import-s3.yaml \
+#     --resources-to-import "[{\"ResourceType\":\"AWS::S3::Bucket\",\"LogicalResourceId\":\"ImportedBucket\",\"ResourceIdentifier\":{\"BucketName\":\"my-legacy-bucket-${ACCOUNT_ID}\"}}]"
+#
+#   # Wait for ChangeSet creation to complete
+#   aws cloudformation wait change-set-create-complete \
+#     --stack-name imported-bucket-stack \
+#     --change-set-name import-legacy-bucket
+#
+#   # Execute ChangeSet
+#   aws cloudformation execute-change-set \
+#     --stack-name imported-bucket-stack \
+#     --change-set-name import-legacy-bucket
+#
+# Cleanup:
+#   1. CloudFormation Console -> Select Stack -> Delete
+#   2. Due to DeletionPolicy: Retain, Bucket will not be deleted
+#   3. Manually delete Bucket: aws s3 rb s3://my-legacy-bucket-{account-id}
 #
 # =============================================================================
 
 AWSTemplateFormatVersion: '2010-09-09'
 
-# -----------------------------------------------------------------------------
-# Description - 模板描述
-# -----------------------------------------------------------------------------
-
 Description: |
-  CloudFormation Resource Import Demo - S3 Bucket
-  Lesson 05 - Drift 检测与资源导入 演示模板
-  将现有 S3 Bucket 导入 CloudFormation 管理
+  CloudFormation Resource Import Demo - S3 Bucket (Phase 1)
+  Minimal template for Import operation, no Outputs
+  After Import, use import-s3-complete.yaml to update and add Outputs
 
 # -----------------------------------------------------------------------------
-# Metadata - Console 界面增强
+# Resources - Resource definitions (minimal configuration)
 # -----------------------------------------------------------------------------
-
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-      - Label:
-          default: "Import 配置"
-        Parameters:
-          - ImportDate
-          - OriginalOwner
-    ParameterLabels:
-      ImportDate:
-        default: "导入日期"
-      OriginalOwner:
-        default: "原始创建者"
-
-# -----------------------------------------------------------------------------
-# Parameters - 输入参数
-# -----------------------------------------------------------------------------
-
-Parameters:
-  # 导入日期（用于标签记录）
-  ImportDate:
-    Type: String
-    Default: "2025-01-01"
-    Description: |
-      记录资源导入的日期（用于追溯）。
-      日本语: インポート日
-
-  # 原始创建者（用于标签记录）
-  OriginalOwner:
-    Type: String
-    Default: manual-creation
-    Description: |
-      记录资源的原始创建者。
-      日本语: 元の作成者
-
-# -----------------------------------------------------------------------------
-# Resources - 资源定义
-# -----------------------------------------------------------------------------
+# Only basic resource properties need to be defined for Import
+# More properties (like Tags) can be added in updates after Import
 
 Resources:
 
-  # ---------------------------------------------------------------------------
-  # S3 Bucket - 要导入的现有资源
-  # ---------------------------------------------------------------------------
-  #
-  # 重要配置：
-  #
-  # 1. DeletionPolicy: Retain
-  #    - 删除 Stack 时保留 Bucket
-  #    - 防止意外删除重要数据
-  #    - 对于生产环境的数据存储资源，这是必须的
-  #
-  # 2. UpdateReplacePolicy: Retain
-  #    - 更新导致资源替换时保留原资源
-  #    - 例如：修改 BucketName 会导致替换
-  #    - 保护数据不丢失
-  #
-  # 3. BucketName 必须精确匹配
-  #    - Import 时需要物理 ID 精确匹配
-  #    - 使用 !Sub 自动替换账户 ID
-
   ImportedBucket:
     Type: AWS::S3::Bucket
-
-    # ---------------------------------------------------------------------------
-    # DeletionPolicy - 删除策略（关键！）
-    # ---------------------------------------------------------------------------
-    #
-    # 可选值：
-    #   - Delete (默认): 删除 Stack 时删除资源
-    #   - Retain: 删除 Stack 时保留资源
-    #   - Snapshot: 删除前创建快照（仅支持 RDS, EBS 等）
-    #
-    # 对于导入的资源，强烈建议使用 Retain：
-    #   - 这些资源可能包含重要数据
-    #   - 防止误操作导致数据丢失
-    #   - 可以后续再决定如何处理
     DeletionPolicy: Retain
-
-    # ---------------------------------------------------------------------------
-    # UpdateReplacePolicy - 更新替换策略
-    # ---------------------------------------------------------------------------
-    #
-    # 某些属性的修改会导致资源替换（而非就地更新）：
-    #   - S3 Bucket: BucketName 修改 → 替换
-    #   - RDS: DBInstanceIdentifier 修改 → 替换
-    #   - EC2: 某些 AMI 属性修改 → 替换
-    #
-    # UpdateReplacePolicy: Retain 确保：
-    #   - 即使发生替换，原资源也不会被删除
-    #   - 新资源创建成功后，原资源继续存在
-    #   - 需要手动清理原资源（但数据安全）
     UpdateReplacePolicy: Retain
-
     Properties:
-      # Bucket 名称 - 必须与现有 Bucket 名称精确匹配
-      #
-      # 使用 !Sub 自动替换账户 ID
-      # 示例: my-legacy-bucket-123456789012
+      # BucketName must exactly match existing Bucket name
       BucketName: !Sub 'my-legacy-bucket-${AWS::AccountId}'
 
-      # 标签 - 记录导入信息
-      #
-      # 导入后添加的标签（与原有标签合并）：
-      #   - ManagedBy: 标识现在由 CloudFormation 管理
-      #   - ImportedOn: 记录导入日期
-      #   - OriginalOwner: 记录原始创建者
-      #
-      # 日本 IT 场景：
-      #   这些标签可作为証跡（エビデンス），
-      #   记录资源从手动管理转为 IaC 管理的时间点
-      Tags:
-        - Key: Name
-          Value: Imported Legacy Bucket
-        - Key: ManagedBy
-          Value: CloudFormation
-        - Key: ImportedOn
-          Value: !Ref ImportDate
-        - Key: OriginalOwner
-          Value: !Ref OriginalOwner
-        - Key: Course
-          Value: CloudFormation-Lesson05
-
-# -----------------------------------------------------------------------------
-# Outputs - 输出值
-# -----------------------------------------------------------------------------
-
-Outputs:
-
-  # Bucket 名称
-  BucketName:
-    Description: Imported S3 Bucket Name
-    Value: !Ref ImportedBucket
-    Export:
-      Name: !Sub '${AWS::StackName}-BucketName'
-
-  # Bucket ARN
-  BucketArn:
-    Description: Imported S3 Bucket ARN
-    Value: !GetAtt ImportedBucket.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-BucketArn'
-
-  # Bucket Domain Name
-  BucketDomainName:
-    Description: S3 Bucket Domain Name
-    Value: !GetAtt ImportedBucket.DomainName
-
-  # Bucket Regional Domain Name
-  BucketRegionalDomainName:
-    Description: S3 Bucket Regional Domain Name
-    Value: !GetAtt ImportedBucket.RegionalDomainName
-
-  # 导入日期（用于追溯）
-  ImportDate:
-    Description: Date when this resource was imported to CloudFormation
-    Value: !Ref ImportDate
-
-# -----------------------------------------------------------------------------
-# Resource Import 注意事项
-# -----------------------------------------------------------------------------
+# =============================================================================
+# About Import Limitations
+# =============================================================================
 #
-# 1. 支持 Import 的资源类型
-#    不是所有资源类型都支持 Import。
-#    完整列表参考：
-#    https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resource-import-supported-resources.html
+# 1. Outputs not supported
+#    Import operation does not allow templates to contain Outputs section
+#    Solution: After Import completes, update Stack to add Outputs
 #
-# 2. 资源标识符
-#    每种资源类型有不同的标识符属性：
-#      - S3 Bucket: BucketName
-#      - EC2 Instance: InstanceId (如 i-1234567890abcdef0)
+# 2. Resource identifier must exactly match
+#    S3 Bucket uses BucketName as identifier
+#    Other resource types have different identifiers:
+#      - EC2 Instance: InstanceId
 #      - RDS: DBInstanceIdentifier
 #      - Lambda: FunctionName
 #
-# 3. Import 不会修改资源
-#    Import 只是建立 CloudFormation 与现有资源的关联。
-#    资源本身不会被修改。
-#    但首次 Update Stack 后，会将资源配置为模板定义的状态。
-#
-# 4. 导入后检查
-#    导入完成后，务必运行 Detect drift：
-#      - 确认 IN_SYNC（无差异）
-#      - 如有差异，决定是更新模板还是更新资源
-#
-# -----------------------------------------------------------------------------
-# DeletionPolicy + Import 工作流
-# -----------------------------------------------------------------------------
-#
-# 将资源从一个 Stack 转移到另一个 Stack：
-#
-# Step 1: 在原 Stack 设置 DeletionPolicy: Retain
-#         → 确保删除 Stack 时资源不会被删除
-#
-# Step 2: 删除原 Stack
-#         → Stack 被删除，但资源保留
-#         → 资源变成"孤儿"状态
-#
-# Step 3: 在新 Stack Import 资源
-#         → 使用本模板导入资源
-#         → 资源重新纳入 CloudFormation 管理
-#
-# 这个工作流在以下场景很有用：
-#   - 团队拆分，资源转移给其他团队
-#   - 架构重构，重新组织 Stack 结构
-#   - Stack 合并或拆分
-#
-# -----------------------------------------------------------------------------
-# 日本 IT 场景
-# -----------------------------------------------------------------------------
-#
-# 既存システムの IaC 化（现有系统 IaC 化）
-#
-# 日本企业经常有大量手动创建的"遗留"资源：
-#   - 历史系统迁移到 AWS
-#   - 早期没有使用 IaC
-#   - 紧急创建的临时资源
-#
-# Resource Import 帮助将这些资源纳入统一管理：
-#
-# 1. 段階的な移行（阶段性迁移）
-#    - 不需要一次性导入所有资源
-#    - 可以按优先级逐步导入
-#    - 每次导入后验证稳定性
-#
-# 2. 変更管理の統一（统一变更管理）
-#    - 所有变更通过 CloudFormation
-#    - ChangeSet 提供变更预览
-#    - 完整的审计日志
-#
-# 3. 証跡管理（审计追踪）
-#    - ImportedOn 标签记录导入时间
-#    - OriginalOwner 标签记录原始创建者
-#    - 满足合规要求
+# 3. Resource types that support Import
+#    Not all resources support Import, full list reference:
+#    https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resource-import-supported-resources.html
 #
 # =============================================================================

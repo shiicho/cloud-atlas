@@ -2,18 +2,19 @@
 # Application Stack - Application Layer Template
 # =============================================================================
 #
-# 应用层模板 - 引用 Network Stack 的导出值创建应用资源
+# Application layer template - Creates application resources using exported
+# values from Network Stack
 #
-# 前置条件:
-#   必须先部署 network-stack.yaml 并确保 Exports 可用
+# Prerequisites:
+#   Must first deploy network-stack.yaml and ensure Exports are available
 #
-# 使用方式:
-#   1. 确保 {Environment}-network-stack 已部署
-#   2. 通过 Console 上传此模板
-#   3. Stack 名称建议: {environment}-app-stack
-#   4. Environment 参数必须与 network-stack 一致！
+# Usage:
+#   1. Ensure {Environment}-network-stack is deployed
+#   2. Upload this template via Console
+#   3. Recommended Stack name: {environment}-app-stack
+#   4. Environment parameter must match network-stack!
 #
-# 引用的 Imports:
+# Referenced Imports:
 #   - {Environment}-VpcId
 #   - {Environment}-PublicSubnet1Id
 #   - {Environment}-PublicSubnet2Id
@@ -28,7 +29,7 @@ Description: |
   Deploy AFTER network-stack is complete.
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数
+# Parameters - Input parameters
 # -----------------------------------------------------------------------------
 Parameters:
   Environment:
@@ -39,32 +40,32 @@ Parameters:
       - staging
       - prod
     Description: |
-      环境名称 - 必须与 network-stack 的 Environment 参数一致！
-      用于找到正确的 Export 名称。
+      Environment name - must match network-stack Environment parameter!
+      Used to find correct Export name.
 
   AllowedCidr:
     Type: String
     Default: 0.0.0.0/0
-    Description: 允许访问 ALB 的 CIDR（生产环境建议限制）
+    Description: CIDR allowed to access ALB (recommend restricting for production)
 
   AppPort:
     Type: Number
     Default: 8080
-    Description: 应用程序监听端口
+    Description: Application listening port
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 Resources:
 
   # ---------------------------------------------------------------------------
-  # ALB Security Group - 负载均衡器安全组
+  # ALB Security Group - Load Balancer Security Group
   # ---------------------------------------------------------------------------
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for Application Load Balancer
-      # 跨栈引用：从 network-stack 导入 VpcId
+      # Cross-stack reference: Import VpcId from network-stack
       VpcId: !ImportValue
         Fn::Sub: '${Environment}-VpcId'
       SecurityGroupIngress:
@@ -90,7 +91,7 @@ Resources:
           Value: CloudFormation
 
   # ---------------------------------------------------------------------------
-  # Application Security Group - 应用程序安全组
+  # Application Security Group - Application Security Group
   # ---------------------------------------------------------------------------
   AppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -99,7 +100,7 @@ Resources:
       VpcId: !ImportValue
         Fn::Sub: '${Environment}-VpcId'
       SecurityGroupIngress:
-        # 只允许来自 ALB 的流量
+        # Only allow traffic from ALB
         - IpProtocol: tcp
           FromPort: !Ref AppPort
           ToPort: !Ref AppPort
@@ -116,7 +117,7 @@ Resources:
           Value: CloudFormation
 
   # ---------------------------------------------------------------------------
-  # Database Security Group - 数据库安全组
+  # Database Security Group - Database Security Group
   # ---------------------------------------------------------------------------
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -125,7 +126,7 @@ Resources:
       VpcId: !ImportValue
         Fn::Sub: '${Environment}-VpcId'
       SecurityGroupIngress:
-        # 只允许来自 App 的流量
+        # Only allow traffic from App
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
@@ -143,9 +144,9 @@ Resources:
           Value: CloudFormation
 
   # ---------------------------------------------------------------------------
-  # Application Load Balancer (示例)
+  # Application Load Balancer (Example)
   # ---------------------------------------------------------------------------
-  # 注意：这只是示例，实际使用需要配置 Target Group 和 Listener
+  # Note: This is just an example, actual use requires Target Group and Listener
 
   # ApplicationLoadBalancer:
   #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -155,7 +156,7 @@ Resources:
   #     SecurityGroups:
   #       - !Ref ALBSecurityGroup
   #     Subnets:
-  #       # 使用 Split 分割逗号分隔的子网列表
+  #       # Use Split to split comma-separated subnet list
   #       - !ImportValue
   #           Fn::Sub: '${Environment}-PublicSubnet1Id'
   #       - !ImportValue
@@ -165,16 +166,14 @@ Resources:
   #         Value: !Sub '${Environment}-alb'
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值
+# Outputs - Output values
 # -----------------------------------------------------------------------------
 Outputs:
 
-  # ALB Security Group ID
+  # ALB Security Group ID (no Export - avoids conflict with alb-stack.yaml)
   ALBSecurityGroupId:
-    Description: ALB Security Group ID
+    Description: ALB Security Group ID (created internally by this stack)
     Value: !Ref ALBSecurityGroup
-    Export:
-      Name: !Sub '${Environment}-ALBSecurityGroupId'
 
   # App Security Group ID
   AppSecurityGroupId:
@@ -190,7 +189,7 @@ Outputs:
     Export:
       Name: !Sub '${Environment}-DatabaseSecurityGroupId'
 
-  # 显示引用的 VPC（用于验证跨栈引用正常工作）
+  # Display referenced VPC (to verify cross-stack reference works)
   ImportedVpcId:
     Description: VPC ID imported from network-stack
     Value: !ImportValue

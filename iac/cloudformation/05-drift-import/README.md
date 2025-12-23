@@ -169,25 +169,58 @@ Tags.ModifiedBy  (not set)         console-user
 
 ### 策略 A：让 CloudFormation 修复（覆盖手动修改）
 
-**最常用！** 把资源恢复到模板定义的状态。
+**⚠️ 重要理解**：CloudFormation 使用 **delta 更新**，不是完整状态同步！
 
-1. 选择 `drift-demo-stack`
-2. 点击 **Update**
-3. 选择 **Use current template**
-4. 点击 **Next** → **Next** → **Next** → **Submit**
+> **常见误解**：很多人以为 "Use current template" 就能修复 Drift，但这是 **错误的**！
+>
+> CloudFormation 比较的是 **模板与模板**，不是 **模板与实际资源**。
+> 如果模板没有变化，CloudFormation 不会执行任何更新。
 
-<!-- SCREENSHOT: cfn-update-to-fix-drift -->
+**方法 1：使用 Drift-Aware Change Sets（推荐，2025 新功能）**
 
-CloudFormation 会：
+> **CLI 版本要求**：`--deployment-mode REVERT_DRIFT` 需要 AWS CLI **2.31.38** 或更高版本。
+> 检查版本：`aws --version`
+>
+> 📖 **参考文档**：
+> - [Using drift-aware change sets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/drift-aware-change-sets.html)
+> - [AWS CLI Changelog - 2.31.38](https://github.com/aws/aws-cli/blob/v2/CHANGELOG.rst) (搜索 "DeploymentMode")
 
-1. 比较模板与实际资源
-2. 将 `Environment` 改回 `dev`
-3. 删除 `ModifiedBy` 标签
+```bash
+# 使用 REVERT_DRIFT 模式创建 ChangeSet
+aws cloudformation create-change-set \
+  --stack-name drift-demo-stack \
+  --change-set-name fix-drift \
+  --template-body file://drift-demo.yaml \
+  --deployment-mode REVERT_DRIFT
 
-验证修复：
+# 执行 ChangeSet
+aws cloudformation execute-change-set \
+  --stack-name drift-demo-stack \
+  --change-set-name fix-drift
+```
+
+`REVERT_DRIFT` 模式会进行 **三向比较**（新模板 vs 旧模板 vs 实际状态），真正将资源恢复到模板定义的状态。
+
+**方法 2：强制触发更新（传统方法）**
+
+如果不使用 Drift-Aware Change Sets，需要 **修改参数值** 来触发实际更新：
+
+1. 选择 `drift-demo-stack` → **Update**
+2. 选择 **Use current template**
+3. 在 Parameters 页面，将 `Environment` 改为 `staging`
+4. 执行更新（这会触发 Tags 的实际修改）
+5. 再次更新，将 `Environment` 改回 `dev`
+
+> **为什么要两步？** 因为第一次更新时 Environment 还是 "dev"（模板值），
+> CloudFormation 看不到变化。必须先改成别的值，再改回来。
+
+**验证修复：**
 
 1. 再次 **Detect drift**
 2. 结果应显示 `IN_SYNC`
+
+> 📚 **深入理解**：关于 CloudFormation 的 delta 更新机制和不同资源/属性的 Drift 行为差异，
+> 请参考补充材料：[Drift 深度解析](supplements/drift-deep-dive.md)
 
 ### 策略 B：更新模板接受现实
 
@@ -368,11 +401,16 @@ aws s3api put-bucket-tagging \
 
 ### 4.3 准备导入模板
 
-查看 `code/import-s3.yaml`，这是为导入准备的模板：
+> ⚠️ **CLI Import 注意**：使用 CLI 创建新 Stack 并导入资源时，模板不能包含 `Outputs`。
+> 错误信息：`As part of the import operation, you cannot modify or add [Outputs]`
+>
+> 解决方案：使用两阶段工作流，或使用 Console（限制较少）。
+
+查看 `code/import-s3.yaml`（Import 专用最小模板）：
 
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Template for importing existing S3 bucket
+Description: CloudFormation Resource Import Demo - S3 Bucket (Phase 1)
 
 Resources:
   ImportedBucket:
@@ -381,12 +419,12 @@ Resources:
     UpdateReplacePolicy: Retain      # 重要！防止更新时替换 Bucket
     Properties:
       BucketName: !Sub 'my-legacy-bucket-${AWS::AccountId}'
-      Tags:
-        - Key: ManagedBy
-          Value: CloudFormation
-        - Key: ImportedOn
-          Value: '2025-01-01'
 ```
+
+**两阶段工作流**（CLI 推荐）：
+
+1. **Phase 1**: 使用最小模板 `import-s3.yaml` 完成 Import
+2. **Phase 2**: 更新 Stack 使用 `import-s3-complete.yaml` 添加 Outputs/Tags
 
 **关键点**：
 
@@ -455,10 +493,11 @@ Import          ImportedBucket  my-legacy-bucket-123456789012  AWS::S3::Bucket
 
 以前，如果你想把资源从一个 Stack 移动到另一个 Stack，需要：
 
-1. 删除原 Stack（资源也被删除）
-2. 在新 Stack 中重新创建
+1. 在原 Stack 设置 `DeletionPolicy: Retain`
+2. 删除原 Stack（资源因 Retain 策略保留）
+3. 在新 Stack 中用 Import 导入资源
 
-现在，Stack Refactoring 允许你**无损移动资源**。
+现在，Stack Refactoring 允许你**一步完成无损移动**，无需删除再导入。
 
 ### 5.2 使用场景
 
@@ -470,7 +509,15 @@ Import          ImportedBucket  my-legacy-bucket-123456789012  AWS::S3::Bucket
 
 ### 5.3 基本操作（Console）
 
-Stack Refactoring 通过 **ChangeSet** 工作流实现：
+**新版 Console（2025 年 11 月后）**：
+
+1. 选择 Stack，点击 **Stack actions** → **Refactor stack**
+2. 添加要涉及的源/目标 Stack
+3. 上传更新后的模板
+4. 预览 Refactoring 计划
+5. 确认后执行
+
+**旧版方式（仍可用）**：
 
 1. 准备两个模板：源 Stack 模板（移除资源定义）和目标 Stack 模板（添加资源定义）
 2. 选择目标 Stack，点击 **Stack actions** → **Create change set for current stack**
@@ -481,20 +528,74 @@ Stack Refactoring 通过 **ChangeSet** 工作流实现：
 
 <!-- SCREENSHOT: cfn-stack-refactoring -->
 
-> **注意**：Stack Refactoring 是 2025 年新功能。  
-> - **限制**：不能跨 Account 或跨 Region 移动资源  
-> - **前提**：目标 Stack 必须已存在  
-> - **推荐**：复杂场景使用 CLI/SDK 或 Infrastructure as Code Generator  
+> **注意**：Stack Refactoring 是 2025 年新功能。
+> - **限制**：不能跨 Account 或跨 Region 移动资源
+> - **资源限制**：仅支持 `provisioningType` 为 `FULLY_MUTABLE` 的资源类型
+> - **推荐**：复杂场景使用 CLI/SDK 或 Infrastructure as Code Generator
 > 请参考最新 AWS 文档：https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stack-refactoring.html
 
-### 5.4 CLI 操作（高级）
+### 5.4 CLI 操作（2025 新命令）
 
-使用 AWS CLI 将资源移动到另一个 Stack：
+AWS 在 2025 年 2 月发布了专用的 Stack Refactoring 命令：
+
+```bash
+# Step 1: 准备模板文件
+# - source-template.yaml: 源 Stack 模板（移除要转移的资源）
+# - target-template.yaml: 目标 Stack 模板（添加要转移的资源）
+
+# Step 2: 创建 Refactoring 操作（预览模式）
+aws cloudformation create-stack-refactor \
+  --stack-definitions '[
+    {
+      "StackName": "source-stack",
+      "TemplateBody": "file://source-template.yaml"
+    },
+    {
+      "StackName": "target-stack",
+      "TemplateBody": "file://target-template.yaml"
+    }
+  ]' \
+  --description "Move S3 bucket from source to target"
+
+# 返回 StackRefactorId，用于后续操作
+
+# Step 3: 查看 Refactoring 计划
+aws cloudformation describe-stack-refactor \
+  --stack-refactor-id <StackRefactorId>
+
+# Step 4: 查看具体操作
+aws cloudformation list-stack-refactor-actions \
+  --stack-refactor-id <StackRefactorId>
+
+# Step 5: 确认无误后执行
+aws cloudformation execute-stack-refactor \
+  --stack-refactor-id <StackRefactorId>
+
+# Step 6: 监控执行状态
+aws cloudformation describe-stack-refactor \
+  --stack-refactor-id <StackRefactorId>
+```
+
+**主要命令：**
+
+| 命令 | 用途 |
+|------|------|
+| `create-stack-refactor` | 创建重构操作并生成预览 |
+| `describe-stack-refactor` | 查看重构状态和详情 |
+| `list-stack-refactor-actions` | 列出计划执行的具体操作 |
+| `execute-stack-refactor` | 执行重构操作 |
+| `list-stack-refactors` | 列出所有重构操作 |
+
+> **注意**：新命令比旧的 Import ChangeSet 方式更简洁，支持一次操作多个 Stack。
+> 📖 参考：[AWS CloudFormation Stack Refactoring](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stack-refactoring.html)
+
+<details>
+<summary>📚 经典方式：Import ChangeSet（参考）</summary>
+
+在 Stack Refactoring 命令发布前，移动资源需要使用 Import ChangeSet：
 
 ```bash
 # Step 1: 在目标 Stack 创建 Import ChangeSet
-# 首先准备好包含新资源定义的模板文件 target-template.yaml
-
 aws cloudformation create-change-set \
   --stack-name target-stack \
   --change-set-name import-from-source \
@@ -520,14 +621,15 @@ aws cloudformation execute-change-set \
   --stack-name target-stack \
   --change-set-name import-from-source
 
-# Step 4: 更新源 Stack，移除资源定义
-# 准备移除了该资源的源模板 source-template-updated.yaml
+# Step 4: 更新源 Stack 移除资源定义
 aws cloudformation update-stack \
   --stack-name source-stack \
   --template-body file://source-template-updated.yaml
 ```
 
-> **注意**：CLI 操作适合 CI/CD 集成。日常使用推荐 Console 操作更直观。
+这种方式仍然有效，但新的 `create-stack-refactor` 命令更推荐。
+
+</details>
 
 ### 5.5 与 Terraform 对比
 

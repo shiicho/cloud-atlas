@@ -2,20 +2,20 @@
 # Child Stack - VPC Module (Nested Stack)
 # =============================================================================
 #
-# 子栈模板 - VPC 模块，被父栈调用
+# Child stack template - VPC module, called by parent stack
 #
-# 关于 Nested Stack 子模板:
-#   - 必须上传到 S3 才能被父栈引用
-#   - 不能直接通过 Console 部署（会缺少父栈的参数传递）
-#   - 可以单独测试，但生产使用应通过父栈
+# About Nested Stack child templates:
+#   - Must be uploaded to S3 to be referenced by parent stack
+#   - Cannot be deployed directly via Console (would miss parent parameter passing)
+#   - Can be tested independently, but production use should go through parent
 #
-# 上传命令:
+# Upload command:
 #   aws s3 cp child-vpc.yaml s3://your-bucket/nested-stacks/child-vpc.yaml
 #
-# 设计原则:
-#   - 输入参数应尽量通用
-#   - 输出值应暴露常用属性
-#   - 保持模块职责单一
+# Design principles:
+#   - Input parameters should be as generic as possible
+#   - Output values should expose commonly used attributes
+#   - Keep module responsibilities single-purpose
 #
 # =============================================================================
 
@@ -26,7 +26,7 @@ Description: |
   Upload to S3 before creating the parent stack.
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数（由父栈传递）
+# Parameters - Input parameters (passed from parent stack)
 # -----------------------------------------------------------------------------
 Parameters:
   Environment:
@@ -36,12 +36,12 @@ Parameters:
       - dev
       - staging
       - prod
-    Description: 环境名称（由父栈传递）
+    Description: Environment name (passed from parent stack)
 
   VpcCidr:
     Type: String
     Default: 10.0.0.0/16
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    AllowedPattern: '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$'
     Description: VPC CIDR block
 
   PublicSubnetCidr:
@@ -55,7 +55,7 @@ Parameters:
     Description: Private Subnet CIDR block
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 Resources:
 
@@ -174,9 +174,9 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值（供父栈使用）
+# Outputs - Output values (for parent stack to use)
 # -----------------------------------------------------------------------------
-# 这些输出会被父栈通过 !GetAtt StackName.Outputs.OutputKey 访问
+# These outputs are accessed by parent stack via !GetAtt StackName.Outputs.OutputKey
 Outputs:
 
   VpcId:

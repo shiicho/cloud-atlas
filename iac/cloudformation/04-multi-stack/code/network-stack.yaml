@@ -2,14 +2,14 @@
 # Network Stack - VPC Layer Template
 # =============================================================================
 #
-# 网络层模板 - 提供 VPC、子网等基础网络资源
+# Network layer template - Provides VPC, subnets, and basic network resources
 #
-# 使用方式:
-#   1. 通过 Console 上传此模板
-#   2. Stack 名称建议: {environment}-network-stack
-#   3. 部署后会导出 Export 供其他 Stack 使用
+# Usage:
+#   1. Upload this template via Console
+#   2. Recommended Stack name: {environment}-network-stack
+#   3. After deployment, Exports will be available for other Stacks
 #
-# 导出的 Exports:
+# Exported Exports:
 #   - {Environment}-VpcId
 #   - {Environment}-PublicSubnet1Id
 #   - {Environment}-PublicSubnet2Id
@@ -25,7 +25,7 @@ Description: |
   Deploy this stack FIRST before other stacks.
 
 # -----------------------------------------------------------------------------
-# Parameters - 输入参数
+# Parameters - Input parameters
 # -----------------------------------------------------------------------------
 Parameters:
   Environment:
@@ -35,13 +35,13 @@ Parameters:
       - dev
       - staging
       - prod
-    Description: 环境名称，用于资源命名和 Export 前缀
+    Description: Environment name, used for resource naming and Export prefix
 
   VpcCidr:
     Type: String
     Default: 10.0.0.0/16
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    Description: VPC CIDR block (例: 10.0.0.0/16)
+    AllowedPattern: '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$'
+    Description: 'VPC CIDR block (e.g., 10.0.0.0/16)'
 
   EnableNatGateway:
     Type: String
@@ -49,21 +49,21 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-    Description: 是否创建 NAT Gateway（生产环境推荐启用，会产生费用）
+    Description: Whether to create NAT Gateway (recommended for production, incurs cost)
 
 # -----------------------------------------------------------------------------
-# Conditions - 条件判断
+# Conditions - Conditional logic
 # -----------------------------------------------------------------------------
 Conditions:
   CreateNatGateway: !Equals [!Ref EnableNatGateway, 'true']
 
 # -----------------------------------------------------------------------------
-# Resources - 资源定义
+# Resources - Resource definitions
 # -----------------------------------------------------------------------------
 Resources:
 
   # ---------------------------------------------------------------------------
-  # VPC - 虚拟私有云
+  # VPC - Virtual Private Cloud
   # ---------------------------------------------------------------------------
   VPC:
     Type: AWS::EC2::VPC
@@ -80,7 +80,7 @@ Resources:
           Value: CloudFormation
 
   # ---------------------------------------------------------------------------
-  # Internet Gateway - 互联网网关
+  # Internet Gateway
   # ---------------------------------------------------------------------------
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -98,7 +98,7 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
 
   # ---------------------------------------------------------------------------
-  # Public Subnets - 公共子网 (2 个 AZ)
+  # Public Subnets (2 AZs)
   # ---------------------------------------------------------------------------
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -131,7 +131,7 @@ Resources:
           Value: Public
 
   # ---------------------------------------------------------------------------
-  # Private Subnets - 私有子网 (2 个 AZ)
+  # Private Subnets (2 AZs)
   # ---------------------------------------------------------------------------
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -162,7 +162,7 @@ Resources:
           Value: Private
 
   # ---------------------------------------------------------------------------
-  # Public Route Table - 公共路由表
+  # Public Route Table
   # ---------------------------------------------------------------------------
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -195,7 +195,7 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
 
   # ---------------------------------------------------------------------------
-  # NAT Gateway (可选) - 用于私有子网访问互联网
+  # NAT Gateway (Optional) - For private subnet internet access
   # ---------------------------------------------------------------------------
   NatGatewayEIP:
     Type: AWS::EC2::EIP
@@ -218,7 +218,7 @@ Resources:
           Value: !Sub '${Environment}-nat-gw'
 
   # ---------------------------------------------------------------------------
-  # Private Route Table - 私有路由表
+  # Private Route Table
   # ---------------------------------------------------------------------------
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -251,25 +251,25 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable
 
 # -----------------------------------------------------------------------------
-# Outputs - 输出值（用于跨栈引用）
+# Outputs - Output values (for cross-stack references)
 # -----------------------------------------------------------------------------
 Outputs:
 
-  # VPC ID - 其他 Stack 创建资源时需要
+  # VPC ID - Needed by other Stacks to create resources
   VpcId:
     Description: VPC ID
     Value: !Ref VPC
     Export:
       Name: !Sub '${Environment}-VpcId'
 
-  # VPC CIDR - 用于安全组规则等
+  # VPC CIDR - Used for security group rules etc.
   VpcCidr:
     Description: VPC CIDR Block
     Value: !GetAtt VPC.CidrBlock
     Export:
       Name: !Sub '${Environment}-VpcCidr'
 
-  # Public Subnet IDs - ALB、Bastion 等使用
+  # Public Subnet IDs - Used by ALB, Bastion, etc.
   PublicSubnet1Id:
     Description: Public Subnet 1 ID
     Value: !Ref PublicSubnet1
@@ -282,14 +282,14 @@ Outputs:
     Export:
       Name: !Sub '${Environment}-PublicSubnet2Id'
 
-  # 公共子网列表（逗号分隔）- 方便 ALB 等使用
+  # Public subnet list (comma-separated) - Convenient for ALB etc.
   PublicSubnetIds:
     Description: Public Subnet IDs (comma-separated)
     Value: !Join [',', [!Ref PublicSubnet1, !Ref PublicSubnet2]]
     Export:
       Name: !Sub '${Environment}-PublicSubnetIds'
 
-  # Private Subnet IDs - RDS、EC2 等使用
+  # Private Subnet IDs - Used by RDS, EC2, etc.
   PrivateSubnet1Id:
     Description: Private Subnet 1 ID
     Value: !Ref PrivateSubnet1
@@ -302,7 +302,7 @@ Outputs:
     Export:
       Name: !Sub '${Environment}-PrivateSubnet2Id'
 
-  # 私有子网列表（逗号分隔）
+  # Private subnet list (comma-separated)
   PrivateSubnetIds:
     Description: Private Subnet IDs (comma-separated)
     Value: !Join [',', [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]

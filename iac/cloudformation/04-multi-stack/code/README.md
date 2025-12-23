@@ -7,6 +7,7 @@
 ```
 code/
 ├── network-stack.yaml       # 网络层模板 (VPC, Subnets)
+├── alb-stack.yaml           # ALB 层模板 (Step 8 三层架构练习)
 ├── app-stack.yaml           # 应用层模板 (Security Groups)
 └── nested-stacks/
     ├── parent.yaml          # 父栈模板
@@ -39,6 +40,41 @@ aws cloudformation create-stack \
 aws cloudformation delete-stack --stack-name dev-app-stack
 aws cloudformation wait stack-delete-complete --stack-name dev-app-stack
 aws cloudformation delete-stack --stack-name dev-network-stack
+```
+
+### 三层架构 (Step 8 练习)
+
+部署 Network → ALB → App 三层架构：
+
+```bash
+# 1. 部署网络层
+aws cloudformation create-stack \
+  --stack-name dev-network-stack \
+  --template-body file://network-stack.yaml \
+  --parameters ParameterKey=Environment,ParameterValue=dev
+aws cloudformation wait stack-create-complete --stack-name dev-network-stack
+
+# 2. 部署 ALB 层（引用网络层的 VpcId）
+aws cloudformation create-stack \
+  --stack-name dev-alb-stack \
+  --template-body file://alb-stack.yaml \
+  --parameters ParameterKey=Environment,ParameterValue=dev
+aws cloudformation wait stack-create-complete --stack-name dev-alb-stack
+
+# 3. 部署应用层（引用网络层和 ALB 层）
+aws cloudformation create-stack \
+  --stack-name dev-app-stack \
+  --template-body file://app-stack.yaml \
+  --parameters ParameterKey=Environment,ParameterValue=dev
+aws cloudformation wait stack-create-complete --stack-name dev-app-stack
+
+# 4. 清理（按反向顺序！）
+aws cloudformation delete-stack --stack-name dev-app-stack
+aws cloudformation wait stack-delete-complete --stack-name dev-app-stack
+aws cloudformation delete-stack --stack-name dev-alb-stack
+aws cloudformation wait stack-delete-complete --stack-name dev-alb-stack
+aws cloudformation delete-stack --stack-name dev-network-stack
+aws cloudformation wait stack-delete-complete --stack-name dev-network-stack
 ```
 
 ### Nested Stacks
