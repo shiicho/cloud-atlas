@@ -1,13 +1,13 @@
 # 00 - CloudFormation 基础与第一个 Stack
 
-> **目标**：10 分钟内创建你的第一个 CloudFormation Stack，体验 AWS 原生 IaC
-> **时间**：30 分钟
-> **费用**：S3 Bucket（免费层 - 5GB 存储 + 2万次 GET/月）
-> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
+> **目标**：10 分钟内创建你的第一个 CloudFormation Stack，体验 AWS 原生 IaC  
+> **时间**：30 分钟  
+> **费用**：S3 Bucket（免费层 - 5GB 存储 + 2万次 GET/月）  
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1  
 > **前置**：AWS 账号 + Console 访问权限
 
-> ⚠️ **费用提醒**：本课使用 S3 Bucket，属于 AWS Free Tier（免费层）。
-> 但请务必在课程结束后删除 Stack（Step 8），避免长期存储产生费用。
+> ⚠️ **费用提醒**：本课使用 S3 Bucket，属于 AWS Free Tier（免费层）。  
+> 但请务必在课程结束后删除 Stack（Step 8），避免长期存储产生费用。  
 > 养成"用完即删"的好习惯！
 
 ---
@@ -53,18 +53,21 @@ Resources:
 ### 1.2 通过 Console 创建 Stack
 
 1. 登录 AWS Console，搜索 **CloudFormation**
-2. 点击 **Create stack** → **With new resources (standard)**
+2. 点击 **创建堆栈** → **使用新资源(标准)**
+
+> **提示**：2024 年起，AWS 新增了 **Infrastructure Composer** 可视化设计工具。  
+> 本课使用传统上传方式，后续课程 [03 - 现代工具](../03-modern-tools/) 会介绍 Infrastructure Composer。
 
 <!-- SCREENSHOT: cloudformation-console-create-stack -->
 
-3. 选择 **Upload a template file**
-4. 点击 **Choose file**，上传你的 `first-stack.yaml`
-5. 点击 **Next**
+3. 选择 **上传模板文件**
+4. 点击 **上传模板文件**，上传你的 `first-stack.yaml`
+5. 点击 **下一步**
 
 <!-- SCREENSHOT: cloudformation-upload-template -->
 
-6. **Stack name**: 输入 `my-first-stack`
-7. 点击 **Next** → **Next** → **Submit**
+6. **堆栈名称**: 输入 `my-first-stack`
+7. 点击 **下一步** → **下一步** → **提交**
 
 <!-- SCREENSHOT: cloudformation-stack-name -->
 
@@ -78,9 +81,9 @@ CREATE_IN_PROGRESS  →  CREATE_COMPLETE
 
 <!-- SCREENSHOT: cloudformation-stack-events -->
 
-点击 **Events** 标签页，观察每个资源的创建状态：
+点击 **事件** 标签页，观察每个资源的创建状态：
 
-| Timestamp | Logical ID | Status | Status reason |
+| 时间戳 | 逻辑 ID | 状态 | 状态原因 |
 |-----------|------------|--------|---------------|
 | 12:00:01 | my-first-stack | CREATE_IN_PROGRESS | User Initiated |
 | 12:00:02 | MyFirstBucket | CREATE_IN_PROGRESS | - |
@@ -89,8 +92,8 @@ CREATE_IN_PROGRESS  →  CREATE_COMPLETE
 
 ### 1.4 验证资源已创建
 
-1. 在 CloudFormation Console，点击 **Resources** 标签页
-2. 找到 `MyFirstBucket`，点击 Physical ID 链接
+1. 在 CloudFormation Console，点击 **资源** 标签页
+2. 找到 `MyFirstBucket`，点击 物理 ID 链接
 3. 跳转到 S3 Console，确认 Bucket 存在
 
 <!-- SCREENSHOT: cloudformation-resources-tab -->
@@ -361,20 +364,23 @@ UPDATE_IN_PROGRESS  →  UPDATE_COMPLETE
 ### 5.1 删除 Stack
 
 1. 在 CloudFormation Console，选择 `my-first-stack`
-2. 点击 **Delete**
-3. 在确认对话框点击 **Delete**
+2. 点击 **删除**
+3. 在确认对话框点击 **删除**
 
 <!-- SCREENSHOT: cloudformation-delete-stack -->
 
 ### 5.2 观察删除过程
 
-在 **Events** 标签页，你会看到：
+在 **事件** 标签页，你会看到：
 
 ```
 DELETE_IN_PROGRESS  →  DELETE_COMPLETE
 ```
 
 CloudFormation 会自动删除 Stack 管理的所有资源（S3 Bucket）。
+
+> **注意**：S3 Bucket 必须为空才能被 CloudFormation 删除。  
+> 本练习的 Bucket 是空的，所以删除会成功。生产环境中需要先清空 Bucket 或配置 `DeletionPolicy`。
 
 ### 5.3 验证删除
 

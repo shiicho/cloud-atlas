@@ -1,9 +1,9 @@
 # 03 - 现代工具：Infrastructure Composer 与 IaC Generator
 
-> **目标**：掌握 2024-2025 年 CloudFormation 新工具，可视化设计与逆向工程
-> **时间**：45 分钟
-> **费用**：VPC + EC2 t3.micro（免费层）、ALB（约 $0.50/小时，请及时清理）
-> **区域**：ap-northeast-1（Tokyo）推荐，Infrastructure Composer 全球可用
+> **目标**：掌握 2024-2025 年 CloudFormation 新工具，可视化设计与逆向工程  
+> **时间**：45 分钟  
+> **费用**：VPC + EC2 t3.micro（免费层）、ALB（约 $0.50/小时，请及时清理）  
+> **区域**：ap-northeast-1（Tokyo）推荐，Infrastructure Composer 全球可用  
 > **前置**：完成 [02 - 安全运维](../02-safe-operations/)
 
 ---
@@ -131,8 +131,8 @@ Infrastructure Composer 集成了 AI 辅助功能：
 
 <!-- SCREENSHOT: infrastructure-composer-ai-assistant -->
 
-> **注意**：AI 辅助功能在 Console 版 Infrastructure Composer 中可用。
-> VS Code 版本通过 AWS Toolkit 扩展使用，功能可能有所不同。
+> **注意**：AI 辅助功能在 Console 版 Infrastructure Composer 中可用。  
+> VS Code 版本通过 AWS Toolkit 扩展使用，功能可能有所不同。  
 > 部分功能需要在 us-east-1 区域使用，且需要账户启用 Amazon Q。
 
 ---
@@ -160,8 +160,11 @@ Infrastructure Composer 集成了 AI 辅助功能：
 
 ### 3.2 扫描账户资源
 
-> **扫描限制**：每个账户每天最多 10 次扫描（小型账户）。
-> 大型账户可能有更高限制，具体请查看 AWS 文档。
+> **扫描限制**：  
+> - 资源数量 < 10,000 的账户：每天最多 **10 次**扫描  
+> - 资源数量 > 10,000 的账户：每天最多 **1 次**扫描  
+> - 扫描结果 30 天后过期  
+> - **2025 年 3 月新功能**：支持 Targeted Scan（定向扫描），可指定只扫描特定资源类型
 
 1. 在 CloudFormation Console，点击 **IaC Generator**
 2. 点击 **Start new scan**
@@ -259,14 +262,17 @@ Infrastructure Composer 集成了 AI 辅助功能：
 
 **对比表**：
 
-| 维度 | IaC Generator | Terraform Import |
-|------|---------------|------------------|
+| 维度 | IaC Generator | Terraform Import (1.5+) |
+|------|---------------|-------------------------|
 | **发现资源** | 自动扫描账户 | 需要手动指定资源 ID |
-| **生成配置** | 自动生成完整模板 | 只导入状态，需手写配置 |
-| **批量操作** | 支持多选批量导入 | 每个资源一条命令 |
-| **GUI 支持** | Console 全程可视化 | 纯 CLI 操作 |
+| **生成配置** | 自动生成完整模板 | `-generate-config-out` 自动生成（1.5+新功能） |
+| **批量操作** | GUI 多选批量导入 | `import` block 支持 `for_each` 循环 |
+| **GUI 支持** | Console 全程可视化 | 纯 CLI（IDE 插件可视化） |
+| **声明式导入** | N/A | `import` block 声明式定义（1.5+新功能） |
+| **预览** | GUI 预览 | `terraform plan` 预览导入效果 |
 | **多云** | 仅 AWS | 支持多云 |
 
+> **注意**：Terraform 1.5（2023 年 6 月）引入了 config-driven import，大幅提升了导入自动化程度。  
 > 参考 [Terraform 系列](../../terraform/) 了解 `terraform import` 的详细用法。
 
 ---
@@ -477,7 +483,7 @@ repos:
         files: .*\.ya?ml$
 ```
 
-> **版本注意**：cfn-lint 1.x 版本于 2024 年发布，包含重大更新。
+> **版本注意**：cfn-lint 1.x 版本于 2024 年发布，包含重大更新。  
 > 使用 `cfn-lint --version` 确认版本。
 
 **CI/CD Pipeline**：
@@ -667,7 +673,7 @@ Infrastructure Composer 项目本身不产生费用，但建议：
 1. 删除不需要的项目
 2. 或者保留用于后续学习
 
-> **验证清理**：在 CloudFormation Console 确认没有遗留的 Stack。
+> **验证清理**：在 CloudFormation Console 确认没有遗留的 Stack。  
 > 如果使用 VPC，也检查 VPC Console 确认资源已删除。
 
 ---

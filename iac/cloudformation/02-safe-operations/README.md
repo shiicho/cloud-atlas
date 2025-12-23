@@ -1,9 +1,9 @@
 # 02 - 安全运维：ChangeSets 与回滚策略
 
-> **目标**：掌握 CloudFormation 安全更新的核心技能，这是日本企业生产环境的必备要求
-> **时间**：45 分钟
-> **费用**：S3 Bucket（免费层 - 5GB 存储 + 2万次 GET/月）
-> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
+> **目标**：掌握 CloudFormation 安全更新的核心技能，这是日本企业生产环境的必备要求  
+> **时间**：45 分钟  
+> **费用**：S3 Bucket（免费层 - 5GB 存储 + 2万次 GET/月）  
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1  
 > **前置**：已完成 [00 - 基础](../00-fundamentals/) 和 [01 - 模板语法](../01-template-syntax/)
 
 ---
@@ -281,6 +281,7 @@ UPDATE_IN_PROGRESS -> UPDATE_COMPLETE
 │   └─────────────┘   - AWS::Redshift::Cluster                           │
 │                     - AWS::DocDB::DBCluster                             │
 │                     - AWS::ElastiCache::ReplicationGroup                │
+│                     - AWS::ElastiCache::CacheCluster                    │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -359,10 +360,12 @@ ImportantBucket   -> 仍然存在！
 |------|----------------|---------------------|
 | Delete | Stack 删除时删除资源 | Replace 时删除旧资源 |
 | Retain | Stack 删除时保留资源 | Replace 时保留旧资源 |
-| RetainExceptOnCreate | 创建成功时保留，创建失败时删除（推荐） | 同 Retain |
+| RetainExceptOnCreate | 创建成功时保留，创建失败时删除（推荐） | **不支持** |
 | Snapshot | Stack 删除时创建快照 | Replace 时创建快照 |
 
-> **推荐**：对于重要资源，使用 `RetainExceptOnCreate` 而非 `Retain`。
+> **注意**：`RetainExceptOnCreate` 只能用于 `DeletionPolicy`，不能用于 `UpdateReplacePolicy`。
+
+> **推荐**：对于重要资源，使用 `RetainExceptOnCreate` 而非 `Retain`。  
 > 这样在创建失败时资源会被清理，避免残留孤立资源。
 
 ---

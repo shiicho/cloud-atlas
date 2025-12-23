@@ -1,6 +1,6 @@
 # CloudFormation AWS 原生基础设施即代码
 
-> **AWS-native Infrastructure as Code**
+> **AWS-native Infrastructure as Code**  
 > 从零开始系统学习 CloudFormation，覆盖从基础语法到企业级运维实践
 
 ---

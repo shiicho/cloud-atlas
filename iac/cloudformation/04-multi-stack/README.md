@@ -1,9 +1,9 @@
 # 04 - 多栈架构与跨栈引用
 
-> **目标**：掌握 CloudFormation 多栈架构设计，实现模块化和跨栈通信
-> **时间**：50 分钟
-> **费用**：VPC + Subnets（免费层）
-> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
+> **目标**：掌握 CloudFormation 多栈架构设计，实现模块化和跨栈通信  
+> **时间**：50 分钟  
+> **费用**：VPC + Subnets（免费层）  
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1  
 > **前置**：[03 - 现代工具](../03-modern-tools/)
 
 ---
@@ -89,7 +89,14 @@ Outputs:
       Name: !Sub '${Environment}-PublicSubnet2Id'
 ```
 
-> 你也可以直接使用课程代码：`code/network-stack.yaml`
+> 你也可以直接使用课程代码：`code/network-stack.yaml`  
+>
+> **注意**：上面的内联代码是**简化版**（仅 VPC + 2 个 Public Subnet）。  
+> `code/network-stack.yaml` 是**完整版**，包含 Private Subnet、NAT Gateway（可选）、更多 Exports。  
+> 学习时使用简化版即可。完整版适合生产环境参考。
+
+> **费用警告**：完整版的 `EnableNatGateway` 参数如果设为 `true`，会创建 NAT Gateway。  
+> NAT Gateway 费用约 **$45/月** + 数据传输费。学习环境请保持 `false`（默认值）！
 
 ### 1.2 部署 Network Stack
 
@@ -499,13 +506,13 @@ Properties:
 | **更新传播** | 更新父栈会检查所有子栈 |
 | **删除顺序** | 删除父栈会自动删除所有子栈 |
 
-> **S3 Bucket 准备**：在使用 Nested Stacks 前，需要先创建 S3 Bucket 存储子模板：
-> ```bash
-> # 创建存储模板的 S3 Bucket
-> aws s3 mb s3://cfn-templates-${AWS_ACCOUNT_ID}-${AWS_REGION}
+> **S3 Bucket 准备**：在使用 Nested Stacks 前，需要先创建 S3 Bucket 存储子模板：  
+> ```bash  
+> # 创建存储模板的 S3 Bucket  
+> aws s3 mb s3://cfn-templates-${AWS_ACCOUNT_ID}-${AWS_REGION}  
 >
-> # 上传子模板
-> aws s3 cp nested-stacks/child-vpc.yaml s3://cfn-templates-xxx/
+> # 上传子模板  
+> aws s3 cp nested-stacks/child-vpc.yaml s3://cfn-templates-xxx/  
 > ```
 
 ---
@@ -569,7 +576,7 @@ Properties:
 └── 04-application-stack   ← 应用团队管理、頻繁更新
 ```
 
-> 日本的运维现场，这种分层叫做「レイヤー分離」。
+> 日本的运维现场，这种分层叫做「レイヤー分離」。  
 > 每个层有不同的変更管理流程和承認者。
 
 ---

@@ -1,9 +1,9 @@
 # 06 - 企业实战与日本 IT 运维
 
-> **目标**：掌握 CloudFormation 企业级运维能力，理解日本 IT 职场的变更管理流程
-> **时间**：90 分钟
-> **费用**：$0.50-1.00（CloudTrail、Config、CloudWatch）
-> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
+> **目标**：掌握 CloudFormation 企业级运维能力，理解日本 IT 职场的变更管理流程  
+> **时间**：90 分钟  
+> **费用**：$0.50-1.00（CloudTrail、Config、CloudWatch）  
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1  
 > **前置**：完成 [05 - Drift 检测与资源导入](../05-drift-import/)
 
 ---
@@ -202,8 +202,8 @@ Resources:
 
 ### 3.1 StackSets：多账户/多区域部署
 
-> **范围说明**：StackSets 需要多个 AWS 账户或 Organizations 环境，本课仅讲解概念。
-> 实践 StackSets 需要：至少 2 个 AWS 账户，或配置好的 AWS Organizations。
+> **范围说明**：StackSets 需要多个 AWS 账户或 Organizations 环境，本课仅讲解概念。  
+> 实践 StackSets 需要：至少 2 个 AWS 账户，或配置好的 AWS Organizations。  
 > 如果你只有单账户，可跳过实践，理解概念即可。
 
 在大型企业，通常有多个 AWS 账户（开发、测试、生产、安全审计等）。StackSets 允许你用一个模板部署到多个账户/区域。
@@ -271,9 +271,9 @@ cfn-guard 是 AWS 开源工具，在部署前检查模板是否符合组织策�
 
 ```bash
 # Linux / macOS（推荐方式 - 官方安装脚本）
-curl -fsSL https://raw.githubusercontent.com/aws-cloudformation/cloudformation-guard/main/install-guard.sh | sh
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/aws-cloudformation/cloudformation-guard/main/install-guard.sh | sh
 export PATH=~/.guard/bin:$PATH
-cfn-guard --version  # 应显示 v3.x.x
+cfn-guard --version  # 应显示 cfn-guard 3.1.2（或更新版本）
 
 # macOS 备选方案（Homebrew）
 brew install cloudformation-guard
@@ -325,9 +325,14 @@ Hooks 在 Stack/ChangeSet 级别进行验证，比 cfn-guard 更强大但配置�
 | 支持资源 | CloudFormation 模板 | CloudFormation + 第三方 |
 | 复杂度 | 低 | 中-高 |
 
+> **2025 更新**：CloudFormation Hooks 现在支持 **Managed Proactive Controls**，  
+> 可直接使用 AWS Control Tower Controls Catalog 中的预定义控制，  
+> 无需编写自定义 Hook 逻辑。详见 [AWS CloudFormation Hooks 文档](https://docs.aws.amazon.com/cloudformation-cli/latest/hooks-userguide/what-is-cloudformation-hooks.html)
+
 **推荐方案**：
 1. CI/CD 阶段使用 cfn-guard（快速反馈）
 2. 生产账户配置 Hooks（最后防线）
+3. **新增**：使用 Managed Proactive Controls 快速启用 AWS 最佳实践控制
 
 ---
 
@@ -473,8 +478,8 @@ aws cloudtrail lookup-events \
 
 1. 修改 `monitoring-alarms.yaml`，添加磁盘监控：
 
-> **前提条件**：磁盘监控需要安装 CloudWatch Agent。
-> EC2 默认只提供 CPU、Network 等基础指标，磁盘和内存需要 CWAgent 采集。
+> **前提条件**：磁盘监控需要安装 CloudWatch Agent。  
+> EC2 默认只提供 CPU、Network 等基础指标，磁盘和内存需要 CWAgent 采集。  
 > 如果未安装 CWAgent，此告警会一直显示 `INSUFFICIENT_DATA`。
 
 ```yaml

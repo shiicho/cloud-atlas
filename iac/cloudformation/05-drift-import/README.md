@@ -1,9 +1,9 @@
 # 05 - Drift 检测与资源导入
 
-> **目标**：理解配置漂移（Drift），掌握检测和修复方法，学会将现有资源导入 CloudFormation 管理
-> **时间**：45-50 分钟
-> **费用**：EC2 t3.micro（免费层 - 新账户前 12 个月 750 小时/月）+ S3（免费层）
-> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
+> **目标**：理解配置漂移（Drift），掌握检测和修复方法，学会将现有资源导入 CloudFormation 管理  
+> **时间**：45-50 分钟  
+> **费用**：EC2 t3.micro（免费层 - 新账户前 12 个月 750 小时/月）+ S3（免费层）  
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1  
 > **前置**：已完成 [04 - 多栈架构与跨栈引用](../04-multi-stack/)
 
 ---
@@ -255,6 +255,50 @@ Resources:
 
 </details>
 
+### 3.6 Drift-Aware Change Sets（2025 新功能）
+
+> **2025 年 11 月发布**：创建 ChangeSet 时自动检测 Drift，避免覆盖手动修改。
+
+**传统问题**：
+
+```
+1. 开发者手动修改了 EC2 的 Security Group（紧急修复）
+2. 运维执行 Update Stack（按原模板）
+3. 手动修改被覆盖！紧急修复失效！
+```
+
+**Drift-Aware Change Sets 解决方案**：
+
+创建 ChangeSet 时，CloudFormation 会：
+1. 自动运行 Drift Detection
+2. 如果检测到 Drift，在 ChangeSet 中显示警告
+3. 你可以选择：接受覆盖、更新模板接受修改、或取消操作
+
+**Console 使用**：
+
+1. Update Stack → Create ChangeSet
+2. 如果资源有 Drift，会显示 **"Drift detected"** 警告
+3. 点击详情查看具体的 Drift 差异
+4. 决定是否继续执行
+
+**CLI 使用**：
+
+```bash
+# 创建 ChangeSet 时会自动包含 Drift 信息
+aws cloudformation create-change-set \
+  --stack-name my-stack \
+  --change-set-name update-with-drift-check \
+  --template-body file://template.yaml
+
+# 查看 ChangeSet 详情，包含 Drift 状态
+aws cloudformation describe-change-set \
+  --stack-name my-stack \
+  --change-set-name update-with-drift-check \
+  --include-property-values
+```
+
+> **推荐**：在生产环境 Update 前，始终使用 ChangeSet 并检查 Drift 状态。
+
 ---
 
 ## Step 4 - 资源导入（Import）基础（15 分钟）
@@ -426,47 +470,61 @@ Import          ImportedBucket  my-legacy-bucket-123456789012  AWS::S3::Bucket
 
 ### 5.3 基本操作（Console）
 
-1. 选择源 Stack
-2. 点击 **Stack actions** → **Refactor stack**
-3. 选择要移动的资源
-4. 指定目标 Stack
-5. 确认移动
+Stack Refactoring 通过 **ChangeSet** 工作流实现：
+
+1. 准备两个模板：源 Stack 模板（移除资源定义）和目标 Stack 模板（添加资源定义）
+2. 选择目标 Stack，点击 **Stack actions** → **Create change set for current stack**
+3. 上传更新后的目标模板，选择 **Import existing resources**
+4. 在资源映射页面，指定要移动的资源的物理 ID
+5. 预览 ChangeSet，确认后执行
+6. 同样方式更新源 Stack（移除资源定义）
 
 <!-- SCREENSHOT: cfn-stack-refactoring -->
 
-> **注意**：Stack Refactoring 是 2025 年新功能，Console 界面可能会更新。
+> **注意**：Stack Refactoring 是 2025 年新功能。  
+> - **限制**：不能跨 Account 或跨 Region 移动资源  
+> - **前提**：目标 Stack 必须已存在  
+> - **推荐**：复杂场景使用 CLI/SDK 或 Infrastructure as Code Generator  
 > 请参考最新 AWS 文档：https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stack-refactoring.html
 
 ### 5.4 CLI 操作（高级）
 
-使用 AWS CLI 进行 Stack Refactoring：
+使用 AWS CLI 将资源移动到另一个 Stack：
 
 ```bash
-# Step 1: 创建 Refactoring 计划
-aws cloudformation create-stack-refactor \
-  --stack-name source-stack \
-  --resource-mappings '[
+# Step 1: 在目标 Stack 创建 Import ChangeSet
+# 首先准备好包含新资源定义的模板文件 target-template.yaml
+
+aws cloudformation create-change-set \
+  --stack-name target-stack \
+  --change-set-name import-from-source \
+  --change-set-type IMPORT \
+  --template-body file://target-template.yaml \
+  --resources-to-import '[
     {
-      "Source": {
-        "LogicalResourceId": "MyBucket"
-      },
-      "Destination": {
-        "LogicalResourceId": "MovedBucket",
-        "StackName": "target-stack"
+      "ResourceType": "AWS::S3::Bucket",
+      "LogicalResourceId": "MovedBucket",
+      "ResourceIdentifier": {
+        "BucketName": "my-bucket-name"
       }
     }
   ]'
 
-# 返回 RefactorId，保存这个 ID
-# 例如: "RefactorId": "refactor-abc123"
+# Step 2: 预览 ChangeSet
+aws cloudformation describe-change-set \
+  --stack-name target-stack \
+  --change-set-name import-from-source
 
-# Step 2: 执行 Refactoring
-aws cloudformation execute-stack-refactor \
-  --stack-refactor-id refactor-abc123
+# Step 3: 执行 ChangeSet
+aws cloudformation execute-change-set \
+  --stack-name target-stack \
+  --change-set-name import-from-source
 
-# Step 3: 查看 Refactoring 状态
-aws cloudformation describe-stack-refactor \
-  --stack-refactor-id refactor-abc123
+# Step 4: 更新源 Stack，移除资源定义
+# 准备移除了该资源的源模板 source-template-updated.yaml
+aws cloudformation update-stack \
+  --stack-name source-stack \
+  --template-body file://source-template-updated.yaml
 ```
 
 > **注意**：CLI 操作适合 CI/CD 集成。日常使用推荐 Console 操作更直观。
@@ -658,7 +716,7 @@ Drift = (模板定义 != AWS 实际状态)
 
 **典型场景**：
 
-> 「夜間障害で Console から緊急変更 → 翌朝 Drift 検出 → 変更管理票で追認」
+> 「夜間障害で Console から緊急変更 → 翌朝 Drift 検出 → 変更管理票で追認」  
 >
 > （夜间故障紧急在 Console 修改 → 第二天早上检测到 Drift → 通过变更管理单追认）
 

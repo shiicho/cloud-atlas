@@ -124,8 +124,6 @@ Resources:
           Value: learning
         - Key: Purpose
           Value: CloudFormation 课程练习
-        - Key: ManagedBy
-          Value: CloudFormation
 
 # -----------------------------------------------------------------------------
 # Outputs - 输出值（可选）

@@ -1,9 +1,9 @@
 # 01 - 模板语法与内置函数
 
-> **目标**：掌握 CloudFormation 模板完整结构，使用内置函数创建可复用模板
-> **时间**：45 分钟
-> **费用**：EC2 t3.micro（免费层 - 新账户前 12 个月 750 小时/月）
-> **区域**：ap-northeast-1（Tokyo）推荐 - 本课 AMI 映射支持 Tokyo/Osaka/Virginia/Oregon
+> **目标**：掌握 CloudFormation 模板完整结构，使用内置函数创建可复用模板  
+> **时间**：45 分钟  
+> **费用**：EC2 t3.micro（免费层 - 新账户前 12 个月 750 小时/月）  
+> **区域**：ap-northeast-1（Tokyo）推荐 - 本课 AMI 映射支持 Tokyo/Osaka/Virginia/Oregon  
 > **前置**：已完成 [00 - CloudFormation 基础](../00-fundamentals/) + 默认 VPC + EC2 Key Pair
 
 ---
@@ -22,9 +22,9 @@
 
 > 先"尝到"一个完整模板的味道，再理解每个部分的作用。
 
-> ⚠️ **前置要求**：
-> - 需要**默认 VPC**（新账户自动创建，如果删除过需要重建）
-> - 需要**EC2 Key Pair**（在 EC2 Console → Key Pairs 创建）
+> ⚠️ **前置要求**：  
+> - 需要**默认 VPC**（新账户自动创建，如果删除过需要重建）  
+> - 需要**EC2 Key Pair**（在 EC2 Console → Key Pairs 创建）  
 > - 本课 AMI 映射仅支持 Tokyo/Osaka/Virginia/Oregon 四个区域
 
 ### 1.1 准备多环境 EC2 模板
@@ -58,12 +58,16 @@ Parameters:
 # ============================================================
 Mappings:
   RegionAMI:
+    # ⚠️ AMI ID 会随时间更新！建议使用 SSM Parameter（见 Step 3.2）
+    # 获取最新 AMI ID: aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --region <region>
     ap-northeast-1:
       AmazonLinux2023: ami-0d52744d6551d851e
     ap-northeast-3:
       AmazonLinux2023: ami-0599b6e53ca798bb2
     us-east-1:
       AmazonLinux2023: ami-0c02fb55956c7d316
+    us-west-2:
+      AmazonLinux2023: ami-0b8c6b923777519db
 
   EnvironmentConfig:
     dev:
@@ -523,6 +527,9 @@ CloudFormation 提供一些**内置参数**，无需定义即可使用：
 | `AWS::StackName` | Stack 名称 | `my-stack` |
 | `AWS::StackId` | Stack ARN | `arn:aws:cloudformation:...` |
 | `AWS::NoValue` | 删除属性 | 用于条件删除 |
+| `AWS::Partition` | 分区 | `aws`（或 `aws-cn`、`aws-us-gov`） |
+| `AWS::URLSuffix` | URL 后缀 | `amazonaws.com`（或 `amazonaws.com.cn`） |
+| `AWS::NotificationARNs` | Stack 的 SNS 通知 ARN 列表 | `["arn:aws:sns:..."]` |
 
 **常见用法**：
 
