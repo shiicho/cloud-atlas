@@ -188,16 +188,25 @@ terraform version -json | jq '.provider_selections'
 
 ```json
 {
-  "registry.terraform.io/hashicorp/aws": "5.82.2"
+  "registry.terraform.io/hashicorp/aws": "5.100.0",
+  "registry.terraform.io/hashicorp/random": "3.7.2"
 }
 ```
 
 ### 4.2 查看可用版本
 
 ```bash
-# 使用 Terraform Registry 查看
+# 使用 Terraform Registry 查看最新 5 个版本
 curl -s "https://registry.terraform.io/v1/providers/hashicorp/aws/versions" | \
-  jq '.versions[-5:][].version'
+  jq '[.versions[].version | select(startswith("5."))] | sort_by(split(".") | map(tonumber)) | .[-5:][]'
+```
+
+```
+"5.96.0"
+"5.97.0"
+"5.98.0"
+"5.99.0"
+"5.100.0"
 ```
 
 ### 4.3 升级 Provider
@@ -208,10 +217,13 @@ terraform init -upgrade
 ```
 
 ```
-Upgrading provider plugin registry.terraform.io/hashicorp/aws...
+Initializing provider plugins...
 - Finding hashicorp/aws versions matching "~> 5.0"...
-- Installing hashicorp/aws v5.83.0...
+- Installing hashicorp/aws v5.100.0...
+- Installed hashicorp/aws v5.100.0 (signed by HashiCorp)
 ```
+
+> **提示**：如果已是最新版本，会显示 `Using previously-installed`
 
 ### 4.4 验证无破坏性变更
 
@@ -237,15 +249,15 @@ git diff .terraform.lock.hcl
 ```
 
 ```diff
-- version     = "5.82.2"
-+ version     = "5.83.0"
+- version     = "5.99.0"
++ version     = "5.100.0"
 ```
 
 **提交锁文件更新**：
 
 ```bash
 git add .terraform.lock.hcl
-git commit -m "chore: upgrade aws provider to 5.83.0"
+git commit -m "chore: upgrade aws provider to 5.100.0"
 ```
 
 ---

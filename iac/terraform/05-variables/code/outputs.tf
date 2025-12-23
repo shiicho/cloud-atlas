@@ -70,6 +70,7 @@ output "lifecycle_days" {
 output "db_password_set" {
   description = "数据库密码是否已设置"
   value       = var.db_password != "" ? "Yes (hidden)" : "No"
+  sensitive   = true  # Required when referencing sensitive variables
 }
 
 # 如果需要输出敏感值，必须标记 sensitive
