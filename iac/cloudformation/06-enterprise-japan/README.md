@@ -3,6 +3,7 @@
 > **目标**：掌握 CloudFormation 企业级运维能力，理解日本 IT 职场的变更管理流程
 > **时间**：90 分钟
 > **费用**：$0.50-1.00（CloudTrail、Config、CloudWatch）
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
 > **前置**：完成 [05 - Drift 检测与资源导入](../05-drift-import/)
 
 ---
@@ -201,6 +202,10 @@ Resources:
 
 ### 3.1 StackSets：多账户/多区域部署
 
+> **范围说明**：StackSets 需要多个 AWS 账户或 Organizations 环境，本课仅讲解概念。
+> 实践 StackSets 需要：至少 2 个 AWS 账户，或配置好的 AWS Organizations。
+> 如果你只有单账户，可跳过实践，理解概念即可。
+
 在大型企业，通常有多个 AWS 账户（开发、测试、生产、安全审计等）。StackSets 允许你用一个模板部署到多个账户/区域。
 
 ![StackSets Architecture](images/stacksets-architecture.png)
@@ -262,16 +267,27 @@ Resources:
 
 cfn-guard 是 AWS 开源工具，在部署前检查模板是否符合组织策略。
 
-**安装**：
+**安装 cfn-guard v3.x**：
 
 ```bash
-# macOS
+# Linux / macOS（推荐方式 - 官方安装脚本）
+curl -fsSL https://raw.githubusercontent.com/aws-cloudformation/cloudformation-guard/main/install-guard.sh | sh
+export PATH=~/.guard/bin:$PATH
+cfn-guard --version  # 应显示 v3.x.x
+
+# macOS 备选方案（Homebrew）
 brew install cloudformation-guard
 
-# Linux
-curl -L https://github.com/aws-cloudformation/cloudformation-guard/releases/latest/download/cfn-guard-v3-ubuntu-latest.tar.gz | tar xz
-sudo mv cfn-guard /usr/local/bin/
+# Windows（两种方式）
+# 方式 A：从 GitHub Releases 下载
+#   https://github.com/aws-cloudformation/cloudformation-guard/releases
+#   下载 cfn-guard-v3-windows-latest.zip，解压后添加到 PATH
+
+# 方式 B：使用 WSL（推荐）
+#   在 WSL 中使用上面的 Linux 命令安装
 ```
+
+> **版本说明**：cfn-guard v3.x 改进了规则语法和错误信息。本课使用 v3 语法。
 
 **示例规则**（`cfn-guard-rules/s3-encryption.guard`）：
 
@@ -457,13 +473,17 @@ aws cloudtrail lookup-events \
 
 1. 修改 `monitoring-alarms.yaml`，添加磁盘监控：
 
+> **前提条件**：磁盘监控需要安装 CloudWatch Agent。
+> EC2 默认只提供 CPU、Network 等基础指标，磁盘和内存需要 CWAgent 采集。
+> 如果未安装 CWAgent，此告警会一直显示 `INSUFFICIENT_DATA`。
+
 ```yaml
   DiskSpaceAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: "ディスク使用率超過 - 容量確認必要"
       MetricName: DiskSpaceUtilization
-      Namespace: CWAgent
+      Namespace: CWAgent  # 需要 CloudWatch Agent
       Statistic: Average
       Period: 300
       EvaluationPeriods: 2
@@ -607,7 +627,32 @@ aws cloudformation list-stacks \
   --query "StackSummaries[?contains(StackName, 'enterprise')]"
 ```
 
-### 7.3 手动检查
+### 7.3 清理 S3 Bucket（重要！）
+
+审计 Stack 中的 S3 Bucket 使用了 `DeletionPolicy: Retain`，不会自动删除。
+
+**必须手动清理**，否则会持续产生存储费用：
+
+```bash
+# 1. 查找审计日志桶
+aws s3 ls | grep enterprise-audit
+
+# 2. 清空桶内容（必须先清空才能删除）
+# 注意：会删除所有审计日志，生产环境请谨慎！
+aws s3 rm s3://your-audit-bucket-name --recursive
+
+# 3. 删除桶
+aws s3 rb s3://your-audit-bucket-name
+```
+
+**或在 Console**：
+
+1. 进入 S3 Console
+2. 找到 `enterprise-audit-` 开头的 Bucket
+3. 点击 **Empty** 清空内容
+4. 点击 **Delete** 删除 Bucket
+
+### 7.4 验证清理
 
 确保以下资源已删除：
 
@@ -615,7 +660,7 @@ aws cloudformation list-stacks \
 - [ ] SNS Topics
 - [ ] CloudTrail Trails
 - [ ] Config Rules
-- [ ] S3 Buckets（日志桶可能需要先清空）
+- [ ] S3 Buckets（按上述步骤手动删除）
 
 ---
 

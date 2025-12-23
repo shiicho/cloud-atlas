@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # 01-setup-facts.sh - Gathering system facts
 
 echo "=== Get all facts from a host ==="

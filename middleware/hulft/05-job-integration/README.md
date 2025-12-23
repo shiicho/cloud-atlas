@@ -1,9 +1,19 @@
 # 05 · 作业连携与错误处理（JP1 联动 + 日志分析）
 
-> **目标**：掌握 HULFT 与作业调度器集成及故障排查  
-> **前置**：[04 · 集信/配信实战](../04-operations/)  
-> **适用**：日本 SIer/银行 IT 岗位面试准备  
+> **目标**：掌握 HULFT 与作业调度器集成及故障排查
+> **前置**：[04 · 集信/配信实战](../04-operations/)
+> **适用**：日本 SIer/银行 IT 岗位面试准备
 > **时长**：约 90 分钟
+> **费用**：使用 Lesson 02 部署的环境；完成后请参考 [02 · 安装配置](../02-installation/) 清理资源
+
+---
+
+> **版本说明**：
+> - 本教程基于 **HULFT8**
+> - **HULFT10** 已于 2024年12月发布
+> - HULFT8 标准支持结束：2030年6月
+> - JP1 示例基于 **V13.x**（V9 支持至 2026年3月）
+> - 新项目建议评估 HULFT10
 
 ## 为什么 JP1 集成重要？
 
@@ -11,7 +21,7 @@
 在日本银行/企业 IT 环境中：
 
 • JP1 AJS (Automatic Job Scheduler) 是主流作业调度器
-• 90%+ 的日本银行使用 JP1
+• 日本银行/大型企业广泛使用 JP1（日立制作所产品）
 • HULFT 传输通常由 JP1 触发和监控
 • 面试必考：「JP1とHULFTの連携経験はありますか？」
 ```
@@ -78,6 +88,9 @@ JP1 AJS (Automatic Job Scheduler)
 ```
 
 ### JP1 作业定义示例
+
+> **注意**：以下为**概念示例**（伪代码格式），展示 JP1 配置的逻辑结构。
+> 实际 JP1 配置通过 **JP1/AJS3 - View** GUI 或专用定义文件完成，语法与此不同。
 
 ```
 # JP1 Jobnet 定义（概念示例）
@@ -538,6 +551,10 @@ INCOMING_DIR=/data/incoming
 PROCESSED_DIR=/data/processed
 CHECKSUM_DB=/data/.checksums
 
+# 确保目录和文件存在
+mkdir -p "$INCOMING_DIR" "$PROCESSED_DIR"
+touch "$CHECKSUM_DB"
+
 process_file() {
     local FILE=$1
     local CHECKSUM=$(md5sum "$FILE" | awk '{print $1}')
@@ -623,9 +640,16 @@ Jobnet: SETTLEMENT_PROCESS
 
 ### 目录结构
 
+> **参考脚本**：本课程提供可复用的脚本模板，位于
+> `cloud-atlas/middleware/hulft/05-job-integration/scripts/` 目录：
+> - `common.sh` - 日志和通用函数
+> - `load_to_db.sh` - 数据库加载 stub
+> - `notify_ops.sh` - 通知脚本模板
+
 ```bash
 /opt/batch/daily_report/
 ├── scripts/
+│   ├── common.sh             # 通用函数（日志、检查）
 │   ├── hulft_receive.sh      # HULFT 接收 wrapper
 │   ├── convert_encoding.sh   # 编码转换
 │   ├── load_to_db.sh         # 数据库加载
@@ -649,6 +673,8 @@ TRANSFER_ID="DAILY_REPORT_RECEIVE"
 log "Starting HULFT receive: $TRANSFER_ID"
 
 # 执行接收（集信）
+# 注意：集信（Pull）操作也使用 flowsend 命令，传输方向由 Transfer Definition 决定
+# 官方文档中对应命令为 utlsend
 /opt/hulft8/bin/hulcmd -flowsend "$TRANSFER_ID"
 RC=$?
 

@@ -1,0 +1,21 @@
+---
+# host_vars/web-1.ans.local.yaml - 特定主机变量
+# 这些变量仅适用于 web-1.ans.local，优先级高于 group_vars
+
+# 该服务器的特殊配置
+server_role: primary
+is_primary: true
+
+# 覆盖组变量示例
+http_port: 8080  # 此服务器使用非标准端口
+
+# 特定于该服务器的应用配置
+app_instances: 4
+app_memory_limit: 512M
+
+# 自定义监控
+custom_metrics:
+  - name: active_connections
+    path: /status
+    interval: 30
+...

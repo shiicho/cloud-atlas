@@ -128,6 +128,8 @@ lifecycle {
 
 ## 4. CloudFormation → Terraform 心智转换
 
+> 如果你熟悉 CloudFormation，可参考 [CloudFormation 基础](../../cloudformation/00-fundamentals/) 了解更多对比。
+
 ### 语法对比
 
 | 概念 | CloudFormation (YAML) | Terraform (HCL) |

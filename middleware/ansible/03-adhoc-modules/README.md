@@ -1,8 +1,9 @@
 # 03 · Ad-hoc 命令与模块（Ad-hoc Commands & Modules）
 
-> **目标**：掌握 Ad-hoc 命令和核心模块  
-> **前置**：[02 · Inventory 管理](../02-inventory/)（需要已部署 Managed Nodes）  
+> **目标**：掌握 Ad-hoc 命令和核心模块
+> **前置**：[02 · Inventory 管理](../02-inventory/)（需要已部署 Managed Nodes）
 > **时间**：25 分钟
+> **版本**：ansible-core 2.17+，Python 3.10+
 
 ---
 
@@ -60,6 +61,11 @@ ansible <目标> -m <模块> -a "<参数>" [选项]
 | `-C` | 检查模式（不执行） | 预览变更 |
 | `-D` | Diff 模式 | 显示文件差异 |
 | `-v/-vv/-vvv` | 详细输出 | 调试时使用 |
+
+> 💡 **关于 FQCN（Fully Qualified Collection Name）**：
+> - Ad-hoc 命令可使用短名 (`-m ping`, `-m copy`)
+> - Playbook 中推荐使用 FQCN (`ansible.builtin.ping`, `ansible.builtin.copy`)
+> - 本课的 ad-hoc 示例使用短名，Playbook 课程会使用 FQCN
 
 ---
 

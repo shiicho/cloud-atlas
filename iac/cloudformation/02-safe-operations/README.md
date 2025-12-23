@@ -2,7 +2,8 @@
 
 > **目标**：掌握 CloudFormation 安全更新的核心技能，这是日本企业生产环境的必备要求
 > **时间**：45 分钟
-> **费用**：S3 Bucket（免费层）
+> **费用**：S3 Bucket（免费层 - 5GB 存储 + 2万次 GET/月）
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
 > **前置**：已完成 [00 - 基础](../00-fundamentals/) 和 [01 - 模板语法](../01-template-syntax/)
 
 ---
@@ -256,7 +257,7 @@ UPDATE_IN_PROGRESS -> UPDATE_COMPLETE
 │                        DeletionPolicy 选项                               │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
-│   Delete (默认)              Retain                   Snapshot          │
+│   Delete (默认)              Retain            RetainExceptOnCreate     │
 │   ┌─────────────┐          ┌─────────────┐          ┌─────────────┐    │
 │   │   Stack     │          │   Stack     │          │   Stack     │    │
 │   │   删除      │          │   删除      │          │   删除      │    │
@@ -264,22 +265,22 @@ UPDATE_IN_PROGRESS -> UPDATE_COMPLETE
 │          │                        │                        │           │
 │          ▼                        ▼                        ▼           │
 │   ┌─────────────┐          ┌─────────────┐          ┌─────────────┐    │
-│   │  资源也被   │          │  资源保留   │          │ 先创建快照  │    │
-│   │   删除！    │          │  不被删除   │          │ 再删除资源  │    │
-│   └─────────────┘          └─────────────┘          └──────┬──────┘    │
-│                                    │                        │           │
-│        危险！                      │                        ▼           │
-│   数据永久丢失              资源继续存在            ┌─────────────┐    │
-│                             需要手动管理            │  Snapshot   │    │
-│                                                     │   可恢复    │    │
-│                                                     └─────────────┘    │
+│   │  资源也被   │          │  资源保留   │          │ 创建成功时  │    │
+│   │   删除！    │          │  不被删除   │          │ 保留资源    │    │
+│   └─────────────┘          └─────────────┘          └─────────────┘    │
+│                                    │                 创建失败时删除     │
+│        危险！                      │                 (2023年7月新增)    │
+│   数据永久丢失              资源继续存在                                │
+│                             需要手动管理                                │
 │                                                                         │
-│   【支持 Snapshot 的资源】                                               │
-│   - AWS::RDS::DBInstance                                                │
-│   - AWS::RDS::DBCluster                                                 │
-│   - AWS::EC2::Volume                                                    │
-│   - AWS::Neptune::DBCluster                                             │
-│   - AWS::Redshift::Cluster                                              │
+│   Snapshot                                                              │
+│   ┌─────────────┐   【支持 Snapshot 的资源】                            │
+│   │ 先创建快照  │   - AWS::RDS::DBInstance / DBCluster                  │
+│   │ 再删除资源  │   - AWS::EC2::Volume                                  │
+│   │  可恢复    │   - AWS::Neptune::DBCluster                           │
+│   └─────────────┘   - AWS::Redshift::Cluster                           │
+│                     - AWS::DocDB::DBCluster                             │
+│                     - AWS::ElastiCache::ReplicationGroup                │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -358,7 +359,11 @@ ImportantBucket   -> 仍然存在！
 |------|----------------|---------------------|
 | Delete | Stack 删除时删除资源 | Replace 时删除旧资源 |
 | Retain | Stack 删除时保留资源 | Replace 时保留旧资源 |
+| RetainExceptOnCreate | 创建成功时保留，创建失败时删除（推荐） | 同 Retain |
 | Snapshot | Stack 删除时创建快照 | Replace 时创建快照 |
+
+> **推荐**：对于重要资源，使用 `RetainExceptOnCreate` 而非 `Retain`。
+> 这样在创建失败时资源会被清理，避免残留孤立资源。
 
 ---
 
@@ -707,12 +712,13 @@ A: 事前に変更内容を確認し、意図しない削除・置換を防ぐ�
 
 **Q: DeletionPolicy の種類は？**
 
-A: 三種類：
+A: 四種類：
 - Delete（デフォルト）：スタック削除時にリソースも削除
 - Retain：リソースを残す
-- Snapshot：RDS/EBS でスナップショット取得後削除
+- RetainExceptOnCreate（2023年新規）：作成成功時は残す、作成失敗時は削除（推奨）
+- Snapshot：RDS/EBS/DocDB/ElastiCache でスナップショット取得後削除
 
-（三种类型：Delete 默认删除资源，Retain 保留资源，Snapshot 先创建快照再删除。）
+（四种类型：Delete 默认删除资源，Retain 保留资源，RetainExceptOnCreate 创建成功时保留创建失败时删除（推荐），Snapshot 先创建快照再删除。）
 
 **Q: Update で Replacement が発生する場合、どう対応しますか？**
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # 02-file-module.sh - File module and idempotence
 
 echo "=== Create a file (first run = CHANGED) ==="

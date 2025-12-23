@@ -4,11 +4,11 @@
 
 # Community Roles
 roles:
-  # geerlingguy の高品質 Roles（例）
-  # - name: geerlingguy.docker
-  #   version: "6.1.0"
+  # geerlingguy の高品質 Roles（示例，取消注释以使用）
+  - name: geerlingguy.docker
+    version: ">=7.0.0"
   # - name: geerlingguy.nginx
-  #   version: "3.1.0"
+  #   version: ">=3.2.0"
 
   # Git リポジトリから
   # - src: https://github.com/your-org/ansible-role-custom.git
@@ -18,14 +18,14 @@ roles:
 
 # Ansible Collections
 collections:
-  # AWS Collection
+  # AWS Collection (需要 ansible-core 2.17+)
   - name: amazon.aws
-    version: ">=6.0.0"
+    version: ">=9.0.0"
 
-  # General utilities
+  # General utilities (10.x 需要 ansible-core 2.16+)
   - name: community.general
-    version: ">=7.0.0"
+    version: ">=10.0.0"
 
-  # POSIX modules (firewalld など)
+  # POSIX modules (firewalld 等)
   - name: ansible.posix
-    version: ">=1.5.0"
+    version: ">=2.0.0"

@@ -1,8 +1,9 @@
 # 02 · Agent 安装与主机管理（Agent & Host Management）
 
-> **目标**：配置 Zabbix Agent 2，在 Web UI 注册主机  
-> **前置**：[01 · Server 初始化](../01-server-setup/)  
-> **时间**：20-25 分钟  
+> **目标**：配置 Zabbix Agent 2，在 Web UI 注册主机
+> **前置**：[01 · Server 初始化](../01-server-setup/)
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈
+> **时间**：20-25 分钟
 > **实战项目**：配置 Active Agent，创建 Host Groups 和 Tags
 
 ## 将学到的内容
@@ -25,7 +26,15 @@ sudo -i
 
 # 确认 Agent2 已安装
 rpm -qa | grep zabbix-agent2
+# 预期输出：zabbix-agent2-7.0.x
 ```
+
+> ⚠️ **如果 Agent 2 未安装**（CloudFormation 应已安装，但如需手动安装）：
+> ```bash
+> rpm -Uvh https://repo.zabbix.com/zabbix/7.0/amazonlinux/2023/x86_64/zabbix-release-latest-7.0.amzn2023.noarch.rpm
+> dnf clean all
+> dnf install -y zabbix-agent2 zabbix-agent2-plugin-*
+> ```
 
 ### 1.1 编辑 Agent 配置
 
@@ -52,7 +61,7 @@ vim /etc/zabbix/zabbix_agent2.conf
 # Active mode: Agent 主动连接 Server（推荐）
 ServerActive=<ZabbixServerPrivateIP>
 
-# 主机名（必须与 Web UI 注册名一致！）
+# 主机名（⚠️ 必须与 Web UI 注册名完全一致！大小写敏感）
 Hostname=monitored-host-01
 
 # 或使用系统主机名
@@ -78,8 +87,9 @@ Timeout=10
 # 允许的 Server（Passive mode 用）
 # Server=<ZabbixServerPrivateIP>
 
-# 允许远程命令（谨慎启用）
-# EnableRemoteCommands=0
+# 允许远程命令（谨慎启用，Zabbix 7.0+ 使用 AllowKey/DenyKey）
+# AllowKey=system.run[*]
+# DenyKey=system.run[*]  # 默认禁用，更安全
 ```
 
 > 💡 **提示**：从 CloudFormation 输出获取 `ZabbixServerPrivateIP`
@@ -159,6 +169,9 @@ zabbix_agent2 -t system.hostname
 
 2. **Host 标签页**：
 
+   > ⚠️ **CRITICAL**：`Host name` 必须与 Agent 配置的 `Hostname` **完全一致**（大小写敏感，无空格）！
+   > 这是 Active Agent 无数据的 #1 原因。
+
    | 字段 | 值 | 说明 |
    |------|-----|------|
    | Host name | `monitored-host-01` | **必须与 Agent 配置一致！** |
@@ -176,7 +189,8 @@ zabbix_agent2 -t system.hostname
    | Connect to | IP |
    | Port | 10050 |
 
-   > 💡 即使使用 Active 模式，也需要配置 Interface（用于识别主机）
+   > 💡 **Active 模式说明**：即使使用 Active 模式，也需要配置 Interface。
+   > 此时 Server 不会主动连接 Agent 的 10050 端口，但 Interface 用于主机识别和 IP 匹配。
 
 4. **Tags 标签页**（添加标签便于筛选）：
 
@@ -212,6 +226,7 @@ zabbix_agent2 -t system.hostname
 | 图标 | 状态 | 说明 |
 |------|------|------|
 | 🟢 ZBX | 正常 | Agent 正常响应 |
+| 🟡 ZBX | 不可达 | 连接失败，状态过渡中 |
 | 🔴 ZBX | 异常 | Agent 无法连接 |
 | ⚪ ZBX | 未知 | 尚未检查或未配置 |
 | 🟢 SNMP | 正常 | SNMP 响应正常 |
@@ -289,7 +304,7 @@ HostMetadata=Linux WebServer Production
 2. 创建 Action，设置条件（如 HostMetadata 包含 "WebServer"）
 3. 设置操作：添加到 Host Group、链接 Template
 
-> 💡 本课仅介绍概念，后续课程将实际配置
+> 💡 **概念预习**：本课仅介绍 Auto-registration 概念，用于面试准备。实际配置为进阶内容，本系列不包含完整实操。
 
 ---
 
@@ -383,6 +398,13 @@ zabbix_get -s <AgentIP> -k agent.ping
 | Hostname | 必须与 Web UI 注册名一致 |
 | Host Groups | 权限控制和批量管理 |
 | Tags | 灵活筛选和路由 |
+
+---
+
+## 清理提醒
+
+> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。
+> 详见 → [00 · 清理资源](../00-architecture-lab/#清理资源)
 
 ---
 

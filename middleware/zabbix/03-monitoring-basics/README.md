@@ -1,8 +1,9 @@
 # 03 · 基础监控 + 死活检查（Monitoring Basics）
 
-> **目标**：应用监控模板，配置进程和服务死活检查  
-> **前置**：[02 · Agent 与主机管理](../02-agent-host/)  
-> **时间**：25-30 分钟  
+> **目标**：应用监控模板，配置进程和服务死活检查
+> **前置**：[02 · Agent 与主机管理](../02-agent-host/)
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈
+> **时间**：25-30 分钟
 > **实战项目**：配置 httpd 进程和 HTTP 服务死活监控
 
 ## 将学到的内容
@@ -32,7 +33,11 @@ Template（模板）是预定义的监控配置集合，包含：
 3. 切换到「Templates」标签页
 4. 点击「Link new templates」
 5. 搜索 `Linux by Zabbix agent`
-6. 选择「Linux by Zabbix agent」（不是 active 版本，因为基础模板通用）
+6. 选择「Linux by Zabbix agent」
+
+   > 💡 **模板说明**：此模板同时支持 Passive 和 Active Agent 模式，不需要选择 "active" 版本。
+   > 模板中的 Items 会根据主机的 Agent 配置自动适配。
+
 7. 点击「Update」
 
 ### 1.3 查看继承的监控项
@@ -97,6 +102,15 @@ Template（模板）是预定义的监控配置集合，包含：
 > 💡 **注意**：`httpd` 运行在 **Monitored Host**（被监控主机），用于演示进程和服务监控。
 > Zabbix Server 也使用 Apache（httpd）作为 Web 服务器，但本课监控的是 Monitored Host 上的 httpd 进程。
 
+**前置确认**：确保 Monitored Host 上 httpd 正在运行（CloudFormation 模板应已启动）：
+
+```bash
+# 在 Monitored Host 上检查
+systemctl status httpd
+# 如未运行：
+# sudo dnf install -y httpd && sudo systemctl enable --now httpd
+```
+
 1. 「Data collection」→「Hosts」→ 点击 `monitored-host-01`
 2. 切换到「Items」标签页
 3. 点击「Create item」
@@ -136,12 +150,15 @@ zabbix_agent2 -t 'proc.num[httpd]'
 
 检查 HTTP 端口是否响应：
 
+> ⚠️ **重要**：`net.tcp.service` 是 **Simple check** 类型，由 Zabbix Server 直接检测目标端口，不经过 Agent。
+> 这是常见错误点：如果选择 "Zabbix agent" 类型，Item 会显示 "Unsupported"。
+
 1. 在同一主机，「Items」→「Create item」
 
    | 字段 | 值 |
    |------|-----|
    | Name | `HTTP service status` |
-   | Type | `Zabbix agent` |
+   | Type | **`Simple check`** |
    | Key | `net.tcp.service[http,,80]` |
    | Type of information | `Numeric (unsigned)` |
    | Update interval | `1m` |
@@ -151,23 +168,30 @@ zabbix_agent2 -t 'proc.num[httpd]'
 
 ### 4.2 net.tcp.port - TCP 端口检查
 
-更简单的端口检查方式：
+更简单的端口检查方式（同样是 Simple check）：
 
 | 字段 | 值 |
 |------|-----|
 | Name | `Port 80 status` |
-| Type | `Zabbix agent` |
+| Type | **`Simple check`** |
 | Key | `net.tcp.port[,80]` |
 | Type of information | `Numeric (unsigned)` |
 
+> 💡 **Agent 本地端口检查**：如需从 Agent 侧检查本机端口监听状态，使用 `net.tcp.listen[80]`（Type: Zabbix agent）。
+
 ### 4.3 死活检查 Key 对比
 
-| Key | 用途 | 返回值 |
-|-----|------|--------|
-| `proc.num[name]` | 进程数量 | 进程数（0=未运行） |
-| `net.tcp.service[service,,port]` | 服务响应 | 1=正常, 0=异常 |
-| `net.tcp.port[,port]` | 端口监听 | 1=监听, 0=未监听 |
-| `net.tcp.service.perf[service,,port]` | 响应时间 | 秒数 |
+| Key | Item Type | 用途 | 返回值 |
+|-----|-----------|------|--------|
+| `proc.num[name]` | Zabbix agent | 进程数量 | 进程数（0=未运行） |
+| `net.tcp.listen[port]` | Zabbix agent | 本机端口监听 | 1=监听, 0=未监听 |
+| `net.tcp.service[service,,port]` | **Simple check** | 服务响应（Server 侧检测） | 1=正常, 0=异常 |
+| `net.tcp.port[,port]` | **Simple check** | 端口连接（Server 侧检测） | 1=连接成功, 0=失败 |
+| `net.tcp.service.perf[service,,port]` | **Simple check** | 响应时间 | 秒数 |
+
+> 💡 **Item Type 选择规则**：
+> - `proc.*`、`net.tcp.listen` = Agent 本地检查 → 选 **Zabbix agent**
+> - `net.tcp.service`、`net.tcp.port` = Server 远程检查 → 选 **Simple check**
 
 ---
 
@@ -356,6 +380,13 @@ tail -f /var/log/zabbix/zabbix_agent2.log
 | net.tcp.service | 服务响应监控 |
 | History | 原始数据，短期保留 |
 | Trends | 聚合数据，长期保留 |
+
+---
+
+## 清理提醒
+
+> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。
+> 详见 → [00 · 清理资源](../00-architecture-lab/#清理资源)
 
 ---
 

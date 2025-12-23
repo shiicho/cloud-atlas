@@ -3,6 +3,7 @@
 > **目标**：掌握 CloudFormation 多栈架构设计，实现模块化和跨栈通信
 > **时间**：50 分钟
 > **费用**：VPC + Subnets（免费层）
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
 > **前置**：[03 - 现代工具](../03-modern-tools/)
 
 ---
@@ -498,6 +499,15 @@ Properties:
 | **更新传播** | 更新父栈会检查所有子栈 |
 | **删除顺序** | 删除父栈会自动删除所有子栈 |
 
+> **S3 Bucket 准备**：在使用 Nested Stacks 前，需要先创建 S3 Bucket 存储子模板：
+> ```bash
+> # 创建存储模板的 S3 Bucket
+> aws s3 mb s3://cfn-templates-${AWS_ACCOUNT_ID}-${AWS_REGION}
+>
+> # 上传子模板
+> aws s3 cp nested-stacks/child-vpc.yaml s3://cfn-templates-xxx/
+> ```
+
 ---
 
 ## Step 5 — 选择哪种方式？（5 分钟）
@@ -634,27 +644,35 @@ Service Catalog 的 Product 内部可以使用 Nested Stacks！
 # Stack A
 Resources:
   ResourceA:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      DependsOn: !ImportValue StackB-Output
+      GroupDescription: SG A
+      VpcId: !ImportValue StackB-VpcId   # 引用 Stack B 的输出
 
 Outputs:
-  OutputA:
+  SecurityGroupA:
+    Value: !Ref ResourceA
     Export:
-      Name: StackA-Output
+      Name: StackA-SecurityGroupId
 
 # Stack B
 Resources:
   ResourceB:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      DependsOn: !ImportValue StackA-Output  # 循环!
+      GroupDescription: SG B
+      # 如果这里又引用 Stack A 的输出，就形成循环！
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !ImportValue StackA-SecurityGroupId  # 循环!
 
 Outputs:
-  OutputB:
+  VpcId:
+    Value: !Ref VPC
     Export:
-      Name: StackB-Output
+      Name: StackB-VpcId
 ```
 
-**解决方案**：重新设计，让依赖单向流动。
+**解决方案**：重新设计，让依赖单向流动（Network → App，不反向）。
 
 ---
 

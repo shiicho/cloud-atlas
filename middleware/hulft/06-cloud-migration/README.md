@@ -1,9 +1,18 @@
 # 06 · 云迁移：HULFT Square / AWS VPC 设计
 
-> **目标**：掌握云环境中的 HULFT 部署与现代化方案  
-> **前置**：[05 · 作业连携与错误处理](../05-job-integration/)  
-> **适用**：日本 SIer/银行 IT 岗位面试准备  
+> **目标**：掌握云环境中的 HULFT 部署与现代化方案
+> **前置**：[05 · 作业连携与错误处理](../05-job-integration/)
+> **适用**：日本 SIer/银行 IT 岗位面试准备
 > **时长**：约 60 分钟
+> **费用**：无（设计练习，无云资源部署）
+
+---
+
+> **版本说明**：
+> - 本教程基于 **HULFT8** + **HULFT Square**
+> - **HULFT10** 已于 2024年12月发布
+> - AWS 信息基于 2025年（VPN 5 Gbps、DX 最高 400 Gbps）
+> - 新项目建议评估 HULFT10 和最新 AWS 服务
 
 ## 为什么学习云迁移？
 
@@ -187,6 +196,11 @@ Outbound Rules:
 ⚠️ 绝对不要：
    • Inbound 0.0.0.0/0 到 8594/8500
    • 公网 IP 直接暴露 HULFT 端口
+
+🏗️ Security Group 管理最佳实践：
+   • 使用 CloudFormation/Terraform 管理（IaC）
+   • 启用 AWS Config 规则检测违规
+   • 定期审计规则变更
 ```
 
 > 💡 **面试要点 #1**
@@ -242,7 +256,7 @@ Outbound Rules:
 |------|------------------|----------------|
 | **部署时间** | 数小时 | 数周~数月 |
 | **月成本** | ~$50/隧道 | $200+/端口 + 线路费 |
-| **带宽** | 最大 1.25 Gbps | 1/10/100 Gbps |
+| **带宽** | 最大 5 Gbps（2025年起） | 1/10/100/400 Gbps |
 | **延迟** | 变化大（网络依赖） | 稳定低延迟 |
 | **抖动** | 较高 | 极低 |
 | **加密** | 默认 IPSec | 需额外配置 |
@@ -366,7 +380,7 @@ RETRY_COUNT=5         # 适当增加重试次数
 
 方案 B：HULFT Square
 ────────────────────────────────
-• Square 订阅: ~$XXX/月（按伙伴/流量）
+• Square 订阅: 按需报价（基于伙伴数量/传输量）
 • FW 变更：0（只需出站 443）
 • 维护：统一管理界面
 
@@ -398,6 +412,12 @@ RETRY_COUNT=5         # 适当增加重试次数
 ## Step 5 — HULFT Integrate 简介
 
 ### 什么是 HULFT Integrate？
+
+> **产品关系说明**：
+> - **HULFT**：文件传输产品（本系列主要内容）
+> - **HULFT Square**：文件传输的 SaaS 中继服务
+> - **HULFT Integrate**：独立的数据集成/ETL 产品
+> - 三者可以独立使用，也可以组合使用
 
 ```
 HULFT Integrate = iPaaS / ETL 产品
@@ -455,7 +475,10 @@ HULFT Integrate：
 
 ---
 
-## Step 6 — 实践：设计 AWS HULFT 架构
+## Step 6 — 实践：设计 AWS HULFT 架构（设计练习）
+
+> **注意**：本节为**设计练习**，不涉及实际 AWS 资源部署。
+> 重点在于理解架构设计思路，为实际项目做准备。
 
 ### 练习：架构设计
 
@@ -665,6 +688,28 @@ monitoring:
 🎯 实践建议：搭建 2 节点 Lab 实际操作
 🚀 下一步：挑战银行 IT 岗位面试！
 ```
+
+---
+
+## 资源清理
+
+如果您在学习过程中部署了 AWS 资源，请确保清理以避免不必要的费用：
+
+```bash
+# 删除 Lesson 02 创建的 CloudFormation Stack
+aws cloudformation delete-stack --stack-name hulft-lab
+
+# 等待删除完成
+aws cloudformation wait stack-delete-complete --stack-name hulft-lab
+
+# 确认资源已删除
+aws cloudformation describe-stacks --stack-name hulft-lab 2>&1 | grep -q "does not exist" && echo "Stack deleted successfully"
+```
+
+> **提醒**：
+> - EC2 实例按小时计费，不用时请删除
+> - VPN 连接按小时计费
+> - Direct Connect 需要联系 AWS 或合作伙伴取消
 
 ---
 

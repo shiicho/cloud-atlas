@@ -2,7 +2,8 @@
 
 > **目标**：理解配置漂移（Drift），掌握检测和修复方法，学会将现有资源导入 CloudFormation 管理
 > **时间**：45-50 分钟
-> **费用**：EC2 t3.micro（免费层）+ S3
+> **费用**：EC2 t3.micro（免费层 - 新账户前 12 个月 750 小时/月）+ S3（免费层）
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
 > **前置**：已完成 [04 - 多栈架构与跨栈引用](../04-multi-stack/)
 
 ---
@@ -434,9 +435,43 @@ Import          ImportedBucket  my-legacy-bucket-123456789012  AWS::S3::Bucket
 <!-- SCREENSHOT: cfn-stack-refactoring -->
 
 > **注意**：Stack Refactoring 是 2025 年新功能，Console 界面可能会更新。
-> 请参考最新 AWS 文档：https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resource-import-new-stack.html
+> 请参考最新 AWS 文档：https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stack-refactoring.html
 
-### 5.4 与 Terraform 对比
+### 5.4 CLI 操作（高级）
+
+使用 AWS CLI 进行 Stack Refactoring：
+
+```bash
+# Step 1: 创建 Refactoring 计划
+aws cloudformation create-stack-refactor \
+  --stack-name source-stack \
+  --resource-mappings '[
+    {
+      "Source": {
+        "LogicalResourceId": "MyBucket"
+      },
+      "Destination": {
+        "LogicalResourceId": "MovedBucket",
+        "StackName": "target-stack"
+      }
+    }
+  ]'
+
+# 返回 RefactorId，保存这个 ID
+# 例如: "RefactorId": "refactor-abc123"
+
+# Step 2: 执行 Refactoring
+aws cloudformation execute-stack-refactor \
+  --stack-refactor-id refactor-abc123
+
+# Step 3: 查看 Refactoring 状态
+aws cloudformation describe-stack-refactor \
+  --stack-refactor-id refactor-abc123
+```
+
+> **注意**：CLI 操作适合 CI/CD 集成。日常使用推荐 Console 操作更直观。
+
+### 5.5 与 Terraform 对比
 
 | 操作 | CloudFormation | Terraform |
 |------|----------------|-----------|

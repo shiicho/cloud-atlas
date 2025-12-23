@@ -1,8 +1,9 @@
 # 08 · 错误处理与调试技巧（Error Handling & Debugging）
 
-> **目标**：掌握错误处理和调试技术  
-> **前置**：[07 · Jinja2 模板](../07-jinja2-templates/)  
-> **时间**：30 分钟  
+> **目标**：掌握错误处理和调试技术
+> **前置**：[07 · Jinja2 模板](../07-jinja2-templates/)
+> **时间**：30 分钟
+> **版本**：ansible-core 2.17+，Python 3.10+
 > **实战项目**：健壮的部署脚本
 
 ---
@@ -38,6 +39,38 @@ ansible all -m ping
 
 类似于 try/catch/finally。
 
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Block/Rescue/Always 流程                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────────┐                                           │
+│   │     block:      │◄── 尝试执行的任务                          │
+│   │   - task 1      │                                           │
+│   │   - task 2      │                                           │
+│   └────────┬────────┘                                           │
+│            │                                                     │
+│     成功? ─┼─ 是 ──────────────────────────┐                     │
+│            │                               │                     │
+│            └─ 否 ──┐                       │                     │
+│                    ▼                       │                     │
+│          ┌─────────────────┐               │                     │
+│          │    rescue:      │◄── 失败时执行  │                     │
+│          │   - rollback    │               │                     │
+│          │   - notify      │               │                     │
+│          └────────┬────────┘               │                     │
+│                   │                        │                     │
+│                   └────────────┬───────────┘                     │
+│                                ▼                                 │
+│                      ┌─────────────────┐                         │
+│                      │    always:      │◄── 无论如何都执行        │
+│                      │   - cleanup     │                         │
+│                      │   - logging     │                         │
+│                      └─────────────────┘                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ```bash
 # 查看 block/rescue/always 示例
 cat exercises/01-block-rescue.yaml
@@ -60,6 +93,22 @@ always:
   - name: Always cleanup
     ansible.builtin.debug:
       msg: "Cleanup done"
+```
+
+**rescue 中可用的特殊变量**：
+
+| 变量 | 说明 |
+|------|------|
+| `ansible_failed_task` | 失败任务的详情（名称、参数等） |
+| `ansible_failed_result` | 失败任务的返回结果 |
+
+```yaml
+rescue:
+  - name: Log failure details
+    ansible.builtin.debug:
+      msg: |
+        Task "{{ ansible_failed_task.name }}" failed
+        Result: {{ ansible_failed_result }}
 ```
 
 > 💡 **面试要点**：block 失敗時 → rescue 実行 → always は常に実行
@@ -161,6 +210,9 @@ ansible-playbook exercises/05-deployment-rollback.yaml --check
 # 执行
 ansible-playbook exercises/05-deployment-rollback.yaml
 ```
+
+> 💡 **关于 `serial: 1`**：此示例演示滚动部署模式（一次部署一台服务器）。
+> 当前环境只有 `web-1`，生产环境通常有多台 Web 服务器可以逐台更新。
 
 ---
 

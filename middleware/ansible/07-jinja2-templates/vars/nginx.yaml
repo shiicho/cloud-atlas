@@ -1,0 +1,33 @@
+---
+# vars/nginx.yaml - Nginx 模板变量定义
+# 用于演示 Jinja2 模板的循环和条件
+
+# 后端服务器列表
+upstream_servers:
+  - host: 10.0.1.10
+    port: 8080
+    weight: 5
+  - host: 10.0.1.11
+    port: 8080
+    weight: 3
+  - host: 10.0.1.12
+    port: 8081
+    # weight 使用默认值 1
+
+# 允许访问的 IP 范围
+allowed_ips:
+  - 10.0.0.0/8
+  - 192.168.0.0/16
+  - 172.16.0.0/12
+
+# 虚拟主机配置
+virtual_hosts:
+  - name: app.example.com
+    root: /var/www/app
+    ssl: true
+  - name: api.example.com
+    root: /var/www/api
+    ssl: true
+  - name: test.example.com
+    root: /var/www/test
+    ssl: false

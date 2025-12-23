@@ -1,8 +1,9 @@
 # 04 · 触发器与告警通知（Triggers & Alerts）
 
-> **目标**：配置触发器、邮件通知和维护窗口  
-> **前置**：[03 · 基础监控 + 死活检查](../03-monitoring-basics/)  
-> **时间**：30-35 分钟  
+> **目标**：配置触发器、邮件通知和维护窗口
+> **前置**：[03 · 基础监控 + 死活检查](../03-monitoring-basics/)
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈
+> **时间**：30-35 分钟
 > **实战项目**：配置磁盘告警 + Golden Week 维护窗口
 
 ## 将学到的内容
@@ -161,6 +162,11 @@ last(/monitored-host-01/vfs.fs.size[/,pused])<75
 3. 点击「Test」验证
 4. 点击「Update」
 
+> ⚠️ **常见 SMTP 问题**：
+> - **Gmail**：需要启用 2FA 并创建 App Password（非登录密码）。进入 Google 账户 → 安全 → 应用专用密码
+> - **AWS SES**：新账户在 Sandbox 模式，只能发送到已验证邮箱。需申请生产环境访问
+> - **防火墙**：确保 Zabbix Server 可访问 SMTP 端口（587/465）
+
 ### 3.2 为用户配置 Media
 
 1. 「Users」→「Users」
@@ -197,7 +203,7 @@ Action 定义「触发器触发时做什么」。
 
 **添加 Conditions**：
 - Trigger severity `>=` `High`
-- Host group `=` `Lab/Linux servers`
+- Host group `=` `Lab/Linux servers`（使用 Lesson 02 创建的 Host Group）
 
 **Operations 标签页**：
 
@@ -238,12 +244,19 @@ Original problem ID: {EVENT.ID}
 触发磁盘告警测试：
 
 ```bash
-# 在 Monitored Host 上创建大文件
-sudo dd if=/dev/zero of=/tmp/bigfile bs=1M count=5000
+# 在 Monitored Host 上
+# 先检查当前磁盘使用情况
+df -h /
 
-# 检查磁盘使用率
+# 根据剩余空间调整大小（目标：使用率超过 80%）
+# Monitored Host 有 8GB 磁盘，约 5GB 可用，创建 3GB 文件应触发告警
+sudo dd if=/dev/zero of=/tmp/bigfile bs=1M count=3000
+
+# 确认使用率
 df -h /
 ```
+
+> ⚠️ **注意**：创建过大文件可能导致磁盘 100% 满，影响系统运行。请根据 `df -h` 结果调整 `count` 值。
 
 在 Web UI 检查：
 1. 「Monitoring」→「Problems」查看告警
@@ -273,6 +286,8 @@ sudo rm /tmp/bigfile
 | Maintenance type | `With data collection`（继续采集但不告警） |
 | Active since | `2025-05-03 00:00` |
 | Active till | `2025-05-07 23:59` |
+
+> ⚠️ **时区注意**：维护窗口时间基于 Zabbix Server 时区。确保已在 [01 · Server 初始化](../01-server-setup/) 中设置为 Asia/Tokyo。
 
 **Periods 标签页**：
 
@@ -419,6 +434,13 @@ sudo rm /tmp/bigfile
 | Action | 触发器 → 通知的映射 |
 | Maintenance | 计划内抑制告警 |
 | Acknowledgment | 告警确认和处理记录 |
+
+---
+
+## 清理提醒
+
+> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。
+> 详见 → [00 · 清理资源](../00-architecture-lab/#清理资源)
 
 ---
 

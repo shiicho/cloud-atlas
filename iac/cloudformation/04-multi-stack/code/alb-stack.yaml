@@ -1,0 +1,73 @@
+# =============================================================================
+# ALB Stack - ALB Security Group Layer
+# =============================================================================
+#
+# Step 8 练习的中间层 Stack
+# 从 Network Stack 导入 VPC 和 Subnet，导出 ALB Security Group ID
+#
+# 使用方法:
+#   1. 先部署 network-stack.yaml (dev-network-stack)
+#   2. 再部署此模板 (dev-alb-stack)
+#   3. 最后部署 app-stack.yaml (dev-app-stack)
+#
+# 清理顺序:
+#   1. 先删除 dev-app-stack
+#   2. 再删除 dev-alb-stack
+#   3. 最后删除 dev-network-stack
+#
+# =============================================================================
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  ALB Layer Stack - Security Group for Application Load Balancer
+  Imports VPC from network-stack, exports ALB SG for app-stack
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Environment name (must match network-stack)
+
+Resources:
+  # ALB Security Group - 允许 HTTP/HTTPS 入站
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Security group for ${Environment} ALB'
+      VpcId: !ImportValue
+        Fn::Sub: '${Environment}-VpcId'
+      SecurityGroupIngress:
+        # HTTP 入站
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP from internet
+        # HTTPS 入站
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS from internet
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-alb-sg'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Layer
+          Value: ALB
+
+Outputs:
+  ALBSecurityGroupId:
+    Description: ALB Security Group ID (for app-stack reference)
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: !Sub '${Environment}-ALBSecurityGroupId'
+
+  ALBSecurityGroupVpcId:
+    Description: VPC ID where ALB SG was created
+    Value: !ImportValue
+      Fn::Sub: '${Environment}-VpcId'

@@ -1,6 +1,7 @@
 ---
 # 05-loops-advanced.yaml - 高级循环模式
-# 学习目标: 掌握 with_sequence, with_dict, until 等高级循环
+# 学习目标: 掌握 range, dict2items, subelements 等现代循环语法
+# 注意: 使用现代 loop + filter 语法，替代旧版 with_* 语法
 
 - name: Advanced Loop Patterns
   hosts: all
@@ -25,43 +26,41 @@
         enabled: false
 
   tasks:
-    # with_sequence - 数字序列
+    # range filter - 数字序列（现代写法，替代 with_sequence）
     - name: Create numbered directories
       ansible.builtin.file:
-        path: "/tmp/dir_{{ item }}"
+        path: "/tmp/dir_{{ '%02d' | format(item) }}"
         state: directory
         mode: '0755'
-      with_sequence: start=1 end=5 format=%02d
+      loop: "{{ range(1, 6) | list }}"
 
-    # with_sequence - 带步进
+    # range with step - 带步进（现代写法）
     - name: Create even numbered files
       ansible.builtin.file:
         path: "/tmp/even_{{ item }}.txt"
         state: touch
         mode: '0644'
-      with_sequence: start=0 end=10 stride=2
+      loop: "{{ range(0, 11, 2) | list }}"
 
-    # with_dict - 字典遍历
+    # dict2items - 字典遍历（现代写法，替代 with_dict）
     - name: Show service configuration
       ansible.builtin.debug:
         msg: "Service {{ item.key }}: port={{ item.value.port }}, enabled={{ item.value.enabled }}"
-      with_dict: "{{ services_config }}"
+      loop: "{{ services_config | dict2items }}"
 
-    # with_subelements - 嵌套循环
+    # subelements - 嵌套循环（现代写法，替代 with_subelements）
     - name: Create user directories
       ansible.builtin.file:
         path: "/home/{{ item.0.key }}/{{ item.1 }}"
         state: directory
         mode: '0755'
         owner: "{{ item.0.key }}"
-      with_subelements:
-        - "{{ user_directories | dict2items }}"
-        - value
+      loop: "{{ user_directories | dict2items | subelements('value') }}"
       loop_control:
         label: "{{ item.0.key }}/{{ item.1 }}"
       ignore_errors: true  # 用户可能不存在
 
-    # until - 重试直到成功
+    # until - 重试直到成功（保持不变，这是正确用法）
     - name: Wait for file to appear (simulated)
       ansible.builtin.command: test -f /tmp/dir_01
       register: result
@@ -70,15 +69,10 @@
       delay: 1
       changed_when: false
 
-    # 随机选择
+    # random filter - 随机选择（现代写法，替代 with_random_choice）
     - name: Pick a random color
       ansible.builtin.debug:
-        msg: "Selected color: {{ item }}"
-      with_random_choice:
-        - red
-        - green
-        - blue
-        - yellow
+        msg: "Selected color: {{ ['red', 'green', 'blue', 'yellow'] | random }}"
 
     # 清理
     - name: Cleanup test directories

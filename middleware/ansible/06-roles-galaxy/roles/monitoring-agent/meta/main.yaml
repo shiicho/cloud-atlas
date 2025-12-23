@@ -1,0 +1,26 @@
+---
+# meta/main.yaml - Monitoring Agent role metadata
+
+galaxy_info:
+  author: Cloud Atlas Lab
+  description: Install and configure monitoring agent (node_exporter for Prometheus)
+  license: MIT
+  min_ansible_version: "2.17"
+
+  platforms:
+    - name: Amazon
+      versions:
+        - "2023"
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - monitoring
+    - prometheus
+    - node_exporter
+    - observability
+
+dependencies:
+  - role: common

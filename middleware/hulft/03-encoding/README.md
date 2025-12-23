@@ -1,9 +1,18 @@
 # 03 · 字符编码处理（SJIS↔UTF-8/EBCDIC）
 
-> **目标**：掌握日本企业环境中常见的字符编码转换  
-> **前置**：[02 · HULFT 安装与基本配置](../02-installation/)  
-> **适用**：日本 SIer/银行 IT 岗位面试准备  
+> **目标**：掌握日本企业环境中常见的字符编码转换
+> **前置**：[02 · HULFT 安装与基本配置](../02-installation/)（双节点 Lab 环境）
+> **适用**：日本 SIer/银行 IT 岗位面试准备
 > **时长**：约 60 分钟
+> **费用**：使用 Lesson 02 部署的环境；完成后请清理资源
+
+---
+
+> **版本说明**：
+> - 本教程基于 **HULFT8**
+> - **HULFT10** 已于 2024年12月发布
+> - HULFT8 标准支持结束：2030年6月
+> - 新项目建议评估 HULFT10
 
 ## 为什么编码问题重要？
 
@@ -108,6 +117,9 @@ TRANSFER_ID: DAILY_REPORT
 
 ### 命令行指定
 
+> **命令说明**：本教程使用 `hulcmd` 命令。官方文档中对应命令为 `utlsend`。
+> 不同版本/平台的命令名称可能略有差异，请参考 `hulcmd -help` 或官方手册。
+
 ```bash
 # 使用 hulcmd 时指定编码
 /opt/hulft8/bin/hulcmd -sendfile \
@@ -126,7 +138,9 @@ TRANSFER_ID: DAILY_REPORT
 file /tmp/report_utf8.csv
 # 期望：UTF-8 Unicode text
 
-# 或使用 nkf
+# 或使用 nkf（需先安装）
+# Amazon Linux 2023: sudo dnf install -y nkf
+# Ubuntu/Debian: sudo apt install -y nkf
 nkf --guess /tmp/report_utf8.csv
 # 期望：UTF-8
 
@@ -369,6 +383,11 @@ file /tmp/test_utf8.txt
 # 使用 iconv 转换为 SJIS
 iconv -f UTF-8 -t CP932 /tmp/test_utf8.txt > /tmp/test_sjis.txt
 
+# 如果遇到无法映射的字符，可以使用 //TRANSLIT 或 //IGNORE
+# //TRANSLIT: 尝试替换为相近字符
+# //IGNORE: 跳过无法映射的字符
+iconv -f UTF-8 -t CP932//TRANSLIT /tmp/test_utf8.txt > /tmp/test_sjis.txt
+
 # 验证
 file /tmp/test_sjis.txt
 # 期望：ISO-8859 text (或 Non-ISO extended-ASCII)
@@ -435,11 +454,11 @@ echo 'export LANG=en_US.UTF-8' >> /opt/hulft8/hulenv
 
 # 方法 2：在用户 profile 中设置
 # 创建 .bash_profile（即使是 nologin 用户）
-sudo tee /opt/hulft/.bash_profile << 'EOF'
+sudo tee /opt/hulft8/.bash_profile << 'EOF'
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 EOF
-sudo chown hulftsvc:hulft /opt/hulft/.bash_profile
+sudo chown hulftsvc:hulft /opt/hulft8/.bash_profile
 
 # 重启 HULFT 使生效
 sudo -u hulftsvc /opt/hulft8/bin/hulstop

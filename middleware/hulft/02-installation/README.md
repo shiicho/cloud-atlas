@@ -1,10 +1,19 @@
 # 02 · HULFT 安装与基本配置
 
-> **目标**：完成 HULFT8 双节点 Lab 环境搭建  
-> **前置**：[01 · 网络拓扑与安全基础](../01-network-security/)  
-> **适用**：日本 SIer/银行 IT 岗位面试准备  
-> **时长**：约 90 分钟  
+> **目标**：完成 HULFT8 双节点 Lab 环境搭建
+> **前置**：[01 · 网络拓扑与安全基础](../01-network-security/)（端口/防火墙/服务账户）
+> **适用**：日本 SIer/银行 IT 岗位面试准备
+> **时长**：约 90 分钟
 > **费用**：2x t3.small EC2（约 $0.05/小时）；**完成后记得清理资源**
+
+---
+
+> **版本说明**：
+> - 本教程基于 **HULFT8**
+> - **HULFT10** 已于 2024年12月发布（首次大版本升级，历时10年）
+> - HULFT8 产品销售结束：2025年6月
+> - HULFT8 标准支持结束：2030年6月
+> - 新项目建议评估 HULFT10
 
 ## 将完成的内容
 
@@ -190,19 +199,58 @@ grep "RC=" /opt/hulft8/log/hulft.log | tail -20
 | **Docker 模拟** | 快速、免费 | 功能受限 | 概念学习 |
 | **本地 VM** | 离线可用 | 配置复杂 | 备选 |
 
+### 部署 Lab 环境（CloudFormation）
+
+使用提供的模板快速部署双节点环境：
+
+```bash
+# 1. 部署 CloudFormation 堆栈
+aws cloudformation create-stack \
+  --stack-name hulft-lab \
+  --template-body file://templates/hulft-lab-2node.yaml \
+  --capabilities CAPABILITY_NAMED_IAM
+
+# 2. 等待部署完成（约 3-5 分钟）
+aws cloudformation wait stack-create-complete --stack-name hulft-lab
+
+# 3. 获取实例 ID
+aws cloudformation describe-stacks --stack-name hulft-lab \
+  --query 'Stacks[0].Outputs' --output table
+
+# 4. 连接到节点（通过 SSM，无需 SSH Key）
+aws ssm start-session --target <NodeAInstanceId>
+aws ssm start-session --target <NodeBInstanceId>
+```
+
+> **模板位置**：[templates/hulft-lab-2node.yaml](templates/hulft-lab-2node.yaml)
+> 模板会自动创建：VPC、子网、安全组、IAM Role、2 个 EC2 实例
+
 ### 获取 HULFT 试用版
 
-```
-申请地址：https://www.hulft.com/trial（日语）
+> **重要**：试用许可证需要 **提前申请**，预计审批时间 1-3 个工作日
 
-试用版限制：
-• 30 天有效期
-• 绑定 MAC/主机名
-• 吞吐量受限
-• 无生产支持
+**申请流程：**
 
-提示：学习足够，但需提前申请
-```
+1. 访问 myHULFT 门户：https://my.hulft.com/
+2. 注册账户并登录
+3. 选择「Evaluation」→「HULFT8 Linux」
+4. 填写以下信息：
+   - 公司名（学习用可填 "Personal Learning"）
+   - 主机名（EC2 的 hostname）
+   - MAC 地址（执行 `ip link show eth0` 获取）
+5. 提交后等待邮件获取许可证文件
+
+**试用版限制：**
+
+| 项目 | 限制 |
+|------|------|
+| **有效期** | 60 天（非 30 天） |
+| **绑定** | 主机名 + MAC 地址 |
+| **吞吐量** | 受限（学习足够） |
+| **支持** | 无生产支持 |
+
+> **备选方案**：如果无法获得试用版，可参考官方文档学习概念，
+> 跳过实际安装步骤，继续后续课程的理论部分。
 
 ---
 
@@ -264,9 +312,9 @@ locale
 ### 创建服务账户（参考 Lesson 01）
 
 ```bash
-# 创建组和用户
+# 创建组和用户（home 目录与安装目录一致）
 sudo groupadd -f hulft
-sudo useradd -r -s /sbin/nologin -d /opt/hulft -g hulft -c "HULFT Service" hulftsvc
+sudo useradd -r -s /sbin/nologin -d /opt/hulft8 -g hulft -c "HULFT Service" hulftsvc
 
 # 创建安装目录
 sudo mkdir -p /opt/hulft8
@@ -279,24 +327,40 @@ sudo chown hulftsvc:hulft /opt/hulft8
 
 ### 安装步骤（两个节点都执行）
 
-```bash
-# 1. 上传安装包（假设已获得试用版）
-# 将 hulft8_linux_x64.tar.gz 上传到 /tmp/
+**上传安装包到 EC2 的方法：**
 
-# 2. 解压安装包
+```bash
+# 方法 1：通过 S3（推荐，SSM 环境）
+# 先上传到 S3 桶
+aws s3 cp hulft8_linux_x64.tar.gz s3://your-bucket/
+# 在 EC2 上下载
+aws s3 cp s3://your-bucket/hulft8_linux_x64.tar.gz /tmp/
+
+# 方法 2：SCP（需要 SSH Key）
+scp hulft8_linux_x64.tar.gz ec2-user@<instance-ip>:/tmp/
+
+# 方法 3：SSM Port Forwarding + SCP
+aws ssm start-session --target <instance-id> --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=2222
+scp -P 2222 hulft8_linux_x64.tar.gz ec2-user@localhost:/tmp/
+```
+
+**安装：**
+
+```bash
+# 1. 解压安装包
 cd /tmp
 tar xzf hulft8_linux_x64.tar.gz
 
-# 3. 以 root 运行安装程序
+# 2. 以 root 运行安装程序
 sudo ./install.sh
 
-# 4. 按提示操作：
+# 3. 按提示操作：
 #    - 安装目录：/opt/hulft8
 #    - 服务账户：hulftsvc
 #    - Control 端口：8594
 #    - Data 端口：8500
 
-# 5. 应用许可证
+# 4. 应用许可证
 sudo cp /tmp/hulfkey /opt/hulft8/
 sudo chown hulftsvc:hulft /opt/hulft8/hulfkey
 ```

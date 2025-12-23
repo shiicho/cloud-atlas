@@ -1,8 +1,9 @@
 # 09 · Vault 与机密管理（Vault & Secrets Management）
 
-> **目标**：掌握 Ansible Vault 加密和机密管理  
-> **前置**：[08 · 错误处理](../08-error-handling/)  
-> **时间**：30 分钟  
+> **目标**：掌握 Ansible Vault 加密和机密管理
+> **前置**：[08 · 错误处理](../08-error-handling/)
+> **时间**：30 分钟
+> **版本**：ansible-core 2.17+，amazon.aws >= 9.0.0
 > **实战项目**：加密数据库密码
 
 ---
@@ -219,12 +220,16 @@ ansible-galaxy collection install amazon.aws
 
 ### 5.2 lookup 插件
 
+> ⚠️ **费用警告**：AWS Secrets Manager 按 API 调用和存储收费。
+> 每个 Secret 约 $0.40/月，每 10,000 次 API 调用 $0.05。
+
 ```yaml
 ---
 - name: Use AWS Secrets Manager
   hosts: all
   vars:
-    db_secret: "{{ lookup('amazon.aws.aws_secret', 'myapp/database') }}"
+    # 使用 secretsmanager_secret（旧版 aws_secret 已重定向）
+    db_secret: "{{ lookup('amazon.aws.secretsmanager_secret', 'myapp/database') }}"
 
   tasks:
     - name: Configure with secret

@@ -1,8 +1,9 @@
 # 02 · インベントリ管理（Inventory Management）
 
-> **目标**：部署 Managed Nodes，掌握 Inventory 管理  
-> **前置**：[01 · 环境构築](../01-installation/)  
-> **时间**：30 分钟  
+> **目标**：部署 Managed Nodes，掌握 Inventory 管理
+> **前置**：[01 · 环境构築](../01-installation/)
+> **时间**：30 分钟
+> **版本**：ansible-core 2.17+，Python 3.10+
 > **费用**：约 $0.02/小时（2x t3.micro）
 
 ---
@@ -193,7 +194,25 @@ dbservers
 ansible_python_interpreter=/usr/bin/python3
 ```
 
-### 3.2 渐进式示例
+### 3.2 YAML 格式
+
+```yaml
+# hosts.yaml - YAML 格式示例
+all:
+  children:
+    webservers:
+      hosts:
+        web-1.ans.local:
+    dbservers:
+      hosts:
+        db-1.ans.local:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+```
+
+> 💡 **YAML vs INI**：YAML 格式更结构化，适合复杂配置。INI 格式更简洁，适合快速编写。
+
+### 3.3 渐进式示例
 
 本课提供 6 个渐进式示例，位于 `inventory/examples/`：
 

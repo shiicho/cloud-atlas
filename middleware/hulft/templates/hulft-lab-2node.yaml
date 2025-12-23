@@ -1,0 +1,269 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HULFT Lab - 2 Node Environment for Learning'
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Description: EC2 instance type
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: Amazon Linux 2023 AMI
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Instance Configuration
+        Parameters:
+          - InstanceType
+          - LatestAmiId
+
+Resources:
+  # VPC
+  LabVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: hulft-lab-vpc
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: hulft-lab-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref LabVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Public Subnet
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref LabVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: hulft-lab-public-subnet
+
+  # Route Table
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref LabVPC
+      Tags:
+        - Key: Name
+          Value: hulft-lab-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # Security Group for HULFT nodes
+  HulftSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for HULFT Lab nodes
+      VpcId: !Ref LabVPC
+      SecurityGroupIngress:
+        # HULFT Control Channel
+        - IpProtocol: tcp
+          FromPort: 8594
+          ToPort: 8594
+          CidrIp: 10.0.1.0/24
+          Description: HULFT Control Channel
+        # HULFT Data Channel
+        - IpProtocol: tcp
+          FromPort: 8500
+          ToPort: 8500
+          CidrIp: 10.0.1.0/24
+          Description: HULFT Data Channel
+        # HULFT Manager (optional)
+        - IpProtocol: tcp
+          FromPort: 25421
+          ToPort: 25421
+          CidrIp: 10.0.1.0/24
+          Description: HULFT Manager Web GUI
+      Tags:
+        - Key: Name
+          Value: hulft-lab-sg
+
+  # IAM Role for SSM
+  SSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: hulft-lab-ssm-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Tags:
+        - Key: Name
+          Value: hulft-lab-ssm-role
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: hulft-lab-instance-profile
+      Roles:
+        - !Ref SSMRole
+
+  # Node A
+  NodeA:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnet
+      PrivateIpAddress: 10.0.1.10
+      SecurityGroupIds:
+        - !Ref HulftSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Set hostname
+          hostnamectl set-hostname hulft-node-a
+
+          # Update system
+          dnf update -y
+
+          # Install useful tools
+          dnf install -y nc chrony
+
+          # Enable and start chronyd for NTP
+          systemctl enable --now chronyd
+
+          # Set ulimit for hulft service account
+          cat >> /etc/security/limits.conf << 'EOF'
+          # HULFT file descriptor limits
+          hulftsvc soft nofile 65535
+          hulftsvc hard nofile 65535
+          EOF
+
+          # Create hulft group and user
+          groupadd -f hulft
+          useradd -r -s /sbin/nologin -d /opt/hulft8 -g hulft -c "HULFT Service" hulftsvc 2>/dev/null || true
+
+          # Create directory structure
+          mkdir -p /opt/hulft8/{bin,spool,log}
+          chown -R hulftsvc:hulft /opt/hulft8
+
+          # Add hosts entry for Node B
+          echo "10.0.1.20    hulft-node-b" >> /etc/hosts
+      Tags:
+        - Key: Name
+          Value: hulft-node-a
+
+  # Node B
+  NodeB:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnet
+      PrivateIpAddress: 10.0.1.20
+      SecurityGroupIds:
+        - !Ref HulftSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Set hostname
+          hostnamectl set-hostname hulft-node-b
+
+          # Update system
+          dnf update -y
+
+          # Install useful tools
+          dnf install -y nc chrony
+
+          # Enable and start chronyd for NTP
+          systemctl enable --now chronyd
+
+          # Set ulimit for hulft service account
+          cat >> /etc/security/limits.conf << 'EOF'
+          # HULFT file descriptor limits
+          hulftsvc soft nofile 65535
+          hulftsvc hard nofile 65535
+          EOF
+
+          # Create hulft group and user
+          groupadd -f hulft
+          useradd -r -s /sbin/nologin -d /opt/hulft8 -g hulft -c "HULFT Service" hulftsvc 2>/dev/null || true
+
+          # Create directory structure
+          mkdir -p /opt/hulft8/{bin,spool,log}
+          chown -R hulftsvc:hulft /opt/hulft8
+
+          # Add hosts entry for Node A
+          echo "10.0.1.10    hulft-node-a" >> /etc/hosts
+      Tags:
+        - Key: Name
+          Value: hulft-node-b
+
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !Ref LabVPC
+
+  NodeAInstanceId:
+    Description: Node A Instance ID (use with SSM)
+    Value: !Ref NodeA
+
+  NodeBInstanceId:
+    Description: Node B Instance ID (use with SSM)
+    Value: !Ref NodeB
+
+  NodeAPrivateIP:
+    Description: Node A Private IP
+    Value: !GetAtt NodeA.PrivateIp
+
+  NodeBPrivateIP:
+    Description: Node B Private IP
+    Value: !GetAtt NodeB.PrivateIp
+
+  SSMConnectNodeA:
+    Description: SSM Connect command for Node A
+    Value: !Sub 'aws ssm start-session --target ${NodeA}'
+
+  SSMConnectNodeB:
+    Description: SSM Connect command for Node B
+    Value: !Sub 'aws ssm start-session --target ${NodeB}'
+
+  SecurityGroupId:
+    Description: Security Group ID
+    Value: !Ref HulftSecurityGroup

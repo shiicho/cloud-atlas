@@ -1,0 +1,29 @@
+---
+# defaults/main.yaml - Default variables for monitoring-agent role
+
+# Node Exporter version
+node_exporter_version: "1.7.0"
+node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+
+# User and group
+node_exporter_user: node_exporter
+node_exporter_group: node_exporter
+
+# Listen address
+node_exporter_listen_address: "0.0.0.0"
+node_exporter_listen_port: 9100
+
+# Collectors to enable/disable
+node_exporter_enabled_collectors:
+  - cpu
+  - diskstats
+  - filesystem
+  - loadavg
+  - meminfo
+  - netdev
+  - stat
+
+node_exporter_disabled_collectors: []
+
+# Firewall configuration
+node_exporter_firewall_enabled: true

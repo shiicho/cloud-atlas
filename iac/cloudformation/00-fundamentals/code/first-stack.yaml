@@ -91,6 +91,20 @@ Resources:
       #   - 使用账户 ID 避免命名冲突
       BucketName: !Sub 'my-first-cfn-bucket-${AWS::AccountId}'
 
+      # PublicAccessBlockConfiguration - 公共访问阻止（安全最佳实践）
+      #
+      # 2023 年起，AWS 默认阻止所有公共访问。
+      # 明确配置此项是企业安全合规的最佳实践。
+      #
+      # 日本 IT 场景：
+      #   - 金融/政府项目必须阻止公共访问
+      #   - cfn-guard 规则通常检查此配置
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
       # Tags - 资源标签
       #
       # 标签是键值对，用于：

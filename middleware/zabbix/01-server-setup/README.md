@@ -1,8 +1,9 @@
 # 01 · Zabbix Server 初始化（Server Setup）
 
-> **目标**：完成 Zabbix Server 数据库初始化和 Web UI 配置  
-> **前置**：[00 · 环境与架构导入](../00-architecture-lab/)  
-> **时间**：20-30 分钟  
+> **目标**：完成 Zabbix Server 数据库初始化和 Web UI 配置
+> **前置**：[00 · 环境与架构导入](../00-architecture-lab/)
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈
+> **时间**：20-30 分钟
 > **实战项目**：配置 Housekeeping，创建运维账户
 
 ## 将学到的内容
@@ -23,12 +24,18 @@
 # 切换到 root
 sudo -i
 
+# 验证 Zabbix 包已安装（CloudFormation 应已完成）
+rpm -qa | grep zabbix-server
+# 预期输出：zabbix-server-mysql-7.0.x
+
 # 确认时间同步正常（重要：时间不同步会导致触发器和图表异常）
 timedatectl
 # 确认 NTP service: active
 # 如果未同步，启用 chronyd：
 # systemctl enable --now chronyd
 ```
+
+> ⚠️ **验证失败？** 如果没有看到 `zabbix-server-mysql` 包，请确认 CloudFormation 堆栈已成功完成（状态为 `CREATE_COMPLETE`）。
 
 ### 1.1 安全配置 MariaDB
 
@@ -206,6 +213,9 @@ php_value[date.timezone] = Asia/Tokyo
 
 ### 2.3 启动服务
 
+> 💡 **SELinux 说明**：CloudFormation 模板已安装 `zabbix-selinux-policy` 包，自动配置 SELinux 规则。
+> 如果遇到 403 错误且日志显示 SELinux 相关信息，可临时禁用测试：`sudo setenforce 0`（仅限实验环境）。
+
 ```bash
 # 启动 Zabbix Server
 systemctl start zabbix-server
@@ -262,7 +272,7 @@ http://<ZabbixServerPublicIP>/zabbix
 | Database port | 0 (default) |
 | Database name | zabbix |
 | User | zabbix |
-| Password | （Step 1.2 で設定したパスワード） |
+| Password | （Step 1.2 设置的 zabbix 用户密码） |
 
 **Step 4: Settings**
 
@@ -450,6 +460,13 @@ http://<ZabbixServerPublicIP>/zabbix
 | PHP 时区 | `/etc/php-fpm.d/zabbix.conf` |
 | Server 日志 | `/var/log/zabbix/zabbix_server.log` |
 | Housekeeping | Web UI → Administration → Housekeeping |
+
+---
+
+## 清理提醒
+
+> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。
+> 详见 → [00 · 清理资源](../00-architecture-lab/#清理资源)
 
 ---
 

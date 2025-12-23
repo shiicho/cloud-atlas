@@ -92,6 +92,8 @@
 - 基本的命令行操作能力
 - 了解 AWS 核心服务（EC2, S3, VPC）
 
+> **CloudFormation 用户？** 参考 [CloudFormation 基础](../cloudformation/00-fundamentals/) 了解两者对比，以及 [HCL 语法速查表](./03-hcl/HCL-CHEATSHEET.md) 快速上手 Terraform 语法。
+
 ---
 
 ## 实验环境

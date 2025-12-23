@@ -1,8 +1,9 @@
 # 07 · Jinja2 模板引擎详解（Template Engine Mastery）
 
-> **目标**：掌握 Jinja2 模板技术  
-> **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)  
-> **时间**：35 分钟  
+> **目标**：掌握 Jinja2 模板技术
+> **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)
+> **时间**：35 分钟
+> **版本**：ansible-core 2.17+，Python 3.10+
 > **实战项目**：模板化 Nginx 配置
 
 ---
@@ -43,10 +44,42 @@ ansible all -m ping
 {{ var | filter }}     {# 过滤器 #}
 ```
 
+**空白控制**（避免模板输出多余空行）：
+
+```jinja2
+{%- if condition %}    {# 删除前面的空白 #}
+{% if condition -%}    {# 删除后面的空白 #}
+{%- if condition -%}   {# 删除两边的空白 #}
+```
+
 ```bash
 # 查看基础模板示例
 cat templates/app.conf.j2
 ```
+
+### template vs copy — 何时使用哪个？
+
+| 模块 | 用途 | 变量替换 | 示例场景 |
+|------|------|---------|----------|
+| `ansible.builtin.template` | 动态生成配置 | ✅ 会替换 `{{ var }}` | nginx.conf, httpd.conf |
+| `ansible.builtin.copy` | 原样复制文件 | ❌ 不处理变量 | 二进制文件、静态 HTML |
+
+```yaml
+# 需要变量替换 → 用 template
+- name: Deploy nginx config
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    validate: nginx -t -c %s
+
+# 原样复制 → 用 copy
+- name: Copy logo image
+  ansible.builtin.copy:
+    src: logo.png
+    dest: /var/www/images/logo.png
+```
+
+> 💡 **记忆技巧**：`.j2` 文件用 `template`，其他用 `copy`
 
 ---
 
@@ -67,6 +100,11 @@ cat exercises/04-template-filters.yaml
 # 执行
 ansible-playbook exercises/04-template-filters.yaml
 ```
+
+> ⚠️ **Python 3.13+ 注意**：`password_hash` 过滤器需要 `passlib` 库。
+> ```bash
+> pip3 install passlib
+> ```
 
 ---
 

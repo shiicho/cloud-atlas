@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # 06-ansible-doc.sh - Using ansible-doc for module documentation
 
 echo "=== List all modules ==="

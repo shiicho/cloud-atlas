@@ -2,7 +2,8 @@
 
 > **目标**：10 分钟内创建你的第一个 CloudFormation Stack，体验 AWS 原生 IaC
 > **时间**：30 分钟
-> **费用**：S3 Bucket（免费层）
+> **费用**：S3 Bucket（免费层 - 5GB 存储 + 2万次 GET/月）
+> **区域**：ap-northeast-1（Tokyo）推荐，或 us-east-1
 > **前置**：AWS 账号 + Console 访问权限
 
 > ⚠️ **费用提醒**：本课使用 S3 Bucket，属于 AWS Free Tier（免费层）。

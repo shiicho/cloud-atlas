@@ -1,0 +1,25 @@
+---
+# group_vars/dbservers.yaml - 数据库服务器专用变量
+
+# MariaDB 配置
+db_port: 3306
+db_data_dir: /var/lib/mysql
+db_socket: /var/lib/mysql/mysql.sock
+
+# 数据库软件包
+db_packages:
+  - mariadb-server
+  - mariadb
+
+# 数据库用户（示例）
+db_users:
+  - name: app_user
+    host: '%'
+    password: "{{ vault_db_app_password | default('changeme') }}"
+    priv: 'app_db.*:ALL'
+
+# 备份配置
+db_backup_enabled: true
+db_backup_dir: /var/backup/mysql
+db_backup_retention: 7
+...

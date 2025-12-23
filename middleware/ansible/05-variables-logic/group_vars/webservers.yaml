@@ -1,0 +1,22 @@
+---
+# group_vars/webservers.yaml - Web 服务器专用变量
+
+# HTTP 配置
+http_port: 80
+https_port: 443
+document_root: /var/www/html
+
+# Web 服务器软件包
+web_packages:
+  - httpd
+  - mod_ssl
+  - php
+
+# 服务配置
+web_services:
+  - httpd
+
+# 日志路径
+access_log: /var/log/httpd/access_log
+error_log: /var/log/httpd/error_log
+...

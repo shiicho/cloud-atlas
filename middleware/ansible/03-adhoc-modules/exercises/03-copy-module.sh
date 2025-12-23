@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # 03-copy-module.sh - Copy module usage
 
 echo "=== Copy content directly to file ==="

@@ -1,8 +1,9 @@
 # 06 · 扩展与运维实践（Advanced Ops - Capstone）
 
-> **目标**：掌握 LLD、Proxy 概念，创建 Dashboard 和監視設計書  
-> **前置**：[05 · 日志 + 自定义指标](../05-logs-custom/)  
-> **时间**：35-40 分钟  
+> **目标**：掌握 LLD、Proxy 概念，创建 Dashboard 和監視設計書
+> **前置**：[05 · 日志 + 自定义指标](../05-logs-custom/)
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成本课后请删除堆栈
+> **时间**：35-40 分钟
 > **Capstone**：编写完整的監視設計書
 
 ## 将学到的内容
@@ -81,17 +82,28 @@ Linux by Zabbix agent 模板已包含 LLD 规则。
 
 ### 1.4 LLD 宏
 
-| 宏 | 说明 |
-|----|------|
-| `{#FSNAME}` | 文件系统名（如 `/`, `/home`） |
-| `{#FSTYPE}` | 文件系统类型（如 `xfs`, `ext4`） |
-| `{#IFNAME}` | 网络接口名（如 `eth0`） |
+| 宏 | 说明 | 适用 Discovery |
+|----|------|--------------|
+| `{#FSNAME}` | 文件系统名（如 `/`, `/home`） | Filesystem |
+| `{#FSTYPE}` | 文件系统类型（如 `xfs`, `ext4`） | Filesystem |
+| `{#FSLABEL}` | 文件系统卷标（Zabbix 6.0+） | Filesystem |
+| `{#IFNAME}` | 网络接口名（如 `eth0`） | Network interface |
+| `{#IFTYPE}` | 接口类型（如 `loopback`, `ethernetCsmacd`） | Network interface |
+
+**查看网络接口 Discovery**：
+
+1. 在 Host 的「Discovery rules」页面
+2. 找到「Network interface discovery」
+3. 自动发现所有网卡并创建监控项（网卡流量、错误包等）
 
 ### 1.5 自定义 LLD 规则（进阶）
 
 创建自定义发现规则示例：
 
 ```bash
+# 安装 jq（JSON 处理工具，LLD 输出需要 JSON 格式）
+sudo dnf install -y jq
+
 # 创建发现脚本
 sudo vim /etc/zabbix/zabbix_agent2.d/discovery_apps.conf
 ```
@@ -100,6 +112,8 @@ sudo vim /etc/zabbix/zabbix_agent2.d/discovery_apps.conf
 # 发现运行中的 Java 应用
 UserParameter=custom.java.discovery,ps aux | grep -E 'java.*-jar' | awk '{print $NF}' | sed 's/.*\///' | sort -u | jq -R -s 'split("\n") | map(select(length > 0)) | map({"{#APPNAME}": .})'
 ```
+
+> 💡 **LLD 输出格式**：自定义 LLD 规则必须返回 JSON 格式的宏数组，如 `[{"{#APPNAME}": "app1"}, {"{#APPNAME}": "app2"}]`。
 
 ---
 
@@ -144,10 +158,22 @@ UserParameter=custom.java.discovery,ps aux | grep -E 'java.*-jar' | awk '{print 
 
 ### 2.3 Proxy 模式
 
-| 模式 | 方向 | 适用场景 |
-|------|------|----------|
-| Active | Proxy → Server | Proxy 在 NAT 后 |
-| Passive | Server → Proxy | Server 可直接访问 Proxy |
+| 模式 | 方向 | 端口 | 适用场景 |
+|------|------|------|----------|
+| Active | Proxy → Server | 10051 | Proxy 在 NAT 后 |
+| Passive | Server → Proxy | 10051 | Server 可直接访问 Proxy |
+
+### 2.4 Proxy Groups（Zabbix 7.0 新功能）
+
+Zabbix 7.0 引入了 Proxy Groups，用于高可用和负载均衡：
+
+| 功能 | 说明 |
+|------|------|
+| **HA 高可用** | 多个 Proxy 组成 Group，自动故障切换 |
+| **负载均衡** | 主机自动分配到不同 Proxy |
+| **配置同步** | Group 内 Proxy 共享配置 |
+
+> 💡 **生产环境建议**：关键站点部署 Proxy Group（至少 2 个 Proxy），确保单点故障不影响监控。
 
 ---
 
@@ -214,6 +240,18 @@ UserParameter=custom.java.discovery,ps aux | grep -E 'java.*-jar' | awk '{print 
 1. 保存 Dashboard
 2. 点击齿轮图标 → 「Set as default」
 
+### 3.7 Zabbix 7.0 新 Widget 类型
+
+| Widget | 用途 |
+|--------|------|
+| **Honeycomb** | 蜂窝状显示主机状态 |
+| **Gauge** | 仪表盘式数值显示 |
+| **Top triggers** | 最频繁触发的告警 |
+| **SLA report** | SLA 达成率报告 |
+| **Item navigator** | Item 值浏览器 |
+
+> 💡 探索「Add widget」菜单查看所有可用 Widget 类型。
+
 ---
 
 ## Step 4 — 配置定期报告
@@ -251,58 +289,100 @@ chmod +x ~/generate_report.sh
 
 ### 4.3 Scheduled Reports（Zabbix 7.0+）
 
+> ⚠️ **前置条件**：Scheduled Reports 需要以下组件：
+> - Zabbix Web Service（独立服务，用于 PDF 生成）
+> - Google Chrome 或 Chromium（PDF 渲染）
+> - 正确配置的 Frontend URL
+
+**检查前置条件**：
+
+```bash
+# 确认 zabbix-web-service 已安装
+rpm -qa | grep zabbix-web-service
+# 如未安装（本实验环境可选）：
+# sudo dnf install -y zabbix-web-service chromium
+
+# 确认服务运行
+systemctl status zabbix-web-service
+```
+
+**配置 Scheduled Report**：
+
 1. 「Reports」→「Scheduled reports」
 2. 点击「Create scheduled report」
-3. 配置发送时间和接收者
+3. 基本配置：
+
+| 字段 | 值 |
+|------|-----|
+| Name | `Daily Ops Report` |
+| Dashboard | 选择之前创建的 Dashboard |
+| Period | `Previous day` |
+| Cycle | `Daily` |
+| Start time | `08:00` |
+
+4. 配置接收者（Subscriptions 标签页）
+5. 点击「Add」
+
+> 💡 **生产环境提示**：Scheduled Reports 生成 PDF 需要较多资源，建议安排在非高峰时段。
 
 ---
 
 ## Step 5 — Slack 通知（可选）
 
-### 5.1 创建 Slack Webhook
+> ⚠️ **可选内容**：此步骤需要 Slack 工作区管理员权限，实验环境可跳过。
 
-1. 访问 Slack API：https://api.slack.com/apps
-2. 创建 App → 启用 Incoming Webhooks
-3. 添加 Webhook 到频道
-4. 复制 Webhook URL
+### 5.1 Slack 集成方式选择
 
-### 5.2 配置 Zabbix Media Type
+| 方式 | 状态 | 推荐度 |
+|------|------|--------|
+| Incoming Webhook | ⚠️ 旧版，功能受限 | 不推荐 |
+| **Bot OAuth Token** | ✅ 官方推荐 | **推荐** |
+| Zabbix 官方模板 | ✅ Zabbix 7.0 内置 | **最推荐** |
+
+### 5.2 使用 Zabbix 官方 Slack 模板（推荐）
+
+Zabbix 7.0 内置了官方 Slack 模板，无需自定义脚本：
 
 1. 「Alerts」→「Media types」
-2. 导入 Slack 模板或创建新的：
+2. 找到「Slack」（预置模板）
+3. 点击配置
 
-| 字段 | 值 |
-|------|-----|
-| Name | Slack |
-| Type | Webhook |
-| Script | （见下方） |
+**创建 Slack Bot**：
 
-**Webhook 脚本参数**：
+1. 访问 https://api.slack.com/apps
+2. 点击「Create New App」→「From scratch」
+3. 输入 App 名称（如 `Zabbix Alerts`），选择 Workspace
+4. 左侧菜单「OAuth & Permissions」
+5. 在「Scopes」→「Bot Token Scopes」添加：
+   - `chat:write`（发送消息）
+   - `chat:write.public`（发送到公开频道）
+6. 点击「Install to Workspace」
+7. 复制「Bot User OAuth Token」（以 `xoxb-` 开头）
+
+**配置 Media Type**：
 
 | 参数 | 值 |
 |------|-----|
-| URL | `{ALERT.SENDTO}` |
-| HTTPProxy | （如有） |
-
-**Script**：
-```javascript
-var params = JSON.parse(value);
-var req = new HttpRequest();
-req.addHeader('Content-Type: application/json');
-
-var payload = {
-    "text": params.Subject + "\n" + params.Message
-};
-
-req.post(params.URL, JSON.stringify(payload));
-return 'OK';
-```
+| bot_token | `xoxb-your-token-here` |
+| channel | `#alerts` 或 Channel ID |
 
 ### 5.3 配置 User Media
 
-1. 编辑用户 → Media 标签
-2. 添加 Slack Media
-3. Send to: 填入 Webhook URL
+1. 「Users」→ 编辑用户 → 「Media」标签
+2. 点击「Add」
+3. Type: `Slack`
+4. Send to: 频道名（如 `#zabbix-alerts`）或用户 ID
+5. 点击「Add」→「Update」
+
+### 5.4 测试 Slack 通知
+
+1. 在「Media types」页面找到 Slack
+2. 点击「Test」
+3. 填写测试参数：
+   - Send to: `#test-channel`
+   - Subject: `Test Alert`
+   - Message: `This is a test from Zabbix`
+4. 检查 Slack 频道是否收到消息
 
 ---
 
@@ -474,7 +554,7 @@ StartDiscoverers=1          # 默认 1，LLD 规则多时增加
 # =============================================================================
 
 # 配置缓存（存放 hosts/items/triggers 配置）
-CacheSize=32M               # 默认 32M，大规模需 128M-256M
+CacheSize=32M               # 默认 8M，大规模需 128M-256M
 
 # 历史数据写入缓存
 HistoryCacheSize=16M        # 默认 16M
@@ -578,11 +658,36 @@ tail -50 /var/log/zabbix/zabbix_server.log
 
 ## 清理资源
 
+### 清理本地资源
+
+```bash
+# 删除本课创建的脚本和文件
+rm -f ~/generate_report.sh
+rm -rf /var/reports/zabbix
+
+# 如果配置了自定义 LLD
+sudo rm -f /etc/zabbix/zabbix_agent2.d/discovery_apps.conf
+```
+
+### 清理 Slack 配置（如配置了）
+
+1. 访问 https://api.slack.com/apps
+2. 找到创建的 Zabbix App
+3. 点击「Delete App」
+
+### 删除 AWS 资源
+
 完成学习后，删除 CloudFormation 堆栈：
 
 ```bash
 aws cloudformation delete-stack --stack-name zabbix-lab
+
+# 确认删除完成
+aws cloudformation describe-stacks --stack-name zabbix-lab
+# 应返回 "Stack not found" 错误
 ```
+
+> ⚠️ **费用提醒**：不删除堆栈将持续产生费用（约 $0.03/小时 ≈ $22/月）。
 
 ---
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # 04-command-idempotent.sh - Making command module idempotent
 
 echo "=== Command with 'creates' - only runs if file doesn't exist ==="

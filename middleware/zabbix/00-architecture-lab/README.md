@@ -156,6 +156,8 @@ curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/za
 
 ### 3.2 通过 AWS 控制台部署
 
+> 💡 **区域推荐**：建议选择 `ap-northeast-1`（东京），适合在日本工作的学习者，延迟最低。
+
 1. **打开 CloudFormation 控制台**
    - 登录 AWS Console
    - 搜索 "CloudFormation" 并打开
@@ -192,9 +194,14 @@ curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/za
 
 | 输出键 | 用途 |
 |--------|------|
-| `ZabbixServerPublicIP` | Web UI 访问地址 |
-| `ZabbixServerPrivateIP` | Agent 配置用 |
+| `ZabbixServerPublicIP` | Zabbix Server 公网 IP |
+| `ZabbixWebURL` | Web UI 访问地址 (`http://<IP>/zabbix`) |
+| `ZabbixServerPrivateIP` | Agent 配置用（ServerActive） |
 | `MonitoredHostPrivateIP` | 主机注册用 |
+| `ZabbixServerInstanceId` | SSM 连接 Zabbix Server 用 |
+| `MonitoredHostInstanceId` | SSM 连接 Monitored Host 用 |
+| `SSMConnectZabbixServer` | 完整的 SSM 连接命令 |
+| `SSMConnectMonitoredHost` | 完整的 SSM 连接命令 |
 | `CleanupCommand` | 删除堆栈命令 |
 
 ### 3.4 验证实例连接
@@ -207,6 +214,10 @@ curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/za
 - 点击「连接」→「Session Manager」→「连接」
 
 **方法 2：CLI**
+
+> 💡 **提示**：Instance ID 可在 CloudFormation「输出」标签页的 `ZabbixServerInstanceId` 和 `MonitoredHostInstanceId` 中找到，格式如 `i-0abc123def456789`。
+> 也可直接复制输出中的 `SSMConnectZabbixServer` / `SSMConnectMonitoredHost` 完整命令。
+
 ```bash
 # 连接 Zabbix Server
 aws ssm start-session --target <ZabbixServerInstanceId>

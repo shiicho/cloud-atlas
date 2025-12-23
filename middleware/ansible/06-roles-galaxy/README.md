@@ -1,8 +1,9 @@
 # 06 · Roles 与 Ansible Galaxy（Roles & Project Structure）
 
-> **目标**：掌握 Role 结构和 Ansible Galaxy  
-> **前置**：[05 · 变量与逻辑](../05-variables-logic/)  
-> **时间**：40 分钟  
+> **目标**：掌握 Role 结构和 Ansible Galaxy
+> **前置**：[05 · 变量与逻辑](../05-variables-logic/)
+> **时间**：40 分钟
+> **版本**：ansible-core 2.17+，Python 3.10+
 > **实战项目**：创建标准化 Role 库
 
 ---
@@ -31,7 +32,13 @@ cd ~/06-roles-galaxy
 
 # 4. 确认 Managed Nodes 可连接
 ansible all -m ping
+
+# 5. 安装依赖（Roles 和 Collections）
+ansible-galaxy install -r requirements.yaml
 ```
+
+> 💡 **关于依赖安装**：`requirements.yaml` 包含 Roles 和 Collections 两类依赖。
+> Collections 是 Ansible 2.9+ 引入的新打包格式，包含模块、插件和文档。
 
 ---
 

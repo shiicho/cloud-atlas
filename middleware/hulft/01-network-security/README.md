@@ -1,9 +1,18 @@
 # 01 · 网络拓扑与安全基础（端口/防火墙/服务账户）
 
-> **目标**：掌握 HULFT 网络配置和企业级安全设计  
-> **前置**：[00 · HULFT 概念与架构](../00-concepts/)  
-> **适用**：日本 SIer/银行 IT 岗位面试准备  
+> **目标**：掌握 HULFT 网络配置和企业级安全设计
+> **前置**：[00 · HULFT 概念与架构](../00-concepts/)（理解 Store-and-Forward）
+> **适用**：日本 SIer/银行 IT 岗位面试准备
 > **时长**：约 45 分钟
+> **费用**：如果在 AWS 上练习，完成后请删除 EC2 资源，避免产生费用
+
+---
+
+> **版本说明**：
+> - 本教程基于 **HULFT8**
+> - **HULFT10** 已于 2024年12月发布（首次大版本升级，历时10年）
+> - HULFT8 标准支持结束：2030年6月
+> - 新项目建议评估 HULFT10
 
 ## 将完成的内容
 
@@ -25,6 +34,12 @@ HULFT 使用以下端口进行通信：
 | **8594** | Control Channel | TCP | 控制通道（默认，可配置） |
 | **8500** | Data Channel | TCP | 数据传输通道 |
 | **25421** | HULFT Manager | TCP | Web GUI 管理界面（可选） |
+
+> **端口说明**：
+> - 本教程使用 **8594** (控制通道) 和 **8500** (数据通道)
+> - 这是日本银行/企业环境的**常见配置**
+> - HULFT 官方默认端口为 **30000** (Receive) / **31000** (Observe)
+> - 实际端口以您的安装配置为准
 
 ### 端口通信流程
 
@@ -85,19 +100,22 @@ HULFT 使用以下端口进行通信：
 用户名: hulftsvc / hulftusr / hulft
 Shell:  /sbin/nologin          # 禁止交互登录
 Group:  hulft
-Home:   /opt/hulft
+Home:   /opt/hulft8            # 与安装目录一致
 ```
 
 ### 创建服务账户
 
+> **注意**：以下命令需要 root 权限执行
+
 ```bash
+# 需要 root 权限
 # 创建 hulft 组
-groupadd hulft
+sudo groupadd hulft
 
 # 创建服务账户（非登录）
-useradd -r \
+sudo useradd -r \
   -s /sbin/nologin \
-  -d /opt/hulft \
+  -d /opt/hulft8 \
   -g hulft \
   -c "HULFT Service Account" \
   hulftsvc
@@ -181,17 +199,24 @@ Outbound: TCP 8594, 8500 → DMZ Security Group
 Inbound:  TCP 8594, 8500 ← Core Security Group ONLY
 ```
 
-**传统防火墙规则：**
+**传统防火墙规则（iptables）：**
 
-```
-# Core → DMZ (出站)
-iptables -A OUTPUT -p tcp -d <DMZ_IP> --dport 8594 -j ACCEPT
-iptables -A OUTPUT -p tcp -d <DMZ_IP> --dport 8500 -j ACCEPT
+```bash
+# Core → DMZ (出站) - 需要 root 权限
+sudo iptables -A OUTPUT -p tcp -d <DMZ_IP> --dport 8594 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp -d <DMZ_IP> --dport 8500 -j ACCEPT
 
 # 响应流量（已建立连接）
-iptables -A INPUT -p tcp --sport 8594 -m state --state ESTABLISHED -j ACCEPT
-iptables -A INPUT -p tcp --sport 8500 -m state --state ESTABLISHED -j ACCEPT
+sudo iptables -A INPUT -p tcp --sport 8594 -m state --state ESTABLISHED -j ACCEPT
+sudo iptables -A INPUT -p tcp --sport 8500 -m state --state ESTABLISHED -j ACCEPT
 ```
+
+> **现代系统替代方案**：Amazon Linux 2023 / RHEL 9 请使用 firewalld：
+> ```bash
+> sudo firewall-cmd --add-port=8594/tcp --permanent
+> sudo firewall-cmd --add-port=8500/tcp --permanent
+> sudo firewall-cmd --reload
+> ```
 
 ### 场景 2：双向通信
 
@@ -378,33 +403,36 @@ date +"%Y-%m-%d %H:%M:%S.%N"
 <details>
 <summary>点击查看参考答案</summary>
 
+**集信（Pull）模式的关键**：Core 发起连接去 DMZ 拉取数据。
+
 ```
-# Core Security Group
-Inbound Rules:
-  - Type: Custom TCP
-    Port: 8594
-    Source: 10.0.2.100/32 (DMZ)
-    Description: HULFT control from DMZ
-
-  - Type: Custom TCP
-    Port: 8500
-    Source: 10.0.2.100/32 (DMZ)
-    Description: HULFT data from DMZ
-
-# DMZ Security Group
+# Core Security Group（发起连接方）
 Outbound Rules:
   - Type: Custom TCP
     Port: 8594
-    Destination: 10.0.1.50/32 (Core)
-    Description: HULFT control to Core
+    Destination: 10.0.2.100/32 (DMZ)
+    Description: HULFT control to DMZ (集信发起)
 
   - Type: Custom TCP
     Port: 8500
-    Destination: 10.0.1.50/32 (Core)
-    Description: HULFT data to Core
+    Destination: 10.0.2.100/32 (DMZ)
+    Description: HULFT data to DMZ (集信数据)
+
+# DMZ Security Group（被拉取方）
+Inbound Rules:
+  - Type: Custom TCP
+    Port: 8594
+    Source: 10.0.1.50/32 (Core)
+    Description: HULFT control from Core
+
+  - Type: Custom TCP
+    Port: 8500
+    Source: 10.0.1.50/32 (Core)
+    Description: HULFT data from Core
 ```
 
-注意：使用集信模式，DMZ 不需要入站规则！
+> **要点**：使用集信（Pull）模式，**Core 向外连接**，**DMZ 无需主动出站**。
+> AWS Security Group 是状态防火墙，响应流量自动放行。
 
 </details>
 
@@ -425,6 +453,7 @@ Outbound Rules:
 ```bash
 #!/bin/bash
 # setup-hulft-account.sh
+# 需要 root 权限执行
 
 # 创建组
 groupadd -f hulft
@@ -432,7 +461,7 @@ groupadd -f hulft
 # 创建用户
 useradd -r \
   -s /sbin/nologin \
-  -d /opt/hulft \
+  -d /opt/hulft8 \
   -g hulft \
   -c "HULFT Service Account" \
   hulftsvc 2>/dev/null || echo "User exists"

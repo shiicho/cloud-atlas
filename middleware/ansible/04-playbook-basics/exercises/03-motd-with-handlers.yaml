@@ -5,6 +5,7 @@
 - name: Configure MOTD with Handlers
   hosts: all
   become: true
+  gather_facts: true  # 需要 ansible_date_time fact
 
   vars:
     motd_content: |
@@ -15,18 +16,19 @@
       ========================================
 
   tasks:
+    # 先创建日志目录，确保 handler 能写入
+    - name: Ensure /var/log/ansible exists
+      ansible.builtin.file:
+        path: /var/log/ansible
+        state: directory
+        mode: '0755'
+
     - name: Deploy MOTD
       ansible.builtin.copy:
         content: "{{ motd_content }}"
         dest: /etc/motd
         mode: '0644'
       notify: Log MOTD change
-
-    - name: Ensure /var/log/ansible exists
-      ansible.builtin.file:
-        path: /var/log/ansible
-        state: directory
-        mode: '0755'
 
   handlers:
     - name: Log MOTD change

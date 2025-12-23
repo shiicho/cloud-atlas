@@ -2,8 +2,9 @@
 
 > **目标**：掌握 CloudFormation 模板完整结构，使用内置函数创建可复用模板
 > **时间**：45 分钟
-> **费用**：EC2 t3.micro（免费层）
-> **前置**：已完成 [00 - CloudFormation 基础](../00-fundamentals/)
+> **费用**：EC2 t3.micro（免费层 - 新账户前 12 个月 750 小时/月）
+> **区域**：ap-northeast-1（Tokyo）推荐 - 本课 AMI 映射支持 Tokyo/Osaka/Virginia/Oregon
+> **前置**：已完成 [00 - CloudFormation 基础](../00-fundamentals/) + 默认 VPC + EC2 Key Pair
 
 ---
 
@@ -20,6 +21,11 @@
 ## Step 1 - 先跑起来！（10 分钟）
 
 > 先"尝到"一个完整模板的味道，再理解每个部分的作用。
+
+> ⚠️ **前置要求**：
+> - 需要**默认 VPC**（新账户自动创建，如果删除过需要重建）
+> - 需要**EC2 Key Pair**（在 EC2 Console → Key Pairs 创建）
+> - 本课 AMI 映射仅支持 Tokyo/Osaka/Virginia/Oregon 四个区域
 
 ### 1.1 准备多环境 EC2 模板
 

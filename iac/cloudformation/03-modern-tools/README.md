@@ -2,7 +2,8 @@
 
 > **目标**：掌握 2024-2025 年 CloudFormation 新工具，可视化设计与逆向工程
 > **时间**：45 分钟
-> **费用**：Free Tier（VPC + EC2 t3.micro）
+> **费用**：VPC + EC2 t3.micro（免费层）、ALB（约 $0.50/小时，请及时清理）
+> **区域**：ap-northeast-1（Tokyo）推荐，Infrastructure Composer 全球可用
 > **前置**：完成 [02 - 安全运维](../02-safe-operations/)
 
 ---
@@ -130,7 +131,9 @@ Infrastructure Composer 集成了 AI 辅助功能：
 
 <!-- SCREENSHOT: infrastructure-composer-ai-assistant -->
 
-> **注意**：AI 辅助功能可能需要在 us-east-1 区域使用，且需要账户启用相关功能。
+> **注意**：AI 辅助功能在 Console 版 Infrastructure Composer 中可用。
+> VS Code 版本通过 AWS Toolkit 扩展使用，功能可能有所不同。
+> 部分功能需要在 us-east-1 区域使用，且需要账户启用 Amazon Q。
 
 ---
 
@@ -156,6 +159,9 @@ Infrastructure Composer 集成了 AI 辅助功能：
 ```
 
 ### 3.2 扫描账户资源
+
+> **扫描限制**：每个账户每天最多 10 次扫描（小型账户）。
+> 大型账户可能有更高限制，具体请查看 AWS 文档。
 
 1. 在 CloudFormation Console，点击 **IaC Generator**
 2. 点击 **Start new scan**
@@ -465,11 +471,14 @@ E1012 Ref NonExistentSubnet not found as a resource or parameter
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/aws-cloudformation/cfn-lint
-    rev: v0.83.0
+    rev: v1.43.1    # 2024年12月时点的最新版本
     hooks:
       - id: cfn-lint
         files: .*\.ya?ml$
 ```
+
+> **版本注意**：cfn-lint 1.x 版本于 2024 年发布，包含重大更新。
+> 使用 `cfn-lint --version` 确认版本。
 
 **CI/CD Pipeline**：
 ```yaml
@@ -717,7 +726,7 @@ CI/CD パイプラインに組み込むことで、品質を保証できます�
 
 ## 延伸阅读
 
-- [Infrastructure Composer ユーザーガイド](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/infrastructure-composer.html)
+- [Infrastructure Composer ユーザーガイド](https://docs.aws.amazon.com/infrastructure-composer/latest/dg/what-is-composer.html)
 - [IaC Generator ドキュメント](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/generate-IaC.html)
 - [cfn-lint GitHub](https://github.com/aws-cloudformation/cfn-lint)
 - [What's New - CloudFormation 2024](https://aws.amazon.com/about-aws/whats-new/2024/?whats-new-content-all.sort-by=item.additionalFields.postDateTime&whats-new-content-all.sort-order=desc&awsf.whats-new-categories=general-products%23aws-cloudformation)

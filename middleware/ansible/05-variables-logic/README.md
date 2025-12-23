@@ -1,8 +1,9 @@
 # 05 · 变量・Facts・条件・循环（Variables, Facts, Conditionals, Loops）
 
-> **目标**：掌握变量、Facts、条件判断和循环  
-> **前置**：[04 · Playbook 基础](../04-playbook-basics/)  
-> **时间**：40 分钟  
+> **目标**：掌握变量、Facts、条件判断和循环
+> **前置**：[04 · Playbook 基础](../04-playbook-basics/)
+> **时间**：40 分钟
+> **版本**：ansible-core 2.17+，Python 3.10+
 > **实战项目**：多环境配置管理
 
 ---
@@ -58,6 +59,8 @@ role defaults < group_vars < host_vars < play vars < extra vars (-e)
 ```
 
 > 💡 **核心记忆**：`-e` 最高，`role defaults` 最低，`host_vars` > `group_vars`
+>
+> 📚 **完整版**：Ansible 实际有 [22 级变量优先级](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable)，上述为常用简化版。
 
 ---
 
