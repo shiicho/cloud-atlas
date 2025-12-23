@@ -1,9 +1,10 @@
 # 10 · AWX/Ansible Tower 入门（GUI Automation Platform）
 
-> **目标**：掌握 AWX 企业级自动化平台  
-> **前置**：[09 · Vault 机密管理](../09-vault-secrets/)  
-> **时间**：45 分钟  
-> **费用**：约 $0.05/小时（t3.medium）  
+> **目标**：掌握 AWX 企业级自动化平台
+> **前置**：[09 · Vault 机密管理](../09-vault-secrets/)
+> **时间**：45 分钟
+> **版本**：AWX 24.x+（需 Kubernetes/Minikube）
+> **费用**：约 $0.05/小时（t3.medium）
 > **实战项目**：部署 AWX 并创建 Workflow
 
 ---
@@ -90,7 +91,7 @@ cd ~/10-awx-tower
 # 部署 AWX Lab
 aws cloudformation create-stack \
   --stack-name ansible-awx-lab \
-  --template-body file://cfn/ansible-awx-lab.yaml \
+  --template-body file://cfn/managed-nodes.yaml \
   --capabilities CAPABILITY_IAM
 
 # 等待完成
@@ -100,13 +101,12 @@ aws cloudformation wait stack-create-complete --stack-name ansible-awx-lab
 ### 2.2 连接到 AWX 主机
 
 ```bash
-# 获取 Instance ID
-AWX_ID=$(aws cloudformation describe-stacks --stack-name ansible-awx-lab \
-  --query 'Stacks[0].Outputs[?OutputKey==`AWXInstanceId`].OutputValue' \
-  --output text)
+# 获取 AWX 主机信息
+aws cloudformation describe-stacks --stack-name ansible-awx-lab \
+  --query 'Stacks[0].Outputs[*].[OutputKey,OutputValue]' --output table
 
-# SSM 连接
-aws ssm start-session --target $AWX_ID
+# 使用 AWX DNS 连接（需要先 SSH 到 Controller）
+ssh ansible@awx.ans.local
 ```
 
 ### 2.3 安装 AWX

@@ -260,7 +260,7 @@ ansible-galaxy collection install amazon.aws
     src: db.conf.j2
     dest: /etc/myapp/db.conf
   vars:
-    db_config: "{{ lookup('amazon.aws.aws_secret', 'myapp/db-credentials') | from_json }}"
+    db_config: "{{ lookup('amazon.aws.secretsmanager_secret', 'myapp/db-credentials') | from_json }}"
     db_host: "{{ db_config.host }}"
     db_user: "{{ db_config.username }}"
     db_pass: "{{ db_config.password }}"

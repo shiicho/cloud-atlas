@@ -1,0 +1,38 @@
+---
+# 01-vault-basics.yaml - Vault 基础操作练习
+# 学习目标: 创建和使用 Vault 加密变量
+
+- name: Vault Basics Exercise
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../vars/main.yaml
+    - ../vars/secrets_example.yaml  # 演示用明文版本
+
+  tasks:
+    - name: Show non-sensitive variable
+      ansible.builtin.debug:
+        msg: "Database host: {{ db_host }}"
+
+    # 注意：实际应用中永远不要这样做！
+    - name: Deploy application config (demo only)
+      ansible.builtin.template:
+        src: ../templates/app.conf.j2
+        dest: /tmp/app.conf
+        mode: '0600'
+
+    - name: Verify config file created
+      ansible.builtin.stat:
+        path: /tmp/app.conf
+      register: config_stat
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg: "Config file created: {{ config_stat.stat.exists }}"
+
+    - name: Cleanup demo config
+      ansible.builtin.file:
+        path: /tmp/app.conf
+        state: absent
+      tags: cleanup
+...

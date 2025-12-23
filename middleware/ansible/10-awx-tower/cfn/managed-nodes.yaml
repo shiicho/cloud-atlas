@@ -7,9 +7,9 @@ Description: |
 Parameters:
   InstanceType:
     Type: String
-    Default: t3.small
-    AllowedValues: [t3.small, t3.medium]
-    Description: AWX needs more resources (min t3.small)
+    Default: t3.medium
+    AllowedValues: [t3.small, t3.medium, t3.large]
+    Description: AWX on Minikube needs more resources (min t3.medium recommended)
 
   PublicKey:
     Type: String
@@ -100,11 +100,25 @@ Resources:
           chmod 700 /home/ansible/.ssh
           chmod 600 /home/ansible/.ssh/authorized_keys
           chown -R ansible:ansible /home/ansible/.ssh
-          dnf install -y python3 python3-pip git docker
+          # Install dependencies for AWX on Minikube
+          dnf install -y python3 python3-pip git docker conntrack
           systemctl enable docker
           systemctl start docker
           usermod -aG docker ansible
-          pip3 install docker-compose
+
+          # Install kubectl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          rm kubectl
+
+          # Install minikube
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          install minikube-linux-amd64 /usr/local/bin/minikube
+          rm minikube-linux-amd64
+
+          # Install awxkit CLI
+          pip3 install awxkit
+
           mkdir -p /opt/awx
           chown ansible:ansible /opt/awx
 

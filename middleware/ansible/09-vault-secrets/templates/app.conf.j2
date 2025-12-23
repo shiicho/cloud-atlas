@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# Application Configuration
+
+[database]
+host = {{ db_host }}
+port = {{ db_port }}
+name = {{ db_name }}
+user = app_user
+password = {{ db_password }}
+
+[application]
+name = {{ app_name }}
+secret_key = {{ app_secret }}
+debug = false
+
+[api]
+key = {{ api_key }}
+timeout = 30

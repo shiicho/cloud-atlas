@@ -1,0 +1,14 @@
+---
+# vars/main.yaml - 引用加密变量
+# 通过此文件间接使用加密变量，便于追踪变量来源
+
+# 从 vault.yaml 引用（vault.yaml 是加密文件）
+db_password: "{{ vault_db_password }}"
+api_key: "{{ vault_api_key }}"
+app_secret: "{{ vault_app_secret }}"
+
+# 非敏感配置
+db_host: db-1.ans.local
+db_port: 3306
+db_name: myapp
+app_name: cloud-atlas-demo

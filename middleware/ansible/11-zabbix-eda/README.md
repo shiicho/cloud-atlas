@@ -1,8 +1,9 @@
 # 11 · Zabbix 连携与 Event-Driven Ansible（EDA Integration）
 
-> **目标**：掌握 Event-Driven Ansible 与 Zabbix 集成  
-> **前置**：[10 · AWX/Tower](../10-awx-tower/)、[Zabbix 04 · 触发器与告警](../../zabbix/04-triggers-alerts/)  
-> **时间**：45 分钟  
+> **目标**：掌握 Event-Driven Ansible 与 Zabbix 集成
+> **前置**：[10 · AWX/Tower](../10-awx-tower/)、[Zabbix 04 · 触发器与告警](../../zabbix/04-triggers-alerts/)
+> **时间**：45 分钟
+> **版本**：ansible-rulebook 1.1+, Python 3.10+, Java 17+, Zabbix 7.0+
 > **实战项目**：障害対応自動化 - 磁盘告警自动清理
 
 ---
@@ -80,10 +81,19 @@ ansible all -m ping
 
 ## Step 2 — 安装 EDA
 
-### 2.1 安装 ansible-rulebook
+### 2.1 安装前置依赖
+
+> ⚠️ **重要**：ansible-rulebook 需要 **Java 17+** 运行时（Drools 规则引擎依赖）
 
 ```bash
-# 安装依赖
+# 1. 安装 Java 17+（Amazon Linux 2023 / RHEL 9）
+sudo dnf install -y java-17-amazon-corretto-headless
+
+# 验证 Java 版本
+java -version
+# 输出应包含: openjdk version "17.x.x"
+
+# 2. 安装 ansible-rulebook
 pip3 install ansible-rulebook ansible-runner
 
 # 验证安装
@@ -93,10 +103,16 @@ ansible-rulebook --version
 ### 2.2 安装 Event Source 插件
 
 ```bash
-# 安装 Zabbix 相关 Collection
+# 安装 EDA Collection（包含 webhook 等 source 插件）
 ansible-galaxy collection install ansible.eda
+
+# 安装 Zabbix Collection（用于 Zabbix API 操作）
 ansible-galaxy collection install community.zabbix
 ```
+
+> 💡 **Collection 版本说明**：
+> - `ansible.eda` 提供 `eda.builtin.webhook` 等 source 插件
+> - `community.zabbix` 提供 Zabbix API 模块（可选）
 
 ---
 
@@ -110,7 +126,7 @@ ansible-galaxy collection install community.zabbix
 - name: Disk Space Remediation
   hosts: all
   sources:
-    - ansible.eda.webhook:
+    - eda.builtin.webhook:
         host: 127.0.0.1      # 仅本地访问，生产环境使用反向代理
         port: 5000
         token: "{{ lookup('env', 'EDA_WEBHOOK_TOKEN') }}"  # 认证令牌
@@ -159,15 +175,25 @@ ansible-rulebook --rulebook rulebook.yaml -i inventory.yaml --verbose
 
 ### 4.1 创建 Media Type
 
-1. 在 Zabbix 中：**Administration** → **Media types** → **Create**
+> 📌 **Zabbix 7.0+ 菜单变更**：Media types 已移至 **Alerts** 菜单
+
+1. 在 Zabbix 中：**Alerts** → **Media types** → **Create media type**
 2. 配置：
    - Name: `Ansible EDA`
    - Type: `Webhook`
-   - Parameters:
-     ```
-     URL: http://eda-host:5000/endpoint
-     HTTPMethod: POST
-     ```
+   - Parameters（添加以下参数）：
+
+   | Name | Value |
+   |------|-------|
+   | `URL` | `http://eda-host:5000/endpoint` |
+   | `HTTPMethod` | `POST` |
+   | `TRIGGER_NAME` | `{TRIGGER.NAME}` |
+   | `TRIGGER_SEVERITY` | `{TRIGGER.SEVERITY}` |
+   | `TRIGGER_STATUS` | `{TRIGGER.STATUS}` |
+   | `HOST_NAME` | `{HOST.NAME}` |
+   | `HOST_IP` | `{HOST.IP}` |
+   | `ITEM_NAME` | `{ITEM.NAME}` |
+   | `ITEM_VALUE` | `{ITEM.VALUE}` |
 
 ### 4.2 Webhook 脚本
 
@@ -204,9 +230,16 @@ return 'OK';
 
 ### 4.3 创建 Action
 
-1. **Configuration** → **Actions** → **Trigger actions** → **Create**
-2. Conditions: Trigger severity = High
-3. Operations: Send to Ansible EDA (media type)
+> 📌 **Zabbix 7.0+ 菜单变更**：Actions 已移至 **Alerts** 菜单
+
+1. **Alerts** → **Actions** → **Trigger actions** → **Create action**
+2. **Action** 标签页：
+   - Name: `EDA Disk Alert`
+   - Conditions: `Trigger severity >= High`
+3. **Operations** 标签页：
+   - Operation type: `Send message`
+   - Send to users: 选择接收用户
+   - Send only to: `Ansible EDA`（上一步创建的 Media type）
 
 ---
 
@@ -220,7 +253,7 @@ return 'OK';
 - name: Disk Space Auto-Remediation
   hosts: all
   sources:
-    - ansible.eda.webhook:
+    - eda.builtin.webhook:
         host: 0.0.0.0
         port: 5000
 
@@ -408,16 +441,32 @@ rules:
 
 ---
 
+## 清理资源
+
+```bash
+# 1. 停止 ansible-rulebook（Ctrl+C）
+
+# 2. 清理 Zabbix 配置（可选）
+# - 删除 Media type: Alerts → Media types → Ansible EDA → Delete
+# - 删除 Action: Alerts → Actions → EDA Disk Alert → Delete
+
+# 3. 清理测试文件（如有）
+rm -f /tmp/eda_test_*
+```
+
+---
+
 ## 动手前检查清单
 
 | # | 检查项 | 验证命令 |
 |---|--------|----------|
-| 1 | Python 3.9+ 已安装 | `python3 --version` |
-| 2 | ansible-rulebook 已安装 | `ansible-rulebook --version` |
-| 3 | EDA collection 已安装 | `ansible-galaxy collection list \| grep eda` |
-| 4 | Inventory 文件存在 | `ansible-inventory --list` |
-| 5 | Webhook 端口可用 | `ss -tlnp \| grep 5000` |
-| 6 | 防火墙规则配置（如需要） | `firewall-cmd --list-ports` |
+| 1 | Python 3.10+ 已安装 | `python3 --version` |
+| 2 | **Java 17+ 已安装** | `java -version` |
+| 3 | ansible-rulebook 已安装 | `ansible-rulebook --version` |
+| 4 | EDA collection 已安装 | `ansible-galaxy collection list \| grep eda` |
+| 5 | Inventory 文件存在 | `ansible-inventory --list` |
+| 6 | Webhook 端口可用 | `ss -tlnp \| grep 5000` |
+| 7 | 防火墙规则配置（如需要） | `firewall-cmd --list-ports` |
 
 ---
 

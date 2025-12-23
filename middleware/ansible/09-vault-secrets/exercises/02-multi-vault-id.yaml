@@ -1,0 +1,38 @@
+---
+# 02-multi-vault-id.yaml - 多 Vault ID 练习
+# 学习目标: 管理多环境的加密变量
+#
+# 准备步骤：
+# 1. 创建 dev 环境密码文件：echo "dev_password" > ~/.vault_pass_dev
+# 2. 创建 prod 环境密码文件：echo "prod_password" > ~/.vault_pass_prod
+# 3. 创建加密文件：
+#    ansible-vault create --vault-id dev@~/.vault_pass_dev vars/vault_dev.yaml
+#    ansible-vault create --vault-id prod@~/.vault_pass_prod vars/vault_prod.yaml
+#
+# 运行方式：
+#    ansible-playbook exercises/02-multi-vault-id.yaml \
+#      --vault-id dev@~/.vault_pass_dev \
+#      --vault-id prod@~/.vault_pass_prod \
+#      -e "target_env=dev"
+
+- name: Multi Vault ID Demo
+  hosts: webservers
+  become: true
+
+  vars:
+    target_env: "{{ target_env | default('dev') }}"
+
+  tasks:
+    - name: Display current environment
+      ansible.builtin.debug:
+        msg: "Running in {{ target_env }} environment"
+
+    - name: Show environment-specific message
+      ansible.builtin.debug:
+        msg: |
+          This playbook demonstrates multi-vault-ID usage.
+          In a real scenario, you would:
+          1. Have separate vault files for each environment
+          2. Use different passwords for each vault
+          3. Load the appropriate variables based on target_env
+...
