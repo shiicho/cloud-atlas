@@ -80,9 +80,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation
         - Key: Description
-          Value: |
-            This bucket is deleted when stack is deleted.
-            For temporary files and regeneratable data.
+          Value: Deleted when stack is deleted. For temporary files.
 
       # Security configuration
       PublicAccessBlockConfiguration:
@@ -125,9 +123,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation
         - Key: Description
-          Value: |
-            This bucket remains after stack deletion.
-            For important data protection. Manual management required after deletion.
+          Value: Retained after stack deletion. Manual management required.
 
       # Version control (best practice for important data)
       VersioningConfiguration:

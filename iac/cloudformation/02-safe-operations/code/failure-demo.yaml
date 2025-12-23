@@ -50,9 +50,9 @@ Resources:
       BucketName: !Sub 'failure-lab-${AWS::AccountId}'
       Tags:
         - Key: Name
-          Value: Failure Lab Bucket (will be rolled back)
+          Value: Failure Lab Bucket
         - Key: Purpose
-          Value: Rollback demo - this bucket will be deleted during rollback
+          Value: Rollback demo bucket
 
   # ---------------------------------------------------------------------------
   # FailingInstance - This will fail (using invalid AMI ID)

@@ -276,7 +276,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation
         - Key: Purpose
-          Value: "API Operation Recording (API Audit Trail)"
+          Value: "API Audit Trail"
 
   # ===========================================================================
   # AWS Config - Compliance checking

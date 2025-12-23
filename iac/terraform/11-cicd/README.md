@@ -17,23 +17,51 @@
 
 ---
 
-## 先跑起来：5 分钟看到效果
+## Step 1 — 环境准备与连接（2 分钟）
+
+连接到你的 Terraform Lab 实例。
+
+**获取实例 ID：**
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --region ap-northeast-1 \
+  --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
+  --output text
+```
+
+> **💡 连接方式**（选择你熟悉的）：
+> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager
+> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`
+> - **VS Code**：Remote-SSH 连接（如已配置）
+>
+> **❓ 没有实例？** Stack 不存在或实例已终止？
+> → [重新部署实验环境](../00-concepts/lab-setup.md)
+
+连接后，切换到课程用户并同步代码：
+
+```bash
+sudo su - terraform
+sync-course
+```
+
+确认上一课的资源已清理：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/10-drift/code/drift-detect
+terraform state list  # 应为空
+```
+
+---
+
+## Step 2 — 先跑起来：5 分钟看到效果
 
 > 我们先用最简单的方式跑通 GitHub Actions + Terraform，再理解细节。
 
-### 快速体验步骤
+### 2.1 进入示例目录
 
 ```bash
-# 1. 克隆示例代码（如果尚未克隆）
-# GitHub（海外用户）
-git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set iac/terraform
-
-# Gitee（中国大陆用户）
-git clone --filter=blob:none --sparse https://gitee.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set iac/terraform
-
-# 2. 进入示例目录
 cd ~/cloud-atlas/iac/terraform/11-cicd/code
 ```
 

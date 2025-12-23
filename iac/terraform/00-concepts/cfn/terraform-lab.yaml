@@ -2,10 +2,12 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   Terraform Learning Lab Environment
   - EC2 instance with Terraform, AWS CLI, Git pre-installed
+  - Dedicated 'terraform' user for course work
   - SSM Session Manager access (no SSH key needed)
   - VS Code Remote-SSH compatible
   - IAM Role with scoped permissions for learning exercises
   - S3 bucket for Terraform remote state (with versioning)
+  - sync-course script for easy code synchronization
 
 Parameters:
   InstanceType:
@@ -174,13 +176,19 @@ Resources:
                   - ec2:DeleteTags
                 Resource: '*'
 
-              # IAM read permissions (for viewing roles)
+              # IAM permissions (for lesson 06-loops IAM user exercises)
               - Effect: Allow
                 Action:
                   - iam:GetRole
                   - iam:GetRolePolicy
                   - iam:ListRolePolicies
                   - iam:ListAttachedRolePolicies
+                  - iam:CreateUser
+                  - iam:DeleteUser
+                  - iam:GetUser
+                  - iam:ListUsers
+                  - iam:TagUser
+                  - iam:UntagUser
                   - sts:GetCallerIdentity
                 Resource: '*'
 
@@ -232,8 +240,76 @@ Resources:
           # Set hostname
           hostnamectl set-hostname terraform-dev
 
-          # Configure ec2-user environment
-          cat >> /home/ec2-user/.bashrc << 'EOF'
+          # ===========================================================================
+          # Create dedicated course user: terraform
+          # ===========================================================================
+          useradd -m -s /bin/bash terraform
+
+          # Set up SSH directory for VS Code Remote
+          mkdir -p /home/terraform/.ssh
+          chmod 700 /home/terraform/.ssh
+          touch /home/terraform/.ssh/authorized_keys
+          chmod 600 /home/terraform/.ssh/authorized_keys
+          chown -R terraform:terraform /home/terraform/.ssh
+
+          # ===========================================================================
+          # Install sync-course script
+          # ===========================================================================
+          cat > /usr/local/bin/sync-course << 'SYNCEOF'
+          #!/bin/bash
+          # sync-course - Synchronize course repository
+          # Handles first-time clone and subsequent updates with conflict resolution
+
+          REPO_DIR=~/cloud-atlas
+          REPO_URL=https://github.com/shiicho/cloud-atlas
+
+          echo "🔄 Syncing course repository..."
+
+          if [ ! -d "$REPO_DIR" ]; then
+              # First time: sparse clone
+              echo "📥 First time setup - cloning repository..."
+              git clone --filter=blob:none --sparse $REPO_URL $REPO_DIR
+              cd $REPO_DIR && git sparse-checkout set iac/terraform
+              echo "✅ Course repository cloned!"
+          else
+              cd $REPO_DIR
+
+              # Check for uncommitted changes
+              if [ -n "$(git status --porcelain)" ]; then
+                  echo "⚠️  Local changes detected..."
+              fi
+
+              # Try fast-forward pull (no conflicts)
+              if git pull --ff-only 2>/dev/null; then
+                  echo "✅ Course repository updated!"
+              else
+                  # Conflicts detected - backup and force update
+                  echo "⚠️  Conflicts detected. Backing up your changes..."
+                  BACKUP_DIR=~/cloud-atlas-backup-$(date +%Y%m%d-%H%M%S)
+                  cp -r $REPO_DIR $BACKUP_DIR
+                  echo "📁 Backup created: $BACKUP_DIR"
+
+                  # Force update
+                  git fetch origin
+                  git reset --hard origin/main
+
+                  # Re-apply sparse checkout
+                  git sparse-checkout set iac/terraform
+
+                  echo "✅ Course repository force-updated!"
+                  echo "📁 Your previous work is in: $BACKUP_DIR"
+              fi
+          fi
+
+          echo ""
+          echo "📂 Course directory: $REPO_DIR/iac/terraform"
+          SYNCEOF
+          chmod +x /usr/local/bin/sync-course
+
+          # ===========================================================================
+          # Configure terraform user environment
+          # ===========================================================================
+          cat >> /home/terraform/.bashrc << 'EOF'
 
           # Terraform aliases
           alias tf='terraform'
@@ -244,28 +320,43 @@ Resources:
           alias tfo='terraform output'
           alias tfs='terraform state'
 
-          # Prompt with Terraform workspace
-          export PS1='[\u@\h:\w $(terraform workspace show 2>/dev/null || echo "N/A")]\$ '
+          # Prompt with current directory
+          export PS1='[terraform@\h:\w]\$ '
 
           # Editor
           export EDITOR=vim
+
+          # Auto-sync course on login (optional - just shows reminder)
+          echo ""
+          echo "💡 Run 'sync-course' to update course materials"
+          echo ""
           EOF
 
+          chown terraform:terraform /home/terraform/.bashrc
+
+          # ===========================================================================
+          # Initial course setup for terraform user
+          # ===========================================================================
+          su - terraform -c "sync-course"
+
+          # ===========================================================================
           # Create welcome message
+          # ===========================================================================
           cat > /etc/motd << 'EOF'
 
           ╔═══════════════════════════════════════════════════════════════╗
-          ║           Terraform Learning Lab Environment                   ║
+          ║           Terraform Learning Lab Environment                  ║
           ╠═══════════════════════════════════════════════════════════════╣
-          ║  Terraform: $(terraform version -json | jq -r '.terraform_version')                                           ║
-          ║  AWS CLI:   $(aws --version | cut -d' ' -f1 | cut -d'/' -f2)                                           ║
           ║                                                               ║
-          ║  Quick Start:                                                 ║
-          ║    cd ~/cloud-atlas/iac/terraform/01-first-resource/code      ║
-          ║    terraform init                                             ║
-          ║    terraform plan                                             ║
+          ║  👤 Course User: terraform                                    ║
           ║                                                               ║
-          ║  Aliases: tf, tfi, tfp, tfa, tfd, tfo, tfs                    ║
+          ║  🚀 Quick Start:                                              ║
+          ║     sudo su - terraform                                       ║
+          ║     sync-course                                               ║
+          ║     cd ~/cloud-atlas/iac/terraform/01-first-resource/code     ║
+          ║                                                               ║
+          ║  📝 Aliases: tf, tfi, tfp, tfa, tfd, tfo, tfs                 ║
+          ║                                                               ║
           ╚═══════════════════════════════════════════════════════════════╝
 
           EOF
@@ -295,12 +386,16 @@ Outputs:
     Value: !Sub 'aws ssm start-session --target ${Instance} --region ${AWS::Region}'
 
   VSCodeSSHConfig:
-    Description: SSH config for VS Code Remote
+    Description: SSH config for VS Code Remote (use terraform user)
     Value: !Sub |
       Host terraform-lab
         HostName ${Instance}
-        User ec2-user
+        User terraform
         ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p' --region ${AWS::Region}
+
+  CourseUser:
+    Description: Dedicated course user (switch to this user after connecting)
+    Value: terraform
 
   TfStateBucketName:
     Description: S3 bucket for Terraform remote state (use with use_lockfile=true)

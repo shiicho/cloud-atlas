@@ -18,11 +18,49 @@
 
 ---
 
-## Step 1 - 先跑起来：注入并检测 Drift（10 分钟）
+## Step 1 — 环境准备与连接（2 分钟）
+
+连接到你的 Terraform Lab 实例。
+
+**获取实例 ID：**
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --region ap-northeast-1 \
+  --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
+  --output text
+```
+
+> **💡 连接方式**（选择你熟悉的）：
+> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager
+> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`
+> - **VS Code**：Remote-SSH 连接（如已配置）
+>
+> **❓ 没有实例？** Stack 不存在或实例已终止？
+> → [重新部署实验环境](../00-concepts/lab-setup.md)
+
+连接后，切换到课程用户并同步代码：
+
+```bash
+sudo su - terraform
+sync-course
+```
+
+确认上一课的资源已清理：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/09-import/code
+terraform state list  # 应为空
+```
+
+---
+
+## Step 2 - 先跑起来：注入并检测 Drift（10 分钟）
 
 > **目标**：先体验 Drift 是什么，再理解原理。
 
-### 1.1 进入示例代码目录
+### 2.1 进入示例代码目录
 
 ```bash
 cd ~/cloud-atlas/iac/terraform/10-drift/code/drift-detect
@@ -127,7 +165,7 @@ Terraform 告诉你：
 
 ---
 
-## Step 2 - 发生了什么？（5 分钟）
+## Step 3 - 发生了什么？（5 分钟）
 
 ### 2.1 Drift 的本质
 
@@ -178,7 +216,7 @@ terraform plan -detailed-exitcode
 
 ---
 
-## Step 3 - 修复 Drift 的三种策略（10 分钟）
+## Step 4 - 修复 Drift 的三种策略（10 分钟）
 
 ### 策略 A：让 Terraform 修复（覆盖手动修改）
 
@@ -250,7 +288,7 @@ terraform apply -refresh-only
 
 ---
 
-## Step 4 - State 操作命令（15 分钟）
+## Step 5 - State 操作命令（15 分钟）
 
 进入 state-operations 目录：
 
@@ -367,7 +405,7 @@ terraform apply
 
 ---
 
-## Step 5 - moved blocks：优雅的重构（5 分钟）
+## Step 6 - moved blocks：优雅的重构（5 分钟）
 
 > **TF 1.1+ 特性**：在代码中声明资源移动，比 `state mv` 更安全。
 
@@ -442,7 +480,7 @@ Plan: 0 to add, 0 to change, 0 to destroy.
 
 ---
 
-## Step 6 - 失败实验室：Drift 注入演练
+## Step 7 - 失败实验室：Drift 注入演练
 
 > **目标**：使用脚本批量注入 Drift，练习检测和修复流程。
 
@@ -491,7 +529,7 @@ terraform plan
 
 ---
 
-## Step 7 - 清理资源
+## Step 8 - 清理资源
 
 > **重要**：完成学习后，立即清理！
 

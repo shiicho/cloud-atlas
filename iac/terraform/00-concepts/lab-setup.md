@@ -82,10 +82,11 @@ aws ssm start-session \
   --region ap-northeast-1
 ```
 
-连接成功后，切换到 ec2-user：
+连接成功后，切换到课程用户并同步代码：
 
 ```bash
-sudo su - ec2-user
+sudo su - terraform
+sync-course
 ```
 
 ### 方式 B：VS Code Remote-SSH（推荐日常开发）
@@ -112,7 +113,7 @@ sudo su - ec2-user
 ```ssh-config
 Host terraform-lab
     HostName i-你的实例ID
-    User ec2-user
+    User terraform
     ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p --region ap-northeast-1
 ```
 
@@ -120,7 +121,7 @@ Host terraform-lab
 ```ssh-config
 Host terraform-lab
     HostName i-你的实例ID
-    User ec2-user
+    User terraform
     ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters "portNumber=%p" --region ap-northeast-1
 ```
 
@@ -137,13 +138,13 @@ ssh-keygen -t ed25519 -C "terraform-lab"
 aws ssm start-session --target i-你的实例ID --region ap-northeast-1
 
 # 在实例内执行
-sudo su - ec2-user
-mkdir -p ~/.ssh && chmod 700 ~/.ssh
+sudo su - terraform
 echo "你的公钥内容" >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
 exit
 exit
 ```
+
+> 💡 `.ssh` 目录已在环境部署时自动创建。
 
 **5. VS Code 连接**
 
@@ -177,21 +178,21 @@ git version 2.x.x
 
 ---
 
-## 克隆课程示例代码
+## 课程代码（自动同步）
+
+课程代码会在环境部署时自动克隆。之后每次开始学习时，使用 `sync-course` 命令同步最新代码：
 
 ```bash
-git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set iac/terraform
-ls ~/cloud-atlas/iac/terraform/
+sync-course
 ```
 
 ```
-00-concepts/
-01-first-resource/
-02-state/
-03-hcl/
-...
+🔄 Syncing course repository...
+✅ Course repository updated!
+📂 Course directory: /home/terraform/cloud-atlas/iac/terraform
 ```
+
+> 💡 `sync-course` 会自动处理代码冲突：如果你修改过的文件与远程冲突，会自动备份到 `~/cloud-atlas-backup-*` 目录。
 
 每个课程直接进入对应目录即可：
 
