@@ -438,27 +438,36 @@ CloudFormation 会自动删除 Stack 管理的所有资源（S3 Bucket）。
 
 ### 日本 IT 企业的 CloudFormation 使用场景
 
-在日本的 SIer（System Integrator）和金融/政府客户中，CloudFormation 比 Terraform 更受欢迎：
+在日本的 SIer（System Integrator）和传统企业项目中，CloudFormation 经常被选用：
 
-**1. 合规要求**
+**1. 客户偏好与审计简便性**
 
-> "AWS 標準サービスのみ使用すること"（只允许使用 AWS 标准服务）
+一些客户会要求使用 AWS 原生工具，常见理由包括：
+- 审计文档与 AWS Console 集成更方便
+- 减少第三方工具的学习和运维成本
+- 风险规避文化倾向于选择供应商官方工具
 
-这种要求在金融、政府项目中很常见，CloudFormation 作为 AWS 原生服务，天然满足要求。
+> **注意**：这是**客户偏好**，而非 FISC（金融情報システムセンター）或 ISMAP 的强制要求。实际上，FISC 指南明确允许使用"サードパーティのツール"（第三方工具），Terraform Enterprise 在日本金融行业也有使用案例。
 
 **2. 変更管理（变更管理）**
 
-在日本企业，任何基础设施变更都需要：
+在日本企业，任何基础设施变更都需要严格的流程：
 
-1. **変更管理票**（变更申请单）
-2. **承認**（审批）
-3. **証跡**（审计日志）
+| 日本企业流程 | 说明 | 西方 DevOps 对比 |
+|------------|------|-----------------|
+| **変更管理票** | 详细的变更申请单，含影响分析、回滚计划 | PR + CI/CD pipeline |
+| **承認（稟議）** | 多层审批（3-5 层），自下而上 | Peer review + 自动化测试 |
+| **証跡** | **Excel 截图**（Excel-証跡）是常见做法 | Git commit + 日志 |
+| **根回し** | 正式审批前的非正式共识建立 | 无对应概念 |
+| **凍結期間** | 特定时期禁止变更（如财年末） | Change freeze |
 
-CloudFormation 的 **ChangeSet** 功能完美支持这个流程（后续课程会详细介绍）。
+CloudFormation 的 **ChangeSet** 功能很适合这个流程：先预览变更，获得审批后再执行（后续课程会详细介绍）。
 
 **3. AWS サポート対象**
 
-CloudFormation 是 AWS 官方服务，遇到问题可以直接联系 AWS Support。Terraform 是第三方工具，AWS 不提供支持。
+CloudFormation 是 AWS 官方服务，遇到问题可以直接联系 AWS Support。Terraform 是第三方工具，需要通过 HashiCorp 获取企业支持。
+
+> **市场现状**：Terraform 在日本的采用正在快速增长（Indeed Japan 有 13,000+ 相关职位）。很多项目采用混合方式：CloudFormation 管理 IAM/安全相关资源，Terraform 管理 VPC/EC2 等基础设施。
 
 ### 常见日语术语
 
@@ -467,6 +476,12 @@ CloudFormation 是 AWS 官方服务，遇到问题可以直接联系 AWS Support
 | スタック | sutakku | 栈 | Stack |
 | テンプレート | tenpureeto | 模板 | Template |
 | 変更管理 | henkou kanri | 变更管理 | Change Management |
+| 変更管理票 | henkou kanri hyou | 变更申请单 | Change Request Ticket |
+| 承認 | shounin | 审批 | Approval |
+| 稟議 | ringi | 稟议（逐层审批） | Formal Approval Process |
+| 証跡 | shouseki | 审计证据 | Audit Trail/Evidence |
+| 根回し | nemawashi | 事前协调 | Pre-approval Consensus |
+| 凍結期間 | touketsu kikan | 冻结期 | Change Freeze Period |
 | 自動ロールバック | jidou roorubakku | 自动回滚 | Automatic Rollback |
 
 ---
@@ -490,9 +505,9 @@ CloudFormation 是 AWS 官方服务，遇到问题可以直接联系 AWS Support
 
 **Q: CloudFormation と Terraform の違いは？**
 
-A: CloudFormation は AWS 専用、State ファイル不要、自動ロールバック機能あり。Terraform はマルチクラウド対応、State 管理が必要、手動ロールバック。日本の SIer では CloudFormation が好まれる傾向。
+A: CloudFormation は AWS 専用、State ファイル不要、自動ロールバック機能あり。Terraform はマルチクラウド対応、State 管理が必要。日本では両方使われており、プロジェクトによって使い分けるケースも多い。
 
-（CloudFormation 是 AWS 专用，不需要状态文件，有自动回滚功能。Terraform 支持多云，需要状态管理，手动回滚。日本 SIer 倾向于使用 CloudFormation。）
+（CloudFormation 是 AWS 专用，不需要状态文件，有自动回滚功能。Terraform 支持多云，需要状态管理。在日本两者都有使用，很多项目会根据场景选择或混合使用。）
 
 **Q: CloudFormation を使うメリットは？**
 
