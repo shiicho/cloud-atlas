@@ -1,0 +1,20 @@
+# =============================================================================
+# required-tags.guard
+# Required tags policy for Japanese enterprises
+# =============================================================================
+# Environment and Owner tags are mandatory for billing and resource management
+
+let all_resources = Resources.*
+
+rule required_tags {
+    %all_resources.Properties.Tags exists
+    %all_resources.Properties.Tags[ Key == 'Environment' ] !empty
+    %all_resources.Properties.Tags[ Key == 'Owner' ] !empty
+    <<
+        [REQUIRED] The following tags are mandatory:
+        - Environment (dev/stg/prod)
+        - Owner (responsible person's email address)
+
+        Tags are required for billing and resource management.
+    >>
+}

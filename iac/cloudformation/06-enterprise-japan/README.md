@@ -636,26 +636,51 @@ aws cloudformation list-stacks \
 
 审计 Stack 中的 S3 Bucket 使用了 `DeletionPolicy: Retain`，不会自动删除。
 
-**必须手动清理**，否则会持续产生存储费用：
+**必须手动清理**，否则会持续产生存储费用。
+
+> **注意**：审计桶启用了版本控制（Versioning），普通的 `aws s3 rm --recursive` 只删除当前版本，无法删除所有历史版本。必须使用特殊方法删除版本化桶。
+
+**方法一：使用 Python boto3（推荐）**
+
+```python
+import boto3
+
+bucket_name = 'enterprise-audit-audit-logs-YOUR-ACCOUNT-ID'
+s3 = boto3.resource('s3')
+bucket = s3.Bucket(bucket_name)
+
+# 删除所有版本（包括历史版本和删除标记）
+bucket.object_versions.all().delete()
+
+# 删除桶
+bucket.delete()
+print(f'Bucket {bucket_name} deleted')
+```
+
+**方法二：使用 Console（更直观）**
+
+1. 进入 S3 Console
+2. 找到 `enterprise-audit-` 开头的 Bucket
+3. 点击 **Empty**（这会删除所有版本）
+4. 输入 `permanently delete` 确认
+5. 点击 **Delete** 删除 Bucket
+
+**方法三：AWS CLI（需要额外处理版本）**
 
 ```bash
 # 1. 查找审计日志桶
 aws s3 ls | grep enterprise-audit
 
-# 2. 清空桶内容（必须先清空才能删除）
-# 注意：会删除所有审计日志，生产环境请谨慎！
-aws s3 rm s3://your-audit-bucket-name --recursive
+# 2. 删除所有对象版本（包括 DeleteMarkers）
+# 注意：此脚本需要 jq 工具
+aws s3api list-object-versions --bucket YOUR-BUCKET-NAME \
+  --query '{Objects: Versions[].{Key: Key, VersionId: VersionId}}' \
+  --output json | \
+  xargs -I {} aws s3api delete-objects --bucket YOUR-BUCKET-NAME --delete '{}'
 
 # 3. 删除桶
-aws s3 rb s3://your-audit-bucket-name
+aws s3 rb s3://YOUR-BUCKET-NAME
 ```
-
-**或在 Console**：
-
-1. 进入 S3 Console
-2. 找到 `enterprise-audit-` 开头的 Bucket
-3. 点击 **Empty** 清空内容
-4. 点击 **Delete** 删除 Bucket
 
 ### 7.4 验证清理
 

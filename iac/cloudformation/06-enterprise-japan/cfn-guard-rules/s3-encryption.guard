@@ -1,0 +1,16 @@
+# =============================================================================
+# s3-encryption.guard
+# S3 Bucket encryption requirement rule
+# =============================================================================
+# All S3 buckets must have encryption enabled
+
+let s3_buckets = Resources.*[ Type == 'AWS::S3::Bucket' ]
+
+rule s3_encryption_enabled when %s3_buckets !empty {
+    %s3_buckets.Properties.BucketEncryption exists
+    <<
+        [CRITICAL] S3 bucket encryption configuration is required
+        - Add BucketEncryption property to your S3 bucket
+        - Reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-bucketencryption.html
+    >>
+}
