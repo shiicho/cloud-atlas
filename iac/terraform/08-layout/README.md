@@ -809,6 +809,33 @@ Error: Backend configuration changed
 terraform init -reconfigure
 ```
 
+**S3 Lifecycle 配置警告（AWS Provider 5.x）**
+
+```
+Warning: Invalid Attribute Combination
+No attribute specified when one (and only one) of
+[rule[0].filter,rule[0].prefix] is required
+```
+
+这是 AWS Provider 5.x 的变更。即使规则适用于全桶对象，也需要显式指定 `filter {}`：
+
+```hcl
+resource "aws_s3_bucket_lifecycle_configuration" "example" {
+  bucket = aws_s3_bucket.bucket.id
+  rule {
+    id     = "cleanup"
+    status = "Enabled"
+    filter {}  # ← 必须添加，即使是空的
+    expiration {
+      days = 30
+    }
+  }
+}
+```
+
+> **背景**：2024年9月 Amazon S3 更新了小对象的默认转换行为。AWS Provider 在 v5.70.0 后调整了实现，要求显式指定 filter 以避免意外行为。
+> 参考：[GitHub Issue #41710](https://github.com/hashicorp/terraform-provider-aws/issues/41710)
+
 ---
 
 ## 职场小贴士

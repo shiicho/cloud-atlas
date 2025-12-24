@@ -88,6 +88,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "demo" {
     id     = "cleanup-old-objects"
     status = "Enabled"
 
+    # 应用于所有对象（空 filter = 全桶生效）
+    # 注意：AWS Provider 5.x 要求显式指定 filter，否则会产生警告
+    # 参考：https://github.com/hashicorp/terraform-provider-aws/issues/41710
+    filter {}
+
     # 对象过期天数根据环境不同
     expiration {
       days = local.env_config.lifecycle_days
