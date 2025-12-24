@@ -189,6 +189,7 @@ Resources:
                   - iam:ListUsers
                   - iam:TagUser
                   - iam:UntagUser
+                  - iam:ListGroupsForUser
                   - sts:GetCallerIdentity
                 Resource: '*'
 
@@ -232,8 +233,16 @@ Resources:
           yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
           dnf install -y terraform
 
+          # Install terraform-docs (for lesson 07-modules)
+          curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.21.0/terraform-docs-v0.21.0-linux-amd64.tar.gz
+          tar -xzf terraform-docs.tar.gz
+          chmod +x terraform-docs
+          mv terraform-docs /usr/local/bin/
+          rm terraform-docs.tar.gz
+
           # Verify installations
           terraform version
+          terraform-docs --version
           aws --version
           git --version
 

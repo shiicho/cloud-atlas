@@ -674,6 +674,11 @@ my-infrastructure/
 
 ---
 
+> **🔬 进阶实验**：想动手部署 Directory Structure 和 Layered Architecture 示例？
+> → [进阶实验：多环境布局实践](./lab-advanced.md)（30-40 分钟，包含完整验证步骤）
+
+---
+
 ## Step 11 - 清理资源（3 分钟）
 
 ```bash

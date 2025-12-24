@@ -50,6 +50,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     id     = "cleanup"
     status = "Enabled"
 
+    # 应用于所有对象
+    # AWS Provider 5.x 要求显式指定 filter
+    filter {}
+
     expiration {
       days = var.lifecycle_days
     }
