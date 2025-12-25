@@ -213,6 +213,15 @@ aws cloudformation describe-stacks --stack-name zabbix-lab \
 
 在浏览器中打开此地址，稍后所有 Zabbix 发送的邮件都会显示在这里。
 
+> ⚠️ **Mailpit 未启动？**
+> ```bash
+> # 检查状态
+> sudo systemctl status mailpit
+>
+> # 重启服务
+> sudo systemctl restart mailpit
+> ```
+
 ### 3.2 配置 Zabbix SMTP
 
 1. 「Alerts」→「Media types」
@@ -310,7 +319,7 @@ Action 定义「触发器触发时做什么」。
 
 **添加 Conditions**：
 - Trigger severity `>=` `High`
-- Host group `=` `Lab/Linux servers`（使用 Lesson 02 创建的 Host Group）
+- Host group `=` `Lab/Linux servers`（参考 [02 · Host 管理](../02-host-management/) 创建）
 
 **Operations 标签页**：
 
