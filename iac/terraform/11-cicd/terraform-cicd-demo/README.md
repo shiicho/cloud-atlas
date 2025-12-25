@@ -6,7 +6,7 @@ This folder is a complete, ready-to-use template. Copy it to a new location, ini
 
 - **Plan on PR**: Automatic `terraform plan` with results posted as PR comments
 - **Apply on Merge**: Automatic `terraform apply` with approval gate
-- **[OIDC Authentication](../../../glossary/security/oidc.md)**: No AWS access keys needed
+- **[OIDC Authentication](../../../../glossary/security/oidc.md)**: No AWS access keys needed
 
 ---
 
