@@ -524,7 +524,7 @@ Level 3: マネージャー
 
 | 症状 | 检查位置 | 可能原因 |
 |------|----------|----------|
-| 数据延迟 | `Monitoring → Queue` | Pollers 不足 |
+| 数据延迟 | `Administration → Queue` | Pollers 不足 |
 | 日志显示 "cache is full" | Server log | Cache 太小 |
 | Web UI 响应慢 | DB 查询 | 需要优化 DB |
 
@@ -588,7 +588,7 @@ systemctl restart zabbix-server
 tail -50 /var/log/zabbix/zabbix_server.log
 
 # 检查 Queue 是否正常
-# Web UI: Monitoring → Queue
+# Web UI: Administration → Queue
 ```
 
 > 💡 **最佳实践**：先监控 Queue，只在出现问题时才调优。过度配置会浪费内存。
