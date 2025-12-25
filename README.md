@@ -93,6 +93,8 @@ cloud-atlas/
   - [07 · Jinja2 模板](./middleware/ansible/07-jinja2-templates/)
   - [08 · 错误处理](./middleware/ansible/08-error-handling/)
   - [09 · Vault 密钥管理](./middleware/ansible/09-vault-secrets/)
+  - [10 · AWX/Ansible Tower 入门](./middleware/ansible/10-awx-tower/)
+  - [11 · Zabbix 连携与 EDA 集成](./middleware/ansible/11-zabbix-eda/)
 
 - **[Zabbix 监控入门](./middleware/zabbix/)**
   - [00 · 架构与环境部署](./middleware/zabbix/00-architecture-lab/)
