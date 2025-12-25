@@ -139,6 +139,118 @@ Resources:
           Value: terraform-state
 
   # ===========================================================================
+  # S3 Bucket Auto-Cleanup (Lambda Custom Resource)
+  # ===========================================================================
+  # Automatically empties the S3 bucket on stack deletion
+  # Handles versioned objects and delete markers
+
+  S3BucketCleanupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${Project}-S3CleanupRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3CleanupPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:ListBucketVersions
+                Resource: !GetAtt TfStateBucket.Arn
+              - Effect: Allow
+                Action:
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
+                Resource: !Sub "${TfStateBucket.Arn}/*"
+
+  S3BucketCleanupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${Project}-S3BucketCleanup
+      Description: Empties S3 bucket on CloudFormation stack deletion
+      Handler: index.handler
+      Role: !GetAtt S3BucketCleanupRole.Arn
+      Runtime: nodejs20.x
+      Timeout: 300
+      Code:
+        ZipFile: |
+          const { S3Client, ListObjectsV2Command, DeleteObjectsCommand, ListObjectVersionsCommand } = require("@aws-sdk/client-s3");
+          const response = require('cfn-response');
+          const s3 = new S3Client();
+
+          const sendResponse = (event, context, ...args) => {
+            return new Promise((resolve, reject) => {
+              context.done = (err) => { err ? reject(err) : resolve(); };
+              response.send(event, context, ...args);
+            });
+          };
+
+          const deleteObjects = async (bucket) => {
+            console.log(`Deleting objects from ${bucket}`);
+            let token;
+            while (true) {
+              const res = await s3.send(new ListObjectsV2Command({ Bucket: bucket, ContinuationToken: token }));
+              const objects = (res.Contents || []).map((item) => ({ Key: item.Key }));
+              if (objects.length > 0) {
+                await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: objects } }));
+              }
+              if (!res.IsTruncated) break;
+              token = res.NextContinuationToken;
+            }
+          };
+
+          const deleteVersions = async (bucket) => {
+            console.log(`Deleting versions and delete markers from ${bucket}`);
+            let keyMarker, versionIdMarker;
+            while (true) {
+              const res = await s3.send(new ListObjectVersionsCommand({ Bucket: bucket, KeyMarker: keyMarker, VersionIdMarker: versionIdMarker }));
+              const objects = (res.Versions || []).concat(res.DeleteMarkers || []).map((item) => ({ Key: item.Key, VersionId: item.VersionId }));
+              if (objects.length > 0) {
+                await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: objects } }));
+              }
+              if (!res.IsTruncated) break;
+              keyMarker = res.NextKeyMarker;
+              versionIdMarker = res.NextVersionIdMarker;
+            }
+          };
+
+          exports.handler = async (event, context) => {
+            console.log('Request:', JSON.stringify(event, null, 2));
+            try {
+              if (event.RequestType === 'Delete') {
+                const bucket = event.ResourceProperties.Bucket;
+                await deleteObjects(bucket);
+                await deleteVersions(bucket);
+                console.log(`Bucket ${bucket} emptied successfully`);
+              }
+            } catch (err) {
+              console.error('Error:', err);
+              return sendResponse(event, context, response.FAILED, { Error: err.message });
+            }
+            return sendResponse(event, context, response.SUCCESS, {});
+          };
+
+  TfStateBucketCleaner:
+    Type: Custom::EmptyS3Bucket
+    Properties:
+      ServiceToken: !GetAtt S3BucketCleanupFunction.Arn
+      Bucket: !Ref TfStateBucket
+
+  # ===========================================================================
   # IAM Role for EC2 (SSM + Terraform permissions)
   # ===========================================================================
 
