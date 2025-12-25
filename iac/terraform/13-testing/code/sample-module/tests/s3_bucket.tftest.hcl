@@ -85,8 +85,9 @@ run "public_access_blocked" {
 run "encryption_configured" {
   command = plan
 
+  # Note: rule is a set, use one() to get the single rule element
   assert {
-    condition     = aws_s3_bucket_server_side_encryption_configuration.main.rule[0].apply_server_side_encryption_by_default[0].sse_algorithm == "AES256"
+    condition     = one(aws_s3_bucket_server_side_encryption_configuration.main.rule[*].apply_server_side_encryption_by_default[0].sse_algorithm) == "AES256"
     error_message = "SSE algorithm should be AES256"
   }
 }
