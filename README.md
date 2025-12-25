@@ -1,37 +1,63 @@
 # cloud-atlas｜云上地图
 
-A mapped guide to **Cloud & Infrastructure** — reproducible labs by **shiicho**.
-面向中文读者的云基础设施实战教程，每个课堂都提供「可复现」的代码与步骤。
+A mapped guide to **Cloud & DevOps** — reproducible labs by **shiicho**.
+面向中文读者的 DevOps 实战教程，每个课堂都提供「可复现」的代码与步骤。
 
 ## 仓库定位 / What this repo is
-- 以 **小而快的课程**（bite-size lessons）讲解云/基础设施知识
-- 侧重 **GUI 步骤 + 必要代码**，适合入门与复盘
-- 每个课程目录内含：IaC 模板 / GUI 图文教程 /（可选）脚本
+
+面向 **DevOps 工程师** 的技能培养路径：
+- 以 **小而快的课程**（bite-size lessons）讲解云/基础设施/自动化知识
+- 覆盖 DevOps 核心技能：IaC、监控、自动化、CI/CD
+- 代码先行：clone 即用，边做边学
+
+## DevOps 技能树 / Skill Tree
+
+```
+DevOps Engineer
+├── Infrastructure as Code
+│   ├── Terraform (17课)
+│   └── CloudFormation (7课)
+├── Cloud Platform
+│   └── AWS SSM (7课)
+├── Automation
+│   └── Ansible (12课)
+├── Monitoring
+│   └── Zabbix (7课)
+├── Middleware
+│   └── HULFT (7课)
+├── Foundation
+│   ├── Linux/Bash (7课)
+│   └── Log Reading (7课)
+└── Soft Skills
+    └── JP Communication (7课)
+```
 
 ## 目录结构｜Repository Structure
+
 ```
 cloud-atlas/
-├── iac/
-│   ├── terraform/          # Terraform IaC 系列 (17课)
-│   └── cloudformation/     # CloudFormation 系列 (7课)
+├── iac/                    # Infrastructure as Code
+│   ├── terraform/          # Terraform (17课)
+│   └── cloudformation/     # CloudFormation (7课)
 ├── aws/
-│   └── ssm/                # Systems Manager 系列
+│   └── ssm/                # Systems Manager (7课)
 ├── linux/
-│   └── bash/               # Bash 脚本入门系列
+│   └── bash/               # Bash 脚本 (7课)
 ├── middleware/
-│   ├── ansible/            # Ansible 自动化入门
-│   ├── hulft/              # HULFT 文件传输
-│   └── zabbix/             # Zabbix 监控入门
+│   ├── ansible/            # Ansible 自动化
+│   ├── zabbix/             # Zabbix 监控
+│   └── hulft/              # HULFT 文件传输
 ├── skills/
-│   ├── jp-communication/   # 日本职场沟通
-│   └── log-reading/        # 日志分析与故障排查
+│   ├── log-reading/        # 日志分析
+│   └── jp-communication/   # 日本职场沟通
 ├── glossary/               # 术语词典
+├── solutions/              # 解决方案集
 └── README.md
 ```
 
 ## 课程目录 / Course Index
 
-### IaC (Infrastructure as Code)
+### Infrastructure as Code
 
 - **[Terraform 基础设施即代码：从入门到生产实战](./iac/terraform/)**
   - [00 · 概念导入与 Terraform 生态](./iac/terraform/00-concepts/)
@@ -61,8 +87,9 @@ cloud-atlas/
   - [05 · Drift 检测与资源导入](./iac/cloudformation/05-drift-import/)
   - [06 · 企业实战与日本 IT 运维](./iac/cloudformation/06-enterprise-japan/)
 
-### AWS
-- **[Systems Manager 入门（GUI 版）](./aws/ssm/)**
+### Cloud Platform
+
+- **[AWS Systems Manager 入门（GUI 版）](./aws/ssm/)**
   - [01 · CloudFormation 部署最小 SSM 实验环境](./aws/ssm/01-cfn-deploy/)
   - [02 · Session Manager 免密登录 EC2](./aws/ssm/02-session-manager/)
   - [03 · Run Command 批量执行脚本](./aws/ssm/03-run-command/)
@@ -71,7 +98,8 @@ cloud-atlas/
   - [06 · State Manager 状态管理器](./aws/ssm/06-state-manager/)
   - [07 · Hybrid 托管 On-Prem](./aws/ssm/07-hybrid/) *(planned)*
 
-### Linux
+### Foundation
+
 - **[Bash 脚本入门系列](./linux/bash/)**
   - [00 · 环境准备](./linux/bash/00-setup/)
   - [01 · 第一个脚本](./linux/bash/01-first-script/)
@@ -81,7 +109,8 @@ cloud-atlas/
   - [05 · 函数与模块化](./linux/bash/05-functions/)
   - [06 · 自动化运维脚本](./linux/bash/06-automation/)
 
-### Middleware
+### Automation
+
 - **[Ansible 自动化入门](./middleware/ansible/)**
   - [00 · 核心概念](./middleware/ansible/00-concepts/)
   - [01 · 安装配置](./middleware/ansible/01-installation/)
@@ -96,6 +125,8 @@ cloud-atlas/
   - [10 · AWX/Ansible Tower 入门](./middleware/ansible/10-awx-tower/)
   - [11 · Zabbix 连携与 EDA 集成](./middleware/ansible/11-zabbix-eda/)
 
+### Monitoring
+
 - **[Zabbix 监控入门](./middleware/zabbix/)**
   - [00 · 架构与环境部署](./middleware/zabbix/00-architecture-lab/)
   - [01 · Server 初始化](./middleware/zabbix/01-server-setup/)
@@ -104,6 +135,8 @@ cloud-atlas/
   - [04 · 触发器与告警](./middleware/zabbix/04-triggers-alerts/)
   - [05 · 日志与自定义指标](./middleware/zabbix/05-logs-custom/)
   - [06 · 运维进阶](./middleware/zabbix/06-ops-advanced/)
+
+### Middleware
 
 - **[HULFT 文件传输](./middleware/hulft/)**
   - [00 · 概念与架构](./middleware/hulft/00-concepts/)
@@ -115,6 +148,7 @@ cloud-atlas/
   - [06 · 云迁移](./middleware/hulft/06-cloud-migration/)
 
 ### Skills
+
 - **[日志分析与故障排查](./skills/log-reading/)**
   - [00 · Linux 日志基础](./skills/log-reading/00-linux-logs/)
   - [01 · 工具与模式](./skills/log-reading/01-tools-patterns/)
@@ -134,6 +168,7 @@ cloud-atlas/
   - [06 · 空気を読む](./skills/jp-communication/06-kuuki-wo-yomu/)
 
 ### Glossary
+
 - **[术语词典](./glossary/)**
   - [Linux 概念](./glossary/linux/) - MOTD, Heredoc
   - [AWS 概念](./glossary/aws/) - SSM Session
@@ -142,15 +177,18 @@ cloud-atlas/
   - [安全概念](./glossary/security/) - MITM, OIDC
 
 ## 前置条件 / Prerequisites
+
 - 可用的 **AWS 账号**（建议区域 `ap-northeast-1` 东京）
 - 学习环境可使用 **AdministratorAccess**（正式环境请最小权限）
 - 若仅按 GUI 操作，可暂不安装 CLI
 
 ## 镜像仓库 / Mirrors
+
 - GitHub：**[shiicho/cloud-atlas](https://github.com/shiicho/cloud-atlas)**
 - 中国大陆镜像：**[shiicho/cloud-atlas（Gitee）](https://gitee.com/shiicho/cloud-atlas)**
 
 > 如果你也在大陆网络环境，建议同时拉取镜像仓库以获得更稳定的访问。
 
 ## 许可证 / License
+
 **[MIT License](./LICENSE)** © 2025 shiicho
