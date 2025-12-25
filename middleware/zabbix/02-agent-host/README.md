@@ -1,9 +1,9 @@
 # 02 · Agent 安装与主机管理（Agent & Host Management）
 
-> **目标**：配置 Zabbix Agent 2，在 Web UI 注册主机
-> **前置**：[01 · Server 初始化](../01-server-setup/)
-> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈
-> **时间**：20-25 分钟
+> **目标**：配置 Zabbix Agent 2，在 Web UI 注册主机  
+> **前置**：[01 · Server 初始化](../01-server-setup/)  
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈  
+> **时间**：20-25 分钟  
 > **实战项目**：配置 Active Agent，创建 Host Groups 和 Tags
 
 ## 将学到的内容
@@ -29,11 +29,11 @@ rpm -qa | grep zabbix-agent2
 # 预期输出：zabbix-agent2-7.0.x
 ```
 
-> ⚠️ **如果 Agent 2 未安装**（CloudFormation 应已安装，但如需手动安装）：
-> ```bash
-> rpm -Uvh https://repo.zabbix.com/zabbix/7.0/amazonlinux/2023/x86_64/zabbix-release-latest-7.0.amzn2023.noarch.rpm
-> dnf clean all
-> dnf install -y zabbix-agent2 zabbix-agent2-plugin-*
+> ⚠️ **如果 Agent 2 未安装**（CloudFormation 应已安装，但如需手动安装）：  
+> ```bash  
+> rpm -Uvh https://repo.zabbix.com/zabbix/7.0/amazonlinux/2023/x86_64/zabbix-release-latest-7.0.amzn2023.noarch.rpm  
+> dnf clean all  
+> dnf install -y zabbix-agent2 zabbix-agent2-plugin-*  
 > ```
 
 ### 1.1 编辑 Agent 配置
@@ -104,8 +104,8 @@ Timeout=10
 | 端口 | Agent 监听 10050 | Server 监听 10051 |
 | **模板选择** | `Linux by Zabbix agent` | `Linux by Zabbix agent active` |
 
-> 📝 **下一步提示**：
-> 在 [Lesson 03](../03-monitoring-basics/) 链接模板时，务必选择 **`Linux by Zabbix agent active`**（带 active 后缀）。
+> 📝 **下一步提示**：  
+> 在 [Lesson 03](../03-monitoring-basics/) 链接模板时，务必选择 **`Linux by Zabbix agent active`**（带 active 后缀）。  
 > 本课配置的是 Active-only 模式，必须使用对应的 Active 模板，否则监控项无法采集数据。
 
 ### 1.4 启动 Agent
@@ -408,7 +408,7 @@ zabbix_get -s <AgentIP> -k agent.ping
 
 ## 清理提醒
 
-> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。
+> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。  
 > 详见 → [00 · 清理资源](../00-architecture-lab/#清理资源)
 
 ---

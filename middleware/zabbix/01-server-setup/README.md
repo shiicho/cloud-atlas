@@ -1,9 +1,9 @@
 # 01 · Zabbix Server 初始化（Server Setup）
 
-> **目标**：完成 Zabbix Server 数据库初始化和 Web UI 配置
-> **前置**：[00 · 环境与架构导入](../00-architecture-lab/)
-> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈
-> **时间**：20-30 分钟
+> **目标**：完成 Zabbix Server 数据库初始化和 Web UI 配置  
+> **前置**：[00 · 环境与架构导入](../00-architecture-lab/)  
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成系列后请删除堆栈  
+> **时间**：20-30 分钟  
 > **实战项目**：配置 Housekeeping，创建运维账户
 
 ## 将学到的内容
@@ -83,9 +83,9 @@ Reload privilege tables now? [Y/n]
 
 ### 1.2 创建 Zabbix 数据库
 
-> 💡 **SQL 简要说明**：不需要记住语法，理解目的即可
-> - `CREATE DATABASE` = 创建一个空的"文件夹"存放 Zabbix 数据
-> - `CREATE USER` = 创建一个专用账户（不用 root 更安全）
+> 💡 **SQL 简要说明**：不需要记住语法，理解目的即可  
+> - `CREATE DATABASE` = 创建一个空的"文件夹"存放 Zabbix 数据  
+> - `CREATE USER` = 创建一个专用账户（不用 root 更安全）  
 > - `GRANT` = 给这个账户"钥匙"，只能访问 zabbix 数据库
 
 ```bash
@@ -111,14 +111,14 @@ EXIT;
 
 ### 1.3 导入初始 Schema
 
-> 💡 **这一步在做什么？**
+> 💡 **这一步在做什么？**  
 >
-> 刚才创建的 `zabbix` 数据库是空的，就像一个空文件夹。
-> Zabbix 需要预定义的「表格结构」来存放数据，比如：
-> - `hosts` 表 → 存放被监控的主机信息
-> - `items` 表 → 存放监控项配置
-> - `triggers` 表 → 存放告警规则
-> - `events` 表 → 存放告警事件历史
+> 刚才创建的 `zabbix` 数据库是空的，就像一个空文件夹。  
+> Zabbix 需要预定义的「表格结构」来存放数据，比如：  
+> - `hosts` 表 → 存放被监控的主机信息  
+> - `items` 表 → 存放监控项配置  
+> - `triggers` 表 → 存放告警规则  
+> - `events` 表 → 存放告警事件历史  
 >
 > 这条命令把 Zabbix 官方提供的表格结构导入数据库。
 
@@ -215,7 +215,7 @@ php_value[date.timezone] = Asia/Tokyo
 
 ### 2.3 启动服务
 
-> 💡 **SELinux 说明**：CloudFormation 模板已安装 `zabbix-selinux-policy` 包，自动配置 SELinux 规则。
+> 💡 **SELinux 说明**：CloudFormation 模板已安装 `zabbix-selinux-policy` 包，自动配置 SELinux 规则。  
 > 如果遇到 403 错误且日志显示 SELinux 相关信息，可临时禁用测试：`sudo setenforce 0`（仅限实验环境）。
 
 ```bash
@@ -467,7 +467,7 @@ http://<ZabbixServerPublicIP>/zabbix
 
 ## 清理提醒
 
-> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。
+> ⚠️ **费用提醒**：实验环境持续产生费用。完成整个系列后，请删除 CloudFormation 堆栈。  
 > 详见 → [00 · 清理资源](../00-architecture-lab/#清理资源)
 
 ---

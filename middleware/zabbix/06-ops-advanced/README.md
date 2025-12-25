@@ -1,9 +1,9 @@
 # 06 · 扩展与运维实践（Advanced Ops - Capstone）
 
-> **目标**：掌握 LLD、Proxy 概念，创建 Dashboard 和監視設計書
-> **前置**：[05 · 日志 + 自定义指标](../05-logs-custom/)
-> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成本课后请删除堆栈
-> **时间**：35-40 分钟
+> **目标**：掌握 LLD、Proxy 概念，创建 Dashboard 和監視設計書  
+> **前置**：[05 · 日志 + 自定义指标](../05-logs-custom/)  
+> **费用**：实验环境持续产生费用（约 $0.03/小时）；完成本课后请删除堆栈  
+> **时间**：35-40 分钟  
 > **Capstone**：编写完整的監視設計書
 
 ## 将学到的内容
@@ -289,9 +289,9 @@ chmod +x ~/generate_report.sh
 
 ### 4.3 Scheduled Reports（Zabbix 7.0+）
 
-> ⚠️ **前置条件**：Scheduled Reports 需要以下组件：
-> - Zabbix Web Service（独立服务，用于 PDF 生成）
-> - Google Chrome 或 Chromium（PDF 渲染）
+> ⚠️ **前置条件**：Scheduled Reports 需要以下组件：  
+> - Zabbix Web Service（独立服务，用于 PDF 生成）  
+> - Google Chrome 或 Chromium（PDF 渲染）  
 > - 正确配置的 Frontend URL
 
 **检查前置条件**：

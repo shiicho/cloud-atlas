@@ -82,8 +82,8 @@
 | **负载** | Server 承担轮询压力 | Agent 分担数据收集 |
 | **配置** | Server 填写 Agent IP | Agent 填写 Server IP |
 
-> 💡 **概念补充**：不熟悉「轮询/推送」或「NAT」？
-> - [轮询与推送](../../../glossary/networking/polling-pushing.md)
+> 💡 **概念补充**：不熟悉「轮询/推送」或「NAT」？  
+> - [轮询与推送](../../../glossary/networking/polling-pushing.md)  
 > - [NAT 与穿透](../../../glossary/networking/nat-traversal.md)
 
 ### 通信流程图
@@ -215,7 +215,7 @@ curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/za
 
 **方法 2：CLI**
 
-> 💡 **提示**：Instance ID 可在 CloudFormation「输出」标签页的 `ZabbixServerInstanceId` 和 `MonitoredHostInstanceId` 中找到，格式如 `i-0abc123def456789`。
+> 💡 **提示**：Instance ID 可在 CloudFormation「输出」标签页的 `ZabbixServerInstanceId` 和 `MonitoredHostInstanceId` 中找到，格式如 `i-0abc123def456789`。  
 > 也可直接复制输出中的 `SSMConnectZabbixServer` / `SSMConnectMonitoredHost` 完整命令。
 
 ```bash
