@@ -31,7 +31,7 @@ Parameters:
 
   Project:
     Type: String
-    Default: terraform-course
+    Default: terraform-lab
     Description: Project name for tagging
 
 Resources:
