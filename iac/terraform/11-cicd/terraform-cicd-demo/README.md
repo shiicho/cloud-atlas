@@ -45,7 +45,58 @@ ls -la .github/workflows/
 
 ---
 
-### Step 2: Initialize Git (3 min)
+### Step 2: Configure S3 Remote Backend (5 min)
+
+The demo uses S3 remote backend for state storage. This is **critical** for CI/CD because:
+- State persists across GitHub Actions runs (runners are ephemeral)
+- State locking prevents concurrent apply conflicts
+- Cleanup via `terraform destroy` actually works!
+
+**Get your S3 bucket name** from the terraform-lab CloudFormation stack:
+
+```bash
+# Get the bucket name created during course setup
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
+
+echo "Your state bucket: $BUCKET"
+```
+
+> **没有 terraform-lab stack？** Deploy it first: [lab-setup.md](../00-concepts/lab-setup.md)
+
+**Update backend.tf** with your bucket name:
+
+```bash
+cd ~/my-terraform-cicd
+
+# Replace PLACEHOLDER with your actual bucket name
+sed -i "s/PLACEHOLDER/$BUCKET/" backend.tf
+
+# Verify the change
+cat backend.tf
+```
+
+You should see your bucket name in the configuration:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket       = "tfstate-terraform-course-123456789012"  # Your bucket
+    key          = "cicd-demo/terraform.tfstate"
+    region       = "ap-northeast-1"
+    encrypt      = true
+    use_lockfile = true
+  }
+}
+```
+
+**Checkpoint**: `backend.tf` shows your actual bucket name (not PLACEHOLDER).
+
+---
+
+### Step 3: Initialize Git (3 min)
 
 Initialize this folder as a new Git repository:
 
@@ -59,7 +110,7 @@ git commit -m "Initial commit: Terraform CI/CD demo"
 
 ---
 
-### Step 3: Create GitHub Repository (5 min)
+### Step 4: Create GitHub Repository (5 min)
 
 1. Go to [github.com/new](https://github.com/new)
 2. Repository name: `my-terraform-cicd`
@@ -111,7 +162,7 @@ git push -u origin main
 
 ---
 
-### Step 4: Deploy OIDC Infrastructure (10 min)
+### Step 5: Deploy OIDC Infrastructure (10 min)
 
 OIDC allows GitHub Actions to authenticate with AWS without storing access keys.
 
@@ -139,7 +190,7 @@ aws cloudformation describe-stacks \
 
 ---
 
-### Step 5: Configure GitHub Secret (3 min)
+### Step 6: Configure GitHub Secret (3 min)
 
 Add the Role ARN as a GitHub secret:
 
@@ -154,7 +205,7 @@ Add the Role ARN as a GitHub secret:
 
 ---
 
-### Step 6: Enable GitHub Actions (2 min)
+### Step 7: Enable GitHub Actions (2 min)
 
 1. Go to **Actions** tab in your repo
 2. If prompted, click **"I understand my workflows, go ahead and enable them"**
@@ -163,7 +214,7 @@ Add the Role ARN as a GitHub secret:
 
 ---
 
-### Step 7: Configure Production Environment (5 min)
+### Step 8: Configure Production Environment (5 min)
 
 Set up an approval gate for the Apply workflow:
 
@@ -181,7 +232,7 @@ Set up an approval gate for the Apply workflow:
 
 ---
 
-### Step 8: Create Feature Branch (3 min)
+### Step 9: Create Feature Branch (3 min)
 
 Now let's trigger the CI/CD pipeline by making a change:
 
@@ -215,7 +266,7 @@ git push -u origin feature/add-my-tag
 
 ---
 
-### Step 9: Create Pull Request (5 min)
+### Step 10: Create Pull Request (5 min)
 
 1. Go to your GitHub repo
 2. You should see a banner: "feature/add-my-tag had recent pushes"
@@ -227,7 +278,7 @@ git push -u origin feature/add-my-tag
 
 ---
 
-### Step 10: Review Plan Comment (5 min)
+### Step 11: Review Plan Comment (5 min)
 
 Wait for the workflow to complete (1-2 minutes), then:
 
@@ -245,7 +296,7 @@ Wait for the workflow to complete (1-2 minutes), then:
 
 ---
 
-### Step 11: Merge and Observe Apply (5 min)
+### Step 12: Merge and Observe Apply (5 min)
 
 1. Click **Merge pull request** > **Confirm merge**
 2. Go to **Actions** tab
@@ -265,7 +316,7 @@ Approve the deployment:
 
 ---
 
-### Step 12: Verify Resources (3 min)
+### Step 13: Verify Resources (3 min)
 
 Verify the S3 bucket was created with your tag:
 
@@ -281,9 +332,13 @@ aws s3api get-bucket-tagging --bucket cicd-demo-XXXXXXXX
 
 ---
 
-### Step 13: Cleanup (5 min)
+### Step 14: Cleanup (10 min)
 
-When done, clean up all resources:
+**Important**: Complete cleanup prevents orphan resources and credential leaks.
+
+#### 14a. Destroy Terraform Resources
+
+With S3 remote backend, `terraform destroy` works properly (state is persistent):
 
 ```bash
 # Make sure AWS credentials are configured locally
@@ -292,27 +347,73 @@ aws sts get-caller-identity
 # Go to your demo folder
 cd ~/my-terraform-cicd
 
-# Destroy Terraform resources (S3 bucket)
+# Initialize Terraform (to connect to remote state)
 terraform init
-terraform destroy -auto-approve
 
-# Delete the OIDC CloudFormation stack
+# Destroy all Terraform-managed resources
+terraform destroy -auto-approve
+```
+
+**Checkpoint**: Output shows `Destroy complete! Resources: X destroyed.`
+
+#### 14b. Delete OIDC CloudFormation Stack
+
+```bash
+# Delete the OIDC stack
 aws cloudformation delete-stack --stack-name github-oidc-terraform
 
 # Wait for stack deletion
 aws cloudformation wait stack-delete-complete --stack-name github-oidc-terraform
 
-# Confirm cleanup
+# Confirm OIDC provider removed
 aws iam list-open-id-connect-providers
 ```
 
-Optionally delete the GitHub repository:
+#### 14c. Delete GitHub Repository
 
-1. Go to **Settings** > scroll to **Danger Zone**
-2. Click **Delete this repository**
-3. Confirm deletion
+1. Go to your GitHub repo > **Settings**
+2. Scroll to **Danger Zone** at bottom
+3. Click **Delete this repository**
+4. Type the repository name to confirm
+5. Click **I understand the consequences, delete this repository**
 
-**Checkpoint**: All cloud resources removed, no ongoing costs.
+#### 14d. Clean Up Git Credentials (Security)
+
+The GitHub PAT you used is stored locally. Remove it:
+
+```bash
+# Remove stored credentials
+# On Linux/macOS:
+rm ~/.git-credentials 2>/dev/null || true
+
+# Or selectively remove GitHub credentials:
+git credential reject <<EOF
+protocol=https
+host=github.com
+EOF
+
+# Verify credentials removed
+cat ~/.git-credentials 2>/dev/null || echo "Credentials file removed"
+```
+
+> **💡 Tip**: If you created a PAT specifically for this demo, also revoke it on GitHub:
+> Settings > Developer settings > Personal access tokens > Delete the token
+
+#### 14e. Clean Up Local Files
+
+```bash
+# Remove the demo folder
+cd ~
+rm -rf ~/my-terraform-cicd
+```
+
+**Checkpoint**: All resources cleaned up:
+- [ ] Terraform resources destroyed (`terraform destroy`)
+- [ ] CloudFormation OIDC stack deleted
+- [ ] GitHub repository deleted
+- [ ] Git credentials removed
+- [ ] Local demo folder removed
+- [ ] (Optional) PAT revoked on GitHub
 
 ---
 

@@ -35,6 +35,22 @@ Parameters:
     Default: sts.amazonaws.com
     Description: OIDC Audience (keep default)
 
+  CreateOIDCProvider:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: |
+      Set to 'false' if OIDC provider already exists in this account.
+      Run: aws iam list-open-id-connect-providers to check.
+
+# =============================================================================
+# Conditions
+# =============================================================================
+Conditions:
+  ShouldCreateOIDCProvider: !Equals [!Ref CreateOIDCProvider, 'true']
+
 # =============================================================================
 # Resources
 # =============================================================================
@@ -44,8 +60,10 @@ Resources:
   # ---------------------------------------------------------------------------
   # Registers GitHub as a trusted identity provider in AWS
   # One per AWS account (shared by all repos)
+  # NOTE: Conditional - skip if provider already exists (CreateOIDCProvider=false)
   GitHubOIDCProvider:
     Type: AWS::IAM::OIDCProvider
+    Condition: ShouldCreateOIDCProvider
     Properties:
       Url: https://token.actions.githubusercontent.com
       ClientIdList:
@@ -73,7 +91,11 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Federated: !GetAtt GitHubOIDCProvider.Arn
+              # Use created provider ARN if creating, otherwise construct ARN
+              Federated: !If
+                - ShouldCreateOIDCProvider
+                - !GetAtt GitHubOIDCProvider.Arn
+                - !Sub arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
@@ -100,8 +122,21 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          # S3 operations (for demo bucket)
-          - Sid: S3Access
+          # S3 State Backend Access
+          # Allows Terraform to read/write state to the shared state bucket
+          - Sid: S3StateBackendAccess
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Resource:
+              - arn:aws:s3:::tfstate-terraform-course-*
+              - arn:aws:s3:::tfstate-terraform-course-*/cicd-demo/*
+
+          # S3 operations (for demo bucket - the actual resource we manage)
+          - Sid: S3DemoResourceAccess
             Effect: Allow
             Action:
               - s3:CreateBucket
@@ -133,7 +168,10 @@ Outputs:
 
   OIDCProviderArn:
     Description: OIDC Provider ARN
-    Value: !GetAtt GitHubOIDCProvider.Arn
+    Value: !If
+      - ShouldCreateOIDCProvider
+      - !GetAtt GitHubOIDCProvider.Arn
+      - !Sub arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com
 
   NextStep:
     Description: Next step after deployment
