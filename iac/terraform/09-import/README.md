@@ -32,12 +32,12 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-> **💡 连接方式**（选择你熟悉的）：
-> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager
-> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`
-> - **VS Code**：Remote-SSH 连接（如已配置）
+> **💡 连接方式**（选择你熟悉的）：  
+> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager  
+> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`  
+> - **VS Code**：Remote-SSH 连接（如已配置）  
 >
-> **❓ 没有实例？** Stack 不存在或实例已终止？
+> **❓ 没有实例？** Stack 不存在或实例已终止？  
 > → [重新部署实验环境](../00-concepts/lab-setup.md)
 
 连接后，切换到课程用户并同步代码：
@@ -801,6 +801,23 @@ Error: importing sg-xxx: security group rules must be imported separately
 ```
 
 → SG と SG Rules は別々に Import が必要。`aws_security_group_rule` リソースも Import する。
+
+**コード生成時に「Conflicting configuration arguments」エラー（EC2 インスタンス）**
+
+```
+Error: Conflicting configuration arguments
+  "ipv6_address_count": conflicts with ipv6_addresses
+```
+
+→ Terraform の `-generate-config-out` 機能がまだ実験的 (experimental) であり、EC2 インスタンスで `ipv6_address_count` と `ipv6_addresses` の両方を生成してしまうことがあります。
+
+**解決方法**: 生成された `generated.tf` から `ipv6_address_count` 行を削除：
+
+```bash
+sed -i '/ipv6_address_count/d' generated.tf
+```
+
+その後、再度 `terraform plan` を実行してください。
 
 ---
 
