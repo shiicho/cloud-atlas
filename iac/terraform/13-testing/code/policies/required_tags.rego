@@ -14,9 +14,13 @@
 #   2. Convert to JSON: terraform show -json tfplan.binary > tfplan.json
 #   3. Run OPA: opa eval -i tfplan.json -d required_tags.rego "data.terraform.deny"
 #
+# Note: This file uses OPA v1 Rego syntax (requires `contains` and `if` keywords)
+#
 # =============================================================================
 
 package terraform
+
+import rego.v1
 
 import input as tfplan
 
@@ -35,12 +39,12 @@ recommended_tags := {"Project", "CostCenter", "Team"}
 # -----------------------------------------------------------------------------
 
 # Get all resources that will be created or updated
-resources_with_changes[resource] {
+resources_with_changes contains resource if {
     resource := tfplan.resource_changes[_]
     resource.change.actions[_] == "create"
 }
 
-resources_with_changes[resource] {
+resources_with_changes contains resource if {
     resource := tfplan.resource_changes[_]
     resource.change.actions[_] == "update"
 }
@@ -71,7 +75,7 @@ taggable_resource_types := {
 # -----------------------------------------------------------------------------
 
 # Deny if required tags are missing
-deny[msg] {
+deny contains msg if {
     resource := resources_with_changes[_]
     taggable_resource_types[resource.type]
 
@@ -89,7 +93,7 @@ deny[msg] {
 }
 
 # Deny if Environment tag has invalid value
-deny[msg] {
+deny contains msg if {
     resource := resources_with_changes[_]
     taggable_resource_types[resource.type]
 
@@ -109,7 +113,7 @@ deny[msg] {
 # Warn Rules: Recommended Tags
 # -----------------------------------------------------------------------------
 
-warn[msg] {
+warn contains msg if {
     resource := resources_with_changes[_]
     taggable_resource_types[resource.type]
 
