@@ -1,6 +1,6 @@
 # cloud-atlas｜云上地图
 
-A mapped guide to **Cloud & Infrastructure** — reproducible labs by **shiicho**.  
+A mapped guide to **Cloud & Infrastructure** — reproducible labs by **shiicho**.
 面向中文读者的云基础设施实战教程，每个课堂都提供「可复现」的代码与步骤。
 
 ## 仓库定位 / What this repo is
@@ -11,6 +11,9 @@ A mapped guide to **Cloud & Infrastructure** — reproducible labs by **shiicho*
 ## 目录结构｜Repository Structure
 ```
 cloud-atlas/
+├── iac/
+│   ├── terraform/          # Terraform IaC 系列 (17课)
+│   └── cloudformation/     # CloudFormation 系列 (7课)
 ├── aws/
 │   └── ssm/                # Systems Manager 系列
 ├── linux/
@@ -27,6 +30,36 @@ cloud-atlas/
 ```
 
 ## 课程目录 / Course Index
+
+### IaC (Infrastructure as Code)
+
+- **[Terraform 基础设施即代码：从入门到生产实战](./iac/terraform/)**
+  - [00 · 概念导入与 Terraform 生态](./iac/terraform/00-concepts/)
+  - [01 · 安装配置与第一个资源](./iac/terraform/01-first-resource/)
+  - [02 · 状态管理与远程后端](./iac/terraform/02-state/)
+  - [03 · HCL 语法与资源建模](./iac/terraform/03-hcl/)
+  - [04 · Provider 策略与版本管理](./iac/terraform/04-providers/)
+  - [05 · 变量系统](./iac/terraform/05-variables/)
+  - [06 · 循环条件与表达式](./iac/terraform/06-loops/)
+  - [07 · 模块化设计](./iac/terraform/07-modules/)
+  - [08 · 项目布局与多环境策略](./iac/terraform/08-layout/)
+  - [09 · 既存インフラ導入（Import）](./iac/terraform/09-import/)
+  - [10 · 漂移検知与状態操作](./iac/terraform/10-drift/)
+  - [11 · CI/CD 集成](./iac/terraform/11-cicd/)
+  - [12 · 安全与机密管理](./iac/terraform/12-security/)
+  - [13 · 测试与质量保证](./iac/terraform/13-testing/)
+  - [14 · 实战项目：三层 Web 架构](./iac/terraform/14-capstone/)
+  - [15 · 日本 IT：変更管理と承認フロー](./iac/terraform/15-jp-change-mgmt/)
+  - [16 · 日本 IT：監査対応とドキュメント](./iac/terraform/16-jp-audit/)
+
+- **[CloudFormation AWS 原生基础设施即代码](./iac/cloudformation/)**
+  - [00 · CloudFormation 基础与第一个 Stack](./iac/cloudformation/00-fundamentals/)
+  - [01 · 模板语法与内置函数](./iac/cloudformation/01-template-syntax/)
+  - [02 · 安全运维：ChangeSets 与回滚策略](./iac/cloudformation/02-safe-operations/)
+  - [03 · 现代工具：Infrastructure Composer 与 IaC Generator](./iac/cloudformation/03-modern-tools/)
+  - [04 · 多栈架构与跨栈引用](./iac/cloudformation/04-multi-stack/)
+  - [05 · Drift 检测与资源导入](./iac/cloudformation/05-drift-import/)
+  - [06 · 企业实战与日本 IT 运维](./iac/cloudformation/06-enterprise-japan/)
 
 ### AWS
 - **[Systems Manager 入门（GUI 版）](./aws/ssm/)**
@@ -97,6 +130,14 @@ cloud-atlas/
   - [04 · 会议文化](./skills/jp-communication/04-meeting-culture/)
   - [05 · 异步沟通](./skills/jp-communication/05-async-communication/)
   - [06 · 空気を読む](./skills/jp-communication/06-kuuki-wo-yomu/)
+
+### Glossary
+- **[术语词典](./glossary/)**
+  - [Linux 概念](./glossary/linux/) - MOTD, Heredoc
+  - [AWS 概念](./glossary/aws/) - SSM Session
+  - [网络概念](./glossary/networking/) - NAT, Polling vs Pushing
+  - [DevOps 概念](./glossary/devops/) - Idempotency, Agent vs Agentless
+  - [安全概念](./glossary/security/) - MITM, OIDC
 
 ## 前置条件 / Prerequisites
 - 可用的 **AWS 账号**（建议区域 `ap-northeast-1` 东京）
