@@ -8,12 +8,50 @@
 
 ## 目录
 
-1. [日常操作](#日常操作)
-2. [Drift 检测与修复](#drift-检测与修复)
-3. [State Lock 处理](#state-lock-处理)
-4. [紧急回滚](#紧急回滚)
-5. [资源清理](#资源清理)
-6. [联系人](#联系人)
+1. [环境概述](#环境概述)
+2. [日常操作](#日常操作)
+3. [Drift 检测与修复](#drift-检测与修复)
+4. [State Lock 处理](#state-lock-处理)
+5. [紧急回滚](#紧急回滚)
+6. [资源清理](#资源清理)
+7. [故障排除](#故障排除)
+8. [联系人](#联系人)
+
+---
+
+## 环境概述
+
+### 环境配置差异
+
+| 设置 | Dev | Staging | Prod |
+|------|-----|---------|------|
+| **VPC CIDR** | 10.0.0.0/16 | 10.1.0.0/16 | 10.2.0.0/16 |
+| **NAT Gateway** | Single | Single | Per-AZ |
+| **RDS Multi-AZ** | No | No | Yes |
+| **Deletion Protection** | No | No | Yes |
+| **ASG Size** | 1-3 | 2-4 | 2-6 |
+| **Backup Retention** | 1 day | 7 days | 30 days |
+| **Flow Logs** | No | Yes | Yes |
+
+### State 文件位置
+
+所有环境使用同一个 S3 Bucket（课程提供），不同的 state key：
+
+```
+s3://tfstate-terraform-lab-{AccountId}/
+├── 14-capstone/dev/terraform.tfstate
+├── 14-capstone/staging/terraform.tfstate
+└── 14-capstone/prod/terraform.tfstate
+```
+
+获取 Bucket 名称：
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text
+```
 
 ---
 
@@ -22,7 +60,9 @@
 ### 1.1 查看基础设施状态
 
 ```bash
-cd environments/dev
+# 选择环境
+ENV=dev  # 或 staging, prod
+cd environments/$ENV
 
 # 查看当前管理的资源
 terraform state list
@@ -56,7 +96,7 @@ terraform apply tfplan
 # 或直接应用（会再次显示 Plan）
 terraform apply
 
-# 强制不询问确认（慎用！）
+# 强制不询问确认（慎用！仅限 dev 环境）
 terraform apply -auto-approve
 ```
 
@@ -68,6 +108,20 @@ terraform apply -refresh-only
 
 # 查看刷新后的变化
 terraform plan -refresh-only
+```
+
+### 1.5 跨环境部署
+
+```bash
+# 部署顺序：dev → staging → prod
+for env in dev staging prod; do
+  echo "=== Deploying $env ==="
+  cd environments/$env
+  terraform init
+  terraform plan
+  terraform apply
+  cd ../..
+done
 ```
 
 ---
@@ -129,28 +183,32 @@ terraform import aws_instance.new i-1234567890abcdef0
 
 ### 2.4 Drift 检测自动化
 
-定期运行 Drift 检测：
+定期运行 Drift 检测脚本：
 
 ```bash
 #!/bin/bash
 # scripts/detect-drift.sh
 
-cd environments/dev
-terraform init -input=false
+for ENV in dev staging prod; do
+  echo "=== Checking $ENV ==="
+  cd environments/$ENV
+  terraform init -input=false
 
-DRIFT=$(terraform plan -detailed-exitcode 2>&1)
-EXIT_CODE=$?
+  DRIFT=$(terraform plan -detailed-exitcode 2>&1)
+  EXIT_CODE=$?
 
-if [ $EXIT_CODE -eq 2 ]; then
-    echo "DRIFT DETECTED!"
+  if [ $EXIT_CODE -eq 2 ]; then
+    echo "⚠️  DRIFT DETECTED in $ENV!"
     echo "$DRIFT"
     # 发送告警（Slack、Email 等）
-elif [ $EXIT_CODE -eq 0 ]; then
-    echo "No drift detected"
-else
-    echo "Error running plan"
-    exit 1
-fi
+  elif [ $EXIT_CODE -eq 0 ]; then
+    echo "✅ No drift in $ENV"
+  else
+    echo "❌ Error checking $ENV"
+  fi
+
+  cd ../..
+done
 ```
 
 ---
@@ -169,11 +227,17 @@ Lock 卡住的常见原因：
 ### 3.2 查看当前 Lock
 
 ```bash
-# 查看 S3 中的锁文件
-aws s3 ls s3://tfstate-capstone-YOUR_ACCOUNT_ID/dev/ | grep tflock
+# 获取 Bucket 名称
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
 
-# 输出示例（有锁时）：
-# 2025-01-15 10:00:00        256 terraform.tfstate.tflock
+# 检查各环境的锁文件
+for ENV in dev staging prod; do
+  echo "=== $ENV ==="
+  aws s3 ls s3://$BUCKET/14-capstone/$ENV/ | grep tflock
+done
 ```
 
 ### 3.3 解锁流程
@@ -224,21 +288,27 @@ terraform plan  # 应该能正常运行
 S3 版本控制保留了 State 历史：
 
 ```bash
+# 获取 Bucket 名称
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
+
 # 列出 State 版本
 aws s3api list-object-versions \
-  --bucket tfstate-capstone-YOUR_ACCOUNT_ID \
-  --prefix dev/terraform.tfstate
+  --bucket $BUCKET \
+  --prefix 14-capstone/dev/terraform.tfstate
 
 # 下载旧版本
 aws s3api get-object \
-  --bucket tfstate-capstone-YOUR_ACCOUNT_ID \
-  --key dev/terraform.tfstate \
+  --bucket $BUCKET \
+  --key 14-capstone/dev/terraform.tfstate \
   --version-id VERSION_ID \
   terraform.tfstate.backup
 
 # 恢复旧版本（危险！先备份当前版本）
 aws s3 cp terraform.tfstate.backup \
-  s3://tfstate-capstone-YOUR_ACCOUNT_ID/dev/terraform.tfstate
+  s3://$BUCKET/14-capstone/dev/terraform.tfstate
 ```
 
 ### 4.2 使用 Git 回滚配置
@@ -266,19 +336,52 @@ terraform apply -replace="module.app.aws_autoscaling_group.main"
 ### 5.1 销毁所有资源
 
 ```bash
-cd environments/dev
+# 按环境逆序销毁（先 prod，后 dev）
+for ENV in prod staging dev; do
+  echo "=== Destroying $ENV ==="
+  cd environments/$ENV
 
-# 预览销毁
-terraform plan -destroy
+  # 预览销毁
+  terraform plan -destroy
 
-# 执行销毁
-terraform destroy
+  # 执行销毁
+  terraform destroy
 
-# 强制销毁（不询问）
-terraform destroy -auto-approve
+  # 强制销毁（不询问）
+  # terraform destroy -auto-approve
+
+  cd ../..
+done
 ```
 
-### 5.2 销毁顺序
+### 5.2 Prod 环境清理（需要禁用删除保护）
+
+Prod 环境启用了删除保护，需要先禁用：
+
+```bash
+# 1. 获取资源 ID
+cd environments/prod
+RDS_ID=$(terraform output -raw rds_endpoint | cut -d: -f1)
+ALB_ARN=$(terraform output -raw alb_arn)
+
+# 2. 禁用 RDS 删除保护
+aws rds modify-db-instance \
+  --db-instance-identifier $RDS_ID \
+  --no-deletion-protection
+
+# 3. 禁用 ALB 删除保护
+aws elbv2 modify-load-balancer-attributes \
+  --load-balancer-arn $ALB_ARN \
+  --attributes Key=deletion_protection.enabled,Value=false
+
+# 4. 等待修改完成
+sleep 60
+
+# 5. 现在可以 destroy
+terraform destroy
+```
+
+### 5.3 销毁顺序
 
 如果 `terraform destroy` 失败，按以下顺序手动清理：
 
@@ -288,23 +391,16 @@ terraform destroy -auto-approve
 4. **NAT Gateway** - 删除 NAT（释放 EIP）
 5. **VPC** - 最后删除 VPC
 
-### 5.3 清理远程后端
-
-项目完全结束后，清理远程后端：
-
-```bash
-# 删除 S3 Bucket
-aws s3 rb s3://tfstate-capstone-YOUR_ACCOUNT_ID --force
-```
-
 ### 5.4 检查残留资源
 
-使用 AWS Cost Explorer 或 Resource Groups 确认无残留：
+使用 AWS Resource Groups 确认无残留：
 
 ```bash
 # 按标签查找资源
 aws resourcegroupstaggingapi get-resources \
   --tag-filters Key=Project,Values=capstone
+
+# 应返回空列表
 ```
 
 ---
@@ -344,12 +440,22 @@ aws sts get-caller-identity
 # 确认有 elasticloadbalancing:* 权限
 ```
 
+**Error: DeletionProtected**
+
+```bash
+# 禁用删除保护后重试
+# 参考 "Prod 环境清理" 章节
+```
+
 ### 6.2 日志收集
 
 ```bash
 # Terraform 详细日志
 export TF_LOG=DEBUG
 terraform plan 2>&1 | tee terraform.log
+
+# AWS CLI 调试
+aws --debug ec2 describe-instances 2>&1 | tee aws.log
 ```
 
 ---
@@ -379,6 +485,7 @@ Level 3: AWS Support
 | 日期 | 版本 | 变更内容 | 作者 |
 |------|------|----------|------|
 | 2025-XX-XX | 1.0 | 初始版本 | Your Name |
+| 2025-XX-XX | 1.1 | 添加多环境支持 | Your Name |
 
 ---
 
@@ -386,17 +493,18 @@ Level 3: AWS Support
 
 ### A. 环境信息
 
-| 环境 | State Bucket | 用途 |
-|------|--------------|------|
-| dev | tfstate-capstone-xxx/dev/ | 开发测试 |
-| staging | tfstate-capstone-xxx/staging/ | 预发布 |
-| prod | tfstate-capstone-xxx/prod/ | 生产 |
+| 环境 | State Key | 用途 |
+|------|-----------|------|
+| dev | 14-capstone/dev/ | 开发测试 |
+| staging | 14-capstone/staging/ | 预发布验证 |
+| prod | 14-capstone/prod/ | 生产环境 |
 
 ### B. 相关文档
 
 - [Terraform 官方文档](https://www.terraform.io/docs)
 - [AWS Provider 文档](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 - [项目 README](../README.md)
+- [11 - CI/CD 集成](../../11-cicd/) - OIDC 和 GitHub Actions
 
 ### C. 日语术语对照
 
@@ -407,3 +515,34 @@ Level 3: AWS Support
 | 变更管理 | 変更管理 | Change Management |
 | 紧急对应 | 緊急対応 | Emergency Response |
 | 回滚 | ロールバック | Rollback |
+| 删除保护 | 削除保護 | Deletion Protection |
+| 多可用区 | マルチAZ | Multi-AZ |
+
+### D. 常用命令速查
+
+```bash
+# 环境切换
+cd environments/{dev|staging|prod}
+
+# 初始化
+terraform init
+
+# 计划变更
+terraform plan
+
+# 应用变更
+terraform apply
+
+# 查看状态
+terraform state list
+terraform output
+
+# 检测 Drift
+terraform plan -refresh-only
+
+# 销毁资源
+terraform destroy
+
+# 强制解锁
+terraform force-unlock LOCK_ID
+```

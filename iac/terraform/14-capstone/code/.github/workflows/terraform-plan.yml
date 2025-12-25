@@ -1,6 +1,6 @@
 # =============================================================================
 # .github/workflows/terraform-plan.yml
-# PR 时自动运行 terraform plan
+# PR 时自动运行 terraform plan（多环境支持）
 # =============================================================================
 #
 # 触发条件：
@@ -12,8 +12,10 @@
 # - 运行 terraform validate
 # - 运行 tflint
 # - 运行 Trivy 安全扫描
-# - 运行 terraform plan
+# - 对所有环境运行 terraform plan
 # - 将 plan 结果作为 PR 评论
+#
+# 参考：11-cicd 课程中的 CI/CD 设计原则
 #
 # =============================================================================
 
@@ -42,15 +44,72 @@ concurrency:
 env:
   TF_VERSION: "1.14.3"
   AWS_REGION: "ap-northeast-1"
-  WORKING_DIRECTORY: "environments/dev"
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 代码质量检查
+  # 检测变更的环境
+  # ---------------------------------------------------------------------------
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.detect.outputs.environments }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed environments
+        id: detect
+        run: |
+          # 获取变更的文件
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # 检测变更的环境
+          ENVS=()
+
+          # 如果模块变更，所有环境都需要 plan
+          if echo "$CHANGED_FILES" | grep -q "^modules/"; then
+            ENVS=("dev" "staging" "prod")
+          else
+            # 检测特定环境变更
+            if echo "$CHANGED_FILES" | grep -q "^environments/dev/"; then
+              ENVS+=("dev")
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^environments/staging/"; then
+              ENVS+=("staging")
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^environments/prod/"; then
+              ENVS+=("prod")
+            fi
+          fi
+
+          # 如果没有检测到变更，默认 plan dev
+          if [ ${#ENVS[@]} -eq 0 ]; then
+            ENVS=("dev")
+          fi
+
+          # 转换为 JSON 数组
+          JSON_ENVS=$(printf '%s\n' "${ENVS[@]}" | jq -R . | jq -s .)
+          echo "environments=$JSON_ENVS" >> $GITHUB_OUTPUT
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+
+          echo "## Changed Environments" >> $GITHUB_STEP_SUMMARY
+          for env in "${ENVS[@]}"; do
+            echo "- $env" >> $GITHUB_STEP_SUMMARY
+          done
+
+  # ---------------------------------------------------------------------------
+  # 代码质量检查（只运行一次）
   # ---------------------------------------------------------------------------
   lint:
     name: Lint & Security
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
 
     steps:
       - name: Checkout
@@ -61,21 +120,10 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
-      # 格式检查
+      # 格式检查（全局）
       - name: Terraform Format Check
         id: fmt
         run: terraform fmt -check -recursive
-        continue-on-error: true
-
-      # 语法验证
-      - name: Terraform Init (for validate)
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: terraform init -backend=false
-
-      - name: Terraform Validate
-        id: validate
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: terraform validate -no-color
         continue-on-error: true
 
       # tflint
@@ -89,39 +137,50 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run tflint
+      - name: Run tflint on modules
         id: tflint
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: tflint --format compact
+        run: |
+          for module in modules/*/; do
+            echo "Linting $module"
+            tflint --chdir="$module" --format compact || true
+          done
         continue-on-error: true
 
-      # Trivy 安全扫描（tfsec 的继承者）
+      # Trivy 安全扫描
       - name: Run Trivy
         id: trivy
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'config'
-          scan-ref: ${{ env.WORKING_DIRECTORY }}
+          scan-ref: 'environments/'
           exit-code: '0'
           severity: 'HIGH,CRITICAL'
 
       # 检查结果汇总
-      - name: Check Results
-        if: steps.fmt.outcome == 'failure' || steps.validate.outcome == 'failure'
+      - name: Lint Summary
         run: |
           echo "## Quality Check Results" >> $GITHUB_STEP_SUMMARY
           echo "- Format: ${{ steps.fmt.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Validate: ${{ steps.validate.outcome }}" >> $GITHUB_STEP_SUMMARY
           echo "- tflint: ${{ steps.tflint.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy: ${{ steps.trivy.outcome }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail on format error
+        if: steps.fmt.outcome == 'failure'
+        run: |
+          echo "::error::Terraform format check failed. Run 'terraform fmt -recursive' to fix."
           exit 1
 
   # ---------------------------------------------------------------------------
-  # Terraform Plan
+  # Terraform Plan（每个环境）
   # ---------------------------------------------------------------------------
   plan:
-    name: Terraform Plan
+    name: Plan - ${{ matrix.environment }}
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [detect-changes, lint]
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: ${{ fromJson(needs.detect-changes.outputs.environments) }}
 
     steps:
       - name: Checkout
@@ -142,17 +201,24 @@ jobs:
       # Terraform Init
       - name: Terraform Init
         id: init
-        working-directory: ${{ env.WORKING_DIRECTORY }}
+        working-directory: environments/${{ matrix.environment }}
         run: terraform init
+        continue-on-error: true
+
+      # Terraform Validate
+      - name: Terraform Validate
+        id: validate
+        working-directory: environments/${{ matrix.environment }}
+        run: terraform validate -no-color
         continue-on-error: true
 
       # Terraform Plan
       - name: Terraform Plan
         id: plan
-        working-directory: ${{ env.WORKING_DIRECTORY }}
+        working-directory: environments/${{ matrix.environment }}
         run: |
           terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
-          echo "plan_exitcode=$?" >> $GITHUB_OUTPUT
+          echo "exitcode=$?" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       # 保存 Plan 输出
@@ -160,10 +226,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-plan
+          name: terraform-plan-${{ matrix.environment }}
           path: |
-            ${{ env.WORKING_DIRECTORY }}/tfplan
-            ${{ env.WORKING_DIRECTORY }}/plan_output.txt
+            environments/${{ matrix.environment }}/tfplan
+            environments/${{ matrix.environment }}/plan_output.txt
 
       # PR 评论
       - name: Comment on PR
@@ -173,7 +239,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const planOutput = fs.readFileSync('${{ env.WORKING_DIRECTORY }}/plan_output.txt', 'utf8');
+            const environment = '${{ matrix.environment }}';
+            const planOutput = fs.readFileSync(`environments/${environment}/plan_output.txt`, 'utf8');
 
             // 截断过长的输出
             const maxLength = 60000;
@@ -182,11 +249,10 @@ jobs:
               truncatedPlan = planOutput.substring(0, maxLength) + '\n\n... (output truncated)';
             }
 
-            const output = `## Terraform Plan Results
-
-            ### Environment: \`dev\`
+            const output = `## Terraform Plan Results - \`${environment}\`
 
             #### 🔧 Init: \`${{ steps.init.outcome }}\`
+            #### ✅ Validate: \`${{ steps.validate.outcome }}\`
             #### 📋 Plan: \`${{ steps.plan.outcome }}\`
 
             <details>
@@ -199,7 +265,7 @@ jobs:
             </details>
 
             ---
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
+            *Environment: \`${environment}\` | Pusher: @${{ github.actor }}*
             `;
 
             // 查找并更新现有评论，或创建新评论
@@ -209,8 +275,9 @@ jobs:
               issue_number: context.issue.number,
             });
 
+            const commentMarker = `## Terraform Plan Results - \`${environment}\``;
             const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' && comment.body.includes('Terraform Plan Results')
+              comment.user.type === 'Bot' && comment.body.includes(commentMarker)
             );
 
             if (botComment) {

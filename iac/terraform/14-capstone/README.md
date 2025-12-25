@@ -1,9 +1,9 @@
 # 14 - 实战项目：三层 Web 架构
 
-> **目标**：综合运用所学知识，从零构建生产级三层 Web 架构  
-> **前置**：已完成 [13 - 测试与质量保证](../13-testing/)  
-> **时间**：8-10 小时（分 4 个阶段完成）  
-> **费用**：$10-20（及时清理！完成后立即 `terraform destroy`）
+> **目标**：综合运用所学知识，从零构建生产级三层 Web 架构
+> **前置**：已完成 [13 - 测试与质量保证](../13-testing/)
+> **时间**：8-10 小时（分 4 个阶段完成）
+> **费用**：$10-20/环境（及时清理！完成后立即 `terraform destroy`）
 
 ---
 
@@ -13,14 +13,15 @@
 +------------------------------------------------------------------+
 |  本项目会创建真实 AWS 资源！                                      |
 |                                                                   |
-|  预估成本: $10-20（如果及时清理）                                  |
+|  预估成本: $10-20/环境（如果及时清理）                            |
 |                                                                   |
 |  建议:                                                            |
 |  - 使用 t3.micro/small 实例                                       |
 |  - RDS 使用 db.t3.micro                                           |
+|  - 只在练习时部署 staging/prod（可选）                             |
 |  - 每阶段完成后评估是否需要保留                                    |
 |  - 项目结束后立即 terraform destroy 所有环境                       |
-|  - 设置 AWS Budget Alert（$20 阈值）                              |
+|  - 设置 AWS Budget Alert（$50 阈值）                              |
 +------------------------------------------------------------------+
 ```
 
@@ -85,9 +86,10 @@
 
 1. **设计多环境项目布局** - dev/staging/prod 目录结构
 2. **构建可复用模块库** - VPC、ALB、EC2、RDS 模块
-3. **导入现有资源并重构** - terraform import + moved blocks
-4. **配置 CI/CD Pipeline** - GitHub Actions plan + apply 工作流
-5. **运维演练** - Drift 检测/修复、State Lock 解锁、Provider 升级
+3. **配置远程后端** - 复用课程 S3 Bucket，lesson-specific state key
+4. **配置 CI/CD Pipeline** - 参考 [11-cicd](../11-cicd/) 实现 GitHub Actions
+5. **理解 Import in CI/CD** - 通过 PR 声明式导入（与本地 import 的区别）
+6. **运维演练** - Drift 检测/修复、State Lock 解锁、Provider 升级
 
 ---
 
@@ -95,10 +97,10 @@
 
 | 阶段 | 名称 | 预计时间 | 主要任务 |
 |------|------|----------|----------|
-| 1 | Scaffold & Setup | ~2 小时 | 项目结构、远程后端、CI 工作流 |
-| 2 | Build via Modules | ~4 小时 | VPC/ALB/EC2/RDS 模块开发 |
-| 3 | Import & Refactor | ~2 小时 | 导入资源、Policy Gate |
-| 4 | Operations Drill | ~2 小时 | Drift/Lock/升级演练 |
+| 1 | Environment Setup | ~1.5 小时 | 后端配置、CI/CD 基础设施 |
+| 2 | Build Three-Tier | ~4 小时 | dev 环境部署、staging 配置 |
+| 3 | CI/CD Integration | ~2 小时 | OIDC、PR 工作流、Import 演示 |
+| 4 | Operations Drill + Prod | ~2 小时 | prod 部署、Drift/Lock 演练 |
 
 ---
 
@@ -116,12 +118,12 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-> **💡 连接方式**（选择你熟悉的）：  
-> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager  
-> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`  
-> - **VS Code**：Remote-SSH 连接（如已配置）  
+> **💡 连接方式**（选择你熟悉的）：
+> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager
+> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`
+> - **VS Code**：Remote-SSH 连接（如已配置）
 >
-> **❓ 没有实例？** Stack 不存在或实例已终止？  
+> **❓ 没有实例？** Stack 不存在或实例已终止？
 > → [重新部署实验环境](../00-concepts/lab-setup.md)
 
 连接后，切换到课程用户并同步代码：
@@ -140,363 +142,455 @@ terraform state list  # 应为空
 
 ---
 
-## Phase 1: Scaffold & Setup（~2 小时）
+## Phase 1: Environment Setup（~1.5 小时）
 
 ### 1.1 项目目录结构
 
 ```bash
 cd ~/cloud-atlas/iac/terraform/14-capstone/code
-tree
+tree -L 2
 ```
 
 ```
 code/
-├── modules/                    # 可复用模块
+├── modules/                    # 可复用模块（已提供）
 │   ├── vpc/                    # VPC 模块
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   └── README.md
 │   ├── alb/                    # ALB 模块
 │   ├── ec2/                    # EC2/ASG 模块
 │   └── rds/                    # RDS 模块
 ├── environments/               # 环境配置
-│   ├── dev/                    # 开发环境
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   ├── backend.tf
-│   │   └── terraform.tfvars
-│   ├── staging/                # 预发布环境
-│   └── prod/                   # 生产环境
+│   ├── dev/                    # 开发环境（本阶段部署）
+│   ├── staging/                # 预发布环境（Phase 2）
+│   └── prod/                   # 生产环境（Phase 4）
 ├── .github/
 │   └── workflows/
 │       ├── terraform-plan.yml  # PR 时自动 plan
-│       └── terraform-apply.yml # 手动审批 apply
+│       ├── terraform-apply.yml # 手动审批 apply
+│       └── infracost.yml       # 成本估算
 └── docs/
     └── runbook.md              # 操作手册
 ```
 
-### 1.2 创建远程后端（Bootstrap）
+### 1.2 获取远程后端配置
 
-首先需要创建 S3 bucket 用于存储 state：
+**课程 S3 Bucket 已由 CloudFormation 创建**，无需手动创建！
+
+获取 Bucket 名称：
 
 ```bash
-# 创建 S3 bucket（替换 YOUR_ACCOUNT_ID）
-aws s3 mb s3://tfstate-capstone-YOUR_ACCOUNT_ID --region ap-northeast-1
-
-# 启用版本控制
-aws s3api put-bucket-versioning \
-  --bucket tfstate-capstone-YOUR_ACCOUNT_ID \
-  --versioning-configuration Status=Enabled
+# 从 CloudFormation 输出获取
+aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --region ap-northeast-1 \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text
 ```
 
-> **Note**: Terraform 1.10+ 支持原生 S3 锁定 (`use_lockfile = true`)，通过 `.tflock` 文件实现锁机制。
+输出示例：`tfstate-terraform-lab-635958930059`
+
+> **💡 为什么复用课程 Bucket？**
+>
+> - **成本节约**：不需要创建额外的 S3 Bucket
+> - **一致性**：所有课程使用同一个 Bucket，不同的 state key
+> - **自动清理**：删除 terraform-lab stack 时自动清理 Bucket
+>
+> 每个 lesson 使用独立的 state key 路径：
+> - `02-state/terraform.tfstate`
+> - `14-capstone/dev/terraform.tfstate`
+> - `14-capstone/staging/terraform.tfstate`
 
 ### 1.3 配置后端（environments/dev/backend.tf）
+
+更新 `environments/dev/backend.tf`，替换 Bucket 名称：
+
+```bash
+cd environments/dev
+cat backend.tf
+```
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket       = "tfstate-capstone-YOUR_ACCOUNT_ID"
-    key          = "dev/terraform.tfstate"
+    # 替换为你的 Bucket 名称（从 CloudFormation 输出获取）
+    bucket = "tfstate-terraform-lab-YOUR_ACCOUNT_ID"
+
+    # 每个 lesson + 环境使用独立的 state key
+    key = "14-capstone/dev/terraform.tfstate"
+
     region       = "ap-northeast-1"
-    use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
     encrypt      = true
+    use_lockfile = true  # Terraform 1.10+ 原生 S3 锁定
   }
 }
 ```
 
-### 1.4 Tagging 规范
+**修改 Bucket 名称**：
 
-定义统一的标签策略：
+```bash
+# 获取你的 Bucket 名称
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
 
-```hcl
-# 在 environments/dev/locals.tf 中定义
-locals {
-  common_tags = {
-    Project     = "capstone"
-    Environment = var.environment
-    ManagedBy   = "terraform"
-    Owner       = "your-team"
-    CostCenter  = "training"
-  }
-}
+echo "Your bucket: $BUCKET"
+
+# 更新 backend.tf
+sed -i "s/tfstate-terraform-lab-REPLACE_WITH_YOUR_BUCKET/$BUCKET/" backend.tf
+cat backend.tf
+```
+
+### 1.4 初始化后端
+
+```bash
+terraform init
+```
+
+成功输出：
+
+```
+Initializing the backend...
+
+Successfully configured the backend "s3"! Terraform will automatically
+use this backend unless the backend configuration changes.
+
+Initializing modules...
+...
+Terraform has been successfully initialized!
 ```
 
 ### 1.5 验证检查点
 
-- [ ] S3 bucket 已创建并启用版本控制
+- [ ] 获取到 S3 Bucket 名称（`tfstate-terraform-lab-xxx`）
+- [ ] `backend.tf` 已更新为实际 Bucket 名称
 - [ ] `terraform init` 成功连接远程后端
-- [ ] GitHub Actions 工作流文件已创建
+- [ ] State key 使用 `14-capstone/dev/terraform.tfstate`（lesson-specific）
 
 ---
 
-## Phase 2: Build via Modules（~4 小时）
+## Phase 2: Build Three-Tier Architecture（~4 小时）
 
-### 2.1 VPC 模块设计
+### 2.1 模块概览
 
-VPC 模块创建完整的网络基础设施：
+本项目已提供 4 个模块：
 
-**输入变量：**
-- `vpc_cidr` - VPC CIDR 块
-- `environment` - 环境名称
-- `public_subnets` - 公共子网 CIDR 列表
-- `private_subnets` - 私有子网 CIDR 列表
-- `database_subnets` - 数据库子网 CIDR 列表
-- `enable_nat_gateway` - 是否启用 NAT Gateway
+| 模块 | 主要资源 | 文档 |
+|------|----------|------|
+| `modules/vpc` | VPC, Subnets, NAT, IGW, Route Tables | [README](code/modules/vpc/README.md) |
+| `modules/alb` | ALB, Target Group, Listener, Security Group | [README](code/modules/alb/README.md) |
+| `modules/ec2` | Launch Template, ASG, Scaling Policies | [README](code/modules/ec2/README.md) |
+| `modules/rds` | RDS Instance, Subnet Group, Security Group | [README](code/modules/rds/README.md) |
 
-**输出值：**
-- `vpc_id` - VPC ID
-- `public_subnet_ids` - 公共子网 ID 列表
-- `private_subnet_ids` - 私有子网 ID 列表
-- `database_subnet_ids` - 数据库子网 ID 列表
-- `nat_gateway_ip` - NAT Gateway 公网 IP
+> **💡 模块设计原则**（参考 [07-modules](../07-modules/)）
+>
+> - 单一职责：每个模块只做一件事
+> - 明确边界：通过 variables 和 outputs 定义接口
+> - 可配置性：环境差异通过变量控制
 
-### 2.2 ALB 模块设计
+### 2.2 环境差异配置
 
-**输入变量：**
-- `name` - ALB 名称
-- `vpc_id` - VPC ID
-- `subnet_ids` - 子网 ID 列表
-- `security_group_ids` - 安全组 ID 列表
+三个环境的主要差异：
 
-**输出值：**
-- `alb_arn` - ALB ARN
-- `alb_dns_name` - ALB DNS 名称
-- `target_group_arn` - 目标组 ARN
-- `listener_arn` - 监听器 ARN
+| 设置 | Dev | Staging | Prod |
+|------|-----|---------|------|
+| **NAT Gateway** | Single | Single | Per-AZ（高可用） |
+| **RDS Multi-AZ** | No | No | Yes |
+| **Deletion Protection** | No | No | Yes |
+| **ASG Size** | 1-3 | 2-4 | 2-6 |
+| **Backup Retention** | 1 day | 7 days | 30 days |
+| **Flow Logs** | No | Yes | Yes |
 
-### 2.3 EC2/ASG 模块设计
-
-**输入变量：**
-- `name` - ASG 名称
-- `instance_type` - 实例类型
-- `min_size` / `max_size` / `desired_capacity` - ASG 容量
-- `subnet_ids` - 子网 ID 列表
-- `target_group_arns` - 目标组 ARN 列表
-- `user_data` - 启动脚本
-
-**输出值：**
-- `asg_name` - ASG 名称
-- `launch_template_id` - 启动模板 ID
-
-### 2.4 RDS 模块设计
-
-**输入变量：**
-- `identifier` - RDS 实例标识
-- `engine` / `engine_version` - 数据库引擎
-- `instance_class` - 实例类型
-- `allocated_storage` - 存储大小
-- `db_name` / `username` / `password` - 数据库凭证
-- `subnet_ids` - 子网 ID 列表
-- `vpc_security_group_ids` - 安全组 ID 列表
-
-**输出值：**
-- `db_instance_endpoint` - 数据库端点
-- `db_instance_id` - 实例 ID
-
-### 2.5 组装三层架构（Dev 环境）
-
-```hcl
-# environments/dev/main.tf
-
-module "vpc" {
-  source = "../../modules/vpc"
-
-  environment        = var.environment
-  vpc_cidr           = "10.0.0.0/16"
-  public_subnets     = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnets    = ["10.0.11.0/24", "10.0.12.0/24"]
-  database_subnets   = ["10.0.21.0/24", "10.0.22.0/24"]
-  enable_nat_gateway = true  # Dev 可以用单 NAT 省钱
-
-  tags = local.common_tags
-}
-
-module "alb" {
-  source = "../../modules/alb"
-
-  name               = "${var.environment}-alb"
-  vpc_id             = module.vpc.vpc_id
-  subnet_ids         = module.vpc.public_subnet_ids
-  security_group_ids = [aws_security_group.alb.id]
-
-  tags = local.common_tags
-}
-
-module "app" {
-  source = "../../modules/ec2"
-
-  name             = "${var.environment}-app"
-  instance_type    = "t3.micro"
-  min_size         = 1
-  max_size         = 3
-  desired_capacity = 2
-  subnet_ids       = module.vpc.private_subnet_ids
-  target_group_arns = [module.alb.target_group_arn]
-
-  tags = local.common_tags
-}
-
-module "database" {
-  source = "../../modules/rds"
-
-  identifier         = "${var.environment}-db"
-  engine             = "mysql"
-  engine_version     = "8.0"  # AWS RDS EOL: 2026-07, 新项目考虑 8.4+
-  instance_class     = "db.t3.micro"
-  allocated_storage  = 20
-  db_name            = "appdb"
-  username           = "admin"
-  # password 从 SSM Parameter Store 获取
-  subnet_ids         = module.vpc.database_subnet_ids
-  security_group_ids = [aws_security_group.rds.id]
-
-  tags = local.common_tags
-}
-```
-
-### 2.6 验证检查点
-
-- [ ] VPC 模块：VPC + Subnets + IGW + NAT + Route Tables 创建成功
-- [ ] ALB 模块：ALB + Target Group + Listener 创建成功
-- [ ] EC2 模块：Launch Template + ASG 创建成功
-- [ ] RDS 模块：RDS 实例创建成功
-- [ ] 所有模块有 README.md（使用 terraform-docs 生成）
-
----
-
-## Phase 3: Import & Refactor（~2 小时）
-
-### 3.1 导入手动创建的资源
-
-假设有一个手动在 Console 创建的 EC2 实例需要纳入管理：
+### 2.3 部署 Dev 环境
 
 ```bash
-# 1. 在 Console 创建一个 "legacy" EC2 实例（用于练习）
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
 
-# 2. 编写对应的 Terraform 配置
-cat >> main.tf << 'EOF'
+# 1. 检查变量
+cat terraform.tfvars
+
+# 2. 预览变更
+terraform plan
+
+# 3. 部署（需要 15-20 分钟，RDS 较慢）
+terraform apply
+```
+
+**预期输出**：
+
+```
+Apply complete! Resources: 30 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+alb_dns_name = "dev-alb-xxxxxxxxx.ap-northeast-1.elb.amazonaws.com"
+alb_url = "http://dev-alb-xxxxxxxxx.ap-northeast-1.elb.amazonaws.com"
+...
+```
+
+### 2.4 验证 Dev 环境
+
+```bash
+# 获取 ALB URL
+ALB_URL=$(terraform output -raw alb_url)
+echo "ALB URL: $ALB_URL"
+
+# 等待目标健康（可能需要 2-3 分钟）
+sleep 180
+
+# 测试访问
+curl -s -o /dev/null -w "%{http_code}" $ALB_URL
+# 应返回 200 或 503（如果应用未部署）
+```
+
+### 2.5 查看 State 在 S3 中的位置
+
+```bash
+# 确认 state 文件位置
+BUCKET=$(terraform output -raw vpc_id | cut -d'-' -f1)  # 取 VPC ID 前缀作占位
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
+
+aws s3 ls s3://$BUCKET/14-capstone/
+# 应显示: dev/terraform.tfstate
+```
+
+### 2.6 验证检查点（Phase 2）
+
+- [ ] VPC 创建成功（包含 6 个子网）
+- [ ] NAT Gateway 创建成功（单个）
+- [ ] ALB 创建成功（可访问）
+- [ ] ASG 创建成功（实例运行中）
+- [ ] RDS 创建成功（端点可用）
+- [ ] State 文件在 S3 正确位置
+
+---
+
+## Phase 3: CI/CD Integration（~2 小时）
+
+本阶段将项目与 GitHub Actions 集成，实现 PR-driven Terraform 工作流。
+
+> **💡 参考课程**
+>
+> CI/CD 基础知识和 Hands-On Lab 在 [11-cicd](../11-cicd/) 中详细介绍。
+> 本阶段重点是**应用**这些知识到多环境 Capstone 项目。
+
+### 3.1 CI/CD 架构回顾
+
+![PR-Driven Terraform Workflow](../11-cicd/images/cicd-workflow.png)
+
+关键原则：
+- **Plan 自动化**：PR 创建/更新时自动运行 `terraform plan`
+- **Apply 门禁**：需要人工审批才能 apply（GitHub Environment）
+- **OIDC 认证**：无需存储 Access Key，临时凭证
+
+### 3.2 设置 GitHub 仓库（如果需要 CI/CD 实践）
+
+如果你想实际体验 CI/CD，需要：
+
+1. **创建 GitHub 仓库**
+2. **部署 OIDC CloudFormation**（参考 [11-cicd/terraform-cicd-demo/oidc-setup/](../11-cicd/terraform-cicd-demo/oidc-setup/)）
+3. **配置 GitHub Secrets**
+
+> **⏭️ 跳过提示**
+>
+> 如果你在 [11-cicd](../11-cicd/) 已完成 Hands-On Lab，可以跳过 CI/CD 设置，
+> 直接进入 3.4 了解 Import in CI/CD 的概念。
+
+### 3.3 工作流配置（已提供）
+
+项目已提供 CI/CD 工作流：
+
+```
+.github/workflows/
+├── terraform-plan.yml    # PR 时自动 plan
+├── terraform-apply.yml   # 合并后 apply（需审批）
+└── infracost.yml         # 成本估算
+```
+
+**关键配置点**：
+
+```yaml
+# terraform-plan.yml
+on:
+  pull_request:
+    paths:
+      - 'environments/**/*.tf'
+
+jobs:
+  plan:
+    strategy:
+      matrix:
+        environment: [dev, staging, prod]  # 多环境支持
+```
+
+### 3.4 Import in CI/CD Context（重要概念）
+
+在 [09-import](../09-import/) 中，我们学习了本地 import：
+
+```bash
+# 本地 import（命令式）
+terraform import aws_instance.legacy i-1234567890abcdef0
+```
+
+**在 CI/CD 环境中，import 使用声明式方式**：
+
+```hcl
+# 在 main.tf 中添加 import block
+import {
+  to = aws_instance.legacy
+  id = "i-1234567890abcdef0"
+}
+
 resource "aws_instance" "legacy" {
   ami           = "ami-0c3fd0f5d33134a76"
   instance_type = "t3.micro"
-
-  tags = {
-    Name = "legacy-instance"
-  }
-}
-EOF
-
-# 3. 导入资源
-terraform import aws_instance.legacy i-xxxxxxxxx
-
-# 4. 调整配置使 plan 无变更
-terraform plan
-```
-
-### 3.2 使用 moved blocks 重构
-
-当需要将资源移入模块或重命名时：
-
-```hcl
-# 在 main.tf 中添加 moved block
-moved {
-  from = aws_instance.legacy
-  to   = module.legacy_app.aws_instance.main
+  # ... 其他配置
 }
 ```
 
-### 3.3 添加 Policy Gate
+**CI/CD Import 工作流**：
 
-配置 Trivy 和 tflint 在 CI 中运行：
-
-```yaml
-# .github/workflows/terraform-plan.yml
-- name: Run Trivy
-  uses: aquasecurity/trivy-action@0.33.1
-  with:
-    scan-type: 'config'
-    scan-ref: 'environments/dev'
-    severity: 'HIGH,CRITICAL'
-
-- name: Run tflint
-  uses: terraform-linters/setup-tflint@v6
-  with:
-    tflint_version: latest
+```
+1. 创建 PR，包含 import block + resource 配置
+2. CI 运行 terraform plan → 显示 "1 to import"
+3. 代码审查 → 确认 import 配置正确
+4. 合并 PR
+5. CI 运行 terraform apply → 执行 import
+6. 下一个 PR 移除 import block（import 是一次性操作）
 ```
 
-### 3.4 配置 Infracost
+> **💡 为什么 CI/CD 使用声明式 Import？**
+>
+> - **可审查**：import 操作通过 PR 可见
+> - **可重复**：配置在代码中，不依赖本地操作
+> - **安全**：apply 需要审批，防止误操作
 
-在 PR 中显示成本变化：
+### 3.5 验证检查点（Phase 3）
 
-```yaml
-# .github/workflows/infracost.yml
-- name: Setup Infracost
-  uses: infracost/actions/setup@v3
-  with:
-    api-key: ${{ secrets.INFRACOST_API_KEY }}
+如果实际设置了 CI/CD：
+- [ ] OIDC CloudFormation 部署成功
+- [ ] GitHub Secrets 配置完成
+- [ ] 创建 PR 后能看到 plan 结果
+- [ ] 理解 Import in CI/CD 的声明式方式
 
-- name: Post Infracost comment
-  run: |
-    infracost diff --path=environments/dev \
-      --format=json --out-file=/tmp/infracost.json
-    infracost comment github --path=/tmp/infracost.json \
-      --repo=$GITHUB_REPOSITORY \
-      --github-token=${{ github.token }} \
-      --pull-request=${{ github.event.pull_request.number }} \
-      --behavior=update
-```
-
-### 3.5 验证检查点
-
-- [ ] 成功导入一个手动创建的资源
-- [ ] moved block 正常工作（无资源重建）
-- [ ] Trivy/tflint 在 CI 中运行并通过
-- [ ] Infracost PR 评论显示成本
+概念理解：
+- [ ] 理解 Plan in PR 的价值
+- [ ] 理解 OIDC vs Access Key 的区别
+- [ ] 理解声明式 Import 的工作流
 
 ---
 
-## Phase 4: Operations Drill（~2 小时）
+## Phase 4: Operations Drill + Prod（~2 小时）
 
-### 4.1 Drift 检测与修复
-
-**注入 Drift：**
-
-1. 在 AWS Console 手动修改一个资源标签
-2. 运行 `terraform plan` 检测 Drift
-3. 决定：恢复到 Terraform 配置 or 更新配置接受变更
+### 4.1 部署 Staging 环境（可选）
 
 ```bash
-# 检测 Drift
-terraform plan -refresh-only
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/staging
 
-# 修复方式 1：应用配置恢复
-terraform apply
+# 更新 backend.tf 中的 Bucket 名称
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
 
-# 修复方式 2：使用 ignore_changes 接受变更
-# lifecycle {
-#   ignore_changes = [tags["ModifiedManually"]]
-# }
+sed -i "s/tfstate-terraform-lab-REPLACE_WITH_YOUR_BUCKET/$BUCKET/" backend.tf
+
+# 初始化并部署
+terraform init
+terraform plan
+terraform apply  # 需要 15-20 分钟
 ```
 
-### 4.2 State Lock 解锁演练
+### 4.2 部署 Prod 环境（可选）
 
-模拟 Lock 卡住的场景：
+> **⚠️ 成本警告**：Prod 环境使用 Multi-AZ RDS 和多个 NAT Gateway，成本更高！
 
 ```bash
-# 查看 .tflock 文件（S3 原生锁定）
-aws s3 ls s3://tfstate-capstone-YOUR_ACCOUNT_ID/dev/
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/prod
 
-# 强制解锁（谨慎！确认无其他操作进行中）
+# 更新 backend.tf
+sed -i "s/tfstate-terraform-lab-REPLACE_WITH_YOUR_BUCKET/$BUCKET/" backend.tf
+
+terraform init
+terraform plan  # 注意查看成本相关资源
+terraform apply
+```
+
+### 4.3 Drift 检测与修复
+
+**注入 Drift**：
+
+1. 在 AWS Console 手动修改 Dev 环境的一个资源标签
+2. 例如：EC2 Console → Auto Scaling Groups → 选择 ASG → Tags → 添加 `ModifiedManually=true`
+
+**检测 Drift**：
+
+```bash
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
+
+# 检测 Drift
+terraform plan -refresh-only
+```
+
+输出会显示：
+
+```
+Note: Objects have changed outside of Terraform
+
+  # module.app.aws_autoscaling_group.main has changed
+  ~ tags = [
+      + {
+          + key                 = "ModifiedManually"
+          + propagate_at_launch = false
+          + value               = "true"
+        },
+      ...
+    ]
+```
+
+**修复 Drift**：
+
+```bash
+# 方式 1：恢复到 Terraform 配置（删除手动添加的标签）
+terraform apply
+
+# 方式 2：如果要保留手动修改，更新配置或使用 ignore_changes
+```
+
+### 4.4 State Lock 处理
+
+使用 Terraform 1.10+ 原生 S3 锁定（`use_lockfile = true`），锁文件是 `.tflock`。
+
+**查看锁文件**（如果有）：
+
+```bash
+BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name terraform-lab \
+  --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
+  --output text)
+
+aws s3 ls s3://$BUCKET/14-capstone/dev/ | grep tflock
+```
+
+**模拟锁定场景**：
+
+1. 在一个终端运行 `terraform apply`（不要按回车）
+2. 在另一个终端尝试 `terraform plan`
+3. 会看到锁定错误
+
+**解锁**（仅在确认无其他操作时）：
+
+```bash
 terraform force-unlock LOCK_ID
 ```
 
-### 4.3 Provider 升级演练
+### 4.5 Provider 升级演练
 
 ```bash
-# 1. 查看当前版本
-cat .terraform.lock.hcl
+# 1. 查看当前 Provider 版本
+cat .terraform.lock.hcl | grep -A5 "provider"
 
 # 2. 升级 Provider
 terraform init -upgrade
@@ -504,26 +598,16 @@ terraform init -upgrade
 # 3. 验证无破坏性变更
 terraform plan
 
-# 4. 提交 lock 文件
-git add .terraform.lock.hcl
-git commit -m "chore: upgrade AWS provider to x.y.z"
+# 4. 查看新版本
+cat .terraform.lock.hcl | grep -A5 "provider"
 ```
 
-### 4.4 编写 Runbook
-
-完成 `docs/runbook.md`，包含：
-
-- 日常操作流程
-- Drift 修复步骤
-- 紧急回滚流程
-- 联系人信息
-
-### 4.5 验证检查点
+### 4.6 验证检查点（Phase 4）
 
 - [ ] 能检测并修复 Drift
-- [ ] 知道如何解锁 State Lock
+- [ ] 理解 State Lock 机制（`use_lockfile = true`）
 - [ ] 成功升级 Provider 版本
-- [ ] Runbook 文档完成
+- [ ] 了解 [Runbook](code/docs/runbook.md) 内容
 
 ---
 
@@ -533,17 +617,52 @@ git commit -m "chore: upgrade AWS provider to x.y.z"
 
 | 交付物 | 位置 | 说明 |
 |--------|------|------|
-| **基础设施** | AWS | VPC + ALB + EC2 + RDS（记得 destroy！） |
+| **Dev 环境** | AWS | VPC + ALB + EC2 + RDS（记得 destroy！） |
+| **Staging 环境** | AWS（可选） | 同上，不同配置 |
+| **Prod 环境** | AWS（可选） | Multi-AZ 配置 |
 | **模块文档** | `modules/*/README.md` | terraform-docs 生成 |
-| **CI/CD Pipeline** | `.github/workflows/` | plan + apply 工作流 |
+| **CI/CD 工作流** | `.github/workflows/` | plan + apply（概念或实践） |
 | **Runbook** | `docs/runbook.md` | 操作手册 |
 | **Interview Story** | 你的记录 | 遇到的问题及解决方案 |
 
 ---
 
-## 面试故事准备
+## 清理资源（重要！）
 
-完成项目后，整理以下内容用于面试：
+**立即清理所有创建的资源**：
+
+```bash
+# 按环境逆序清理（如果部署了多个环境）
+
+# 1. Prod（如果部署了）
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/prod
+terraform destroy -auto-approve
+
+# 2. Staging（如果部署了）
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/staging
+terraform destroy -auto-approve
+
+# 3. Dev
+cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
+terraform destroy -auto-approve
+```
+
+**验证清理**：
+
+```bash
+# 确认 state 为空
+terraform state list  # 应为空
+
+# 检查 AWS 资源
+aws ec2 describe-vpcs --filters "Name=tag:Project,Values=capstone"
+# 应返回空数组
+```
+
+> **Note**: S3 Bucket 中的 state 文件不需要手动清理，它会在删除 terraform-lab stack 时自动清理。
+
+---
+
+## 面试故事准备
 
 ### 项目概述模板
 
@@ -553,15 +672,16 @@ git commit -m "chore: upgrade AWS provider to x.y.z"
 役割: インフラエンジニア（個人プロジェクト）
 
 技術スタック:
-- Terraform (v1.x)
-- AWS (VPC, ALB, EC2, RDS)
+- Terraform (v1.14+)
+- AWS (VPC, ALB, EC2/ASG, RDS)
 - GitHub Actions (CI/CD)
-- Trivy, tflint (Policy as Code)
+- S3 Remote Backend with native locking
 
 成果:
 - 4 つの再利用可能なモジュールを作成
+- 3 環境（dev/staging/prod）を構築
 - CI/CD パイプラインを構築（PR で自動 plan、手動承認で apply）
-- 既存リソースの Import と Drift 検知/修復を実践
+- Drift 検知/修復と State Lock 解除を実践
 ```
 
 ### 问题解决记录模板
@@ -580,21 +700,6 @@ git commit -m "chore: upgrade AWS provider to x.y.z"
 原因: ネットワーク切断により apply が中断、S3 の .tflock ファイルが残った
 解決策: terraform force-unlock で手動解除後、正常に apply 完了
 学び: CI 環境でのタイムアウト設定見直し、ロック監視アラート追加を検討
-```
-
----
-
-## 清理资源
-
-**重要！** 项目完成后立即清理所有资源：
-
-```bash
-# 逆序销毁（先销毁依赖资源）
-cd environments/dev
-terraform destroy -auto-approve
-
-# 清理远程后端（可选，如果不再需要）
-aws s3 rb s3://tfstate-capstone-YOUR_ACCOUNT_ID --force
 ```
 
 ---
@@ -626,6 +731,10 @@ A: 単一責任の原則、適切な粒度（大きすぎず小さすぎず）�
 **Q: CI/CD パイプラインの設計は？**
 
 A: PR で plan 自動実行、結果をコメントで可視化、apply は Environment 承認が必要。OIDC 認証で長期クレデンシャル不要。Infracost でコスト可視化。
+
+**Q: Import をチームで行う場合の注意点は？**
+
+A: CI/CD 環境では import block を使った宣言的な方法を推奨。PR で可視化でき、承認フローを経由する。ローカルでの `terraform import` コマンドは避ける。
 
 ---
 
@@ -659,6 +768,7 @@ Capstone プロジェクトを完成させたら、コミュニティで発表�
 - [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
 - [terraform-aws-modules](https://github.com/terraform-aws-modules) - 社区模块参考
 - [Gruntwork Lessons Learned](https://blog.gruntwork.io/5-lessons-learned-from-writing-over-300000-lines-of-infrastructure-code-36ba7fadebd4)
+- [11 - CI/CD 集成](../11-cicd/) - OIDC 和 GitHub Actions 详细教程
 
 ---
 

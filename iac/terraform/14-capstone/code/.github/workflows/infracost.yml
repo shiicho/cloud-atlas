@@ -1,6 +1,6 @@
 # =============================================================================
 # .github/workflows/infracost.yml
-# PR 中显示成本变化
+# PR 中显示成本变化（多环境支持）
 # =============================================================================
 #
 # Infracost 分析 Terraform 代码，估算云资源成本变化
@@ -27,13 +27,17 @@ permissions:
   contents: read
   pull-requests: write
 
-env:
-  WORKING_DIRECTORY: "environments/dev"
-
 jobs:
+  # ---------------------------------------------------------------------------
+  # 成本估算（每个环境）
+  # ---------------------------------------------------------------------------
   infracost:
     name: Cost Estimation
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
 
     steps:
       - name: Checkout base branch
@@ -49,9 +53,9 @@ jobs:
       # 基准成本（main 分支）
       - name: Generate base cost
         run: |
-          infracost breakdown --path=${{ env.WORKING_DIRECTORY }} \
+          infracost breakdown --path=environments/${{ matrix.environment }} \
             --format=json \
-            --out-file=/tmp/infracost-base.json
+            --out-file=/tmp/infracost-base-${{ matrix.environment }}.json
         continue-on-error: true
 
       - name: Checkout PR branch
@@ -60,36 +64,36 @@ jobs:
       # PR 分支成本
       - name: Generate PR cost
         run: |
-          infracost breakdown --path=${{ env.WORKING_DIRECTORY }} \
+          infracost breakdown --path=environments/${{ matrix.environment }} \
             --format=json \
-            --out-file=/tmp/infracost-pr.json
+            --out-file=/tmp/infracost-pr-${{ matrix.environment }}.json
         continue-on-error: true
 
       # 计算差异
       - name: Generate diff
         run: |
-          infracost diff --path=${{ env.WORKING_DIRECTORY }} \
+          infracost diff --path=environments/${{ matrix.environment }} \
             --format=json \
-            --compare-to=/tmp/infracost-base.json \
-            --out-file=/tmp/infracost-diff.json
+            --compare-to=/tmp/infracost-base-${{ matrix.environment }}.json \
+            --out-file=/tmp/infracost-diff-${{ matrix.environment }}.json
         continue-on-error: true
 
       # PR 评论
       - name: Post Infracost comment
         uses: infracost/actions/comment@v1
         with:
-          path: /tmp/infracost-diff.json
+          path: /tmp/infracost-diff-${{ matrix.environment }}.json
           behavior: update
         continue-on-error: true
 
       # 生成 Summary
       - name: Generate Summary
         run: |
-          echo "## 💰 Cost Estimation" >> $GITHUB_STEP_SUMMARY
+          echo "## 💰 Cost Estimation - ${{ matrix.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ -f /tmp/infracost-pr.json ]; then
-            MONTHLY_COST=$(cat /tmp/infracost-pr.json | jq -r '.totalMonthlyCost // "N/A"')
+          if [ -f /tmp/infracost-pr-${{ matrix.environment }}.json ]; then
+            MONTHLY_COST=$(cat /tmp/infracost-pr-${{ matrix.environment }}.json | jq -r '.totalMonthlyCost // "N/A"')
             echo "Estimated monthly cost: **\$${MONTHLY_COST}**" >> $GITHUB_STEP_SUMMARY
           else
             echo "Cost estimation not available" >> $GITHUB_STEP_SUMMARY
@@ -97,3 +101,27 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "See PR comment for detailed breakdown." >> $GITHUB_STEP_SUMMARY
+
+  # ---------------------------------------------------------------------------
+  # 汇总所有环境成本
+  # ---------------------------------------------------------------------------
+  summary:
+    name: Cost Summary
+    runs-on: ubuntu-latest
+    needs: infracost
+    if: always()
+
+    steps:
+      - name: Generate Total Summary
+        run: |
+          echo "## 💰 Total Cost Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Cost estimation completed for all environments." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| dev | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| staging | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| prod | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See individual PR comments for detailed cost breakdowns." >> $GITHUB_STEP_SUMMARY

@@ -1,6 +1,6 @@
 # =============================================================================
-# environments/dev/backend.tf
-# 远程后端配置 - Dev 环境
+# environments/staging/backend.tf
+# 远程后端配置 - Staging 环境
 # =============================================================================
 #
 # 使用课程实验环境提供的 S3 Bucket（避免重复创建）
@@ -22,7 +22,7 @@ terraform {
     bucket = "tfstate-terraform-lab-REPLACE_WITH_YOUR_BUCKET"
 
     # 每个 lesson + 环境使用独立的 state key
-    key = "14-capstone/dev/terraform.tfstate"
+    key = "14-capstone/staging/terraform.tfstate"
 
     region       = "ap-northeast-1"
     encrypt      = true
