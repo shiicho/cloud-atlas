@@ -133,7 +133,7 @@ Resources:
               - s3:ListBucket
             Resource:
               - arn:aws:s3:::tfstate-terraform-course-*
-              - arn:aws:s3:::tfstate-terraform-course-*/cicd-demo/*
+              - arn:aws:s3:::tfstate-terraform-course-*/iac/terraform/11-cicd/*
 
           # S3 operations (for demo bucket - the actual resource we manage)
           - Sid: S3DemoResourceAccess
