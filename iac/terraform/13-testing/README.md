@@ -429,6 +429,7 @@ rm aws-check.tf
 ### 6.2 查看测试文件
 
 ```bash
+cd ~/cloud-atlas/iac/terraform/13-testing/code/sample-module
 cat tests/s3_bucket.tftest.hcl
 ```
 
@@ -496,7 +497,6 @@ run "invalid_environment_rejected" {
 ### 6.3 运行测试
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/13-testing/code/sample-module
 terraform init
 terraform test
 ```
@@ -504,12 +504,20 @@ terraform test
 ```
 tests/s3_bucket.tftest.hcl... in progress
   run "default_values"... pass
+  run "versioning_enabled_by_default"... pass
+  run "public_access_blocked"... pass
+  run "encryption_configured"... pass
   run "production_config"... pass
+  run "logging_disabled_by_default"... pass
+  run "custom_tags_merged"... pass
+  run "versioning_disabled"... pass
   run "invalid_environment_rejected"... pass
+  run "invalid_bucket_prefix_rejected"... pass
+  run "bucket_prefix_starting_with_hyphen_rejected"... pass
 tests/s3_bucket.tftest.hcl... tearing down
 tests/s3_bucket.tftest.hcl... pass
 
-Success! 3 passed, 0 failed.
+Success! 11 passed, 0 failed.
 ```
 
 ### 6.4 测试文件语法

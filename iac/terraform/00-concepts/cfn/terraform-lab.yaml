@@ -248,6 +248,7 @@ Resources:
 
   TfStateBucketCleaner:
     Type: Custom::EmptyS3Bucket
+    DependsOn: S3BucketCleanupLogGroup  # Ensures log group deleted AFTER Lambda finishes
     Properties:
       ServiceToken: !GetAtt S3BucketCleanupFunction.Arn
       Bucket: !Ref TfStateBucket
@@ -377,7 +378,7 @@ Resources:
           dnf update -y
 
           # Install required packages
-          dnf install -y git jq unzip
+          dnf install -y git jq unzip python3-pip
 
           # Install Terraform
           dnf install -y yum-utils
@@ -394,10 +395,23 @@ Resources:
           # Install Trivy security scanner (for lesson 12-security)
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
+          # Install tflint (Terraform Linter - for lesson 13-testing)
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+          # Install pre-commit (Git hooks framework - for lesson 13-testing)
+          pip3 install pre-commit
+
+          # Install OPA (Open Policy Agent - for lesson 13-testing)
+          curl -L -o /usr/local/bin/opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
+          chmod +x /usr/local/bin/opa
+
           # Verify installations
           terraform version
           terraform-docs --version
           trivy --version
+          tflint --version
+          pre-commit --version
+          opa version
           aws --version
           git --version
 
