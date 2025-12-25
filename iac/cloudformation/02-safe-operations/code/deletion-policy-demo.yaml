@@ -72,7 +72,7 @@ Resources:
       BucketName: !Sub 'temp-bucket-${AWS::AccountId}'
       Tags:
         - Key: Name
-          Value: Temporary Bucket (will be deleted with stack)
+          Value: Temporary Bucket - will be deleted with stack
         - Key: Environment
           Value: !Ref Environment
         - Key: Protected
@@ -115,7 +115,7 @@ Resources:
       BucketName: !Sub 'important-bucket-${AWS::AccountId}'
       Tags:
         - Key: Name
-          Value: Important Bucket (will be retained)
+          Value: Important Bucket - will be retained
         - Key: Environment
           Value: !Ref Environment
         - Key: Protected

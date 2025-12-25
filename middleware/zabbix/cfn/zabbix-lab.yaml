@@ -134,6 +134,12 @@ Resources:
           ToPort: 80
           CidrIp: !Ref AllowedCIDR
           Description: Zabbix Web UI (HTTP)
+        # Mailpit Web UI for email testing (lab environment)
+        - IpProtocol: tcp
+          FromPort: 8025
+          ToPort: 8025
+          CidrIp: !Ref AllowedCIDR
+          Description: Mailpit Web UI (Email Testing)
         # Active Agent connections (from VPC internal)
         - IpProtocol: tcp
           FromPort: 10051
@@ -208,8 +214,32 @@ Resources:
           # Install Zabbix Server, Web UI, Agent (Apache version for AL2023 compatibility)
           dnf install -y zabbix-server-mysql zabbix-web-mysql zabbix-apache-conf zabbix-sql-scripts zabbix-selinux-policy zabbix-agent2
 
+          # Install Mailpit for email testing (lab environment)
+          # Mailpit is a lightweight fake SMTP server with Web UI
+          curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh | bash
+
+          # Create systemd service for Mailpit
+          cat > /etc/systemd/system/mailpit.service << 'MAILPIT_EOF'
+          [Unit]
+          Description=Mailpit SMTP Testing Server
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/local/bin/mailpit --smtp 0.0.0.0:1025 --listen 0.0.0.0:8025
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+          MAILPIT_EOF
+
+          systemctl daemon-reload
+          systemctl enable mailpit
+          systemctl start mailpit
+
           # Create marker file for lesson verification
-          echo "Zabbix packages installed. DB setup required." > /root/zabbix-install-status.txt
+          echo "Zabbix packages installed. Mailpit running. DB setup required." > /root/zabbix-install-status.txt
 
           # Note: Database initialization and web setup are done manually in lessons
 
@@ -300,6 +330,10 @@ Outputs:
   ZabbixWebURL:
     Description: Zabbix Web UI URL (available after lesson 01 setup)
     Value: !Sub http://${ZabbixServer.PublicIp}/zabbix
+
+  MailpitWebURL:
+    Description: Mailpit Web UI for viewing alert emails (lab testing)
+    Value: !Sub http://${ZabbixServer.PublicIp}:8025
 
   MonitoredHostPrivateIP:
     Description: Monitored Host Private IP (for host registration)

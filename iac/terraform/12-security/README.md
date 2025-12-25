@@ -95,7 +95,7 @@ trivy --version
 # Version: 0.68.x
 ```
 
-> **💡 Trivy 简介**：Aqua Security 推出的统一安全扫描工具，已整合 tfsec 功能。
+> **💡 Trivy 简介**：Aqua Security 推出的统一安全扫描工具，已整合 tfsec 功能。  
 > 支持 Terraform、Docker、Kubernetes 等多种 IaC 和容器扫描。
 
 **（可选）安装 checkov**：
@@ -106,7 +106,7 @@ trivy --version
 pip install checkov
 ```
 
-> **注意**: 本课主要使用 Trivy 进行演示。checkov 是 Bridgecrew/Palo Alto 的开源工具，
+> **注意**: 本课主要使用 Trivy 进行演示。checkov 是 Bridgecrew/Palo Alto 的开源工具，  
 > 支持多种合规框架（CIS、SOC2、HIPAA 等），可作为补充工具使用。
 
 ### 扫描不安全的代码
