@@ -102,6 +102,11 @@ Timeout=10
 | `ServerActive` | 留空 | Server IP |
 | `Hostname` | 必须设置 | 必须设置 |
 | 端口 | Agent 监听 10050 | Server 监听 10051 |
+| **模板选择** | `Linux by Zabbix agent` | `Linux by Zabbix agent active` |
+
+> 📝 **下一步提示**：
+> 在 [Lesson 03](../03-monitoring-basics/) 链接模板时，务必选择 **`Linux by Zabbix agent active`**（带 active 后缀）。
+> 本课配置的是 Active-only 模式，必须使用对应的 Active 模板，否则监控项无法采集数据。
 
 ### 1.4 启动 Agent
 

@@ -49,6 +49,10 @@
 
 ### 1.2 创建磁盘空间触发器
 
+> 💡 **模板已包含触发器**：
+> `Linux by Zabbix agent active` 模板已内置磁盘空间触发器（`FS [/]: Space is critically low`、`FS [/]: Space is low`）。
+> 本节创建自定义触发器是为了**学习触发器配置流程**。生产环境中，优先使用或修改模板内置触发器。
+
 1. 「Data collection」→「Hosts」→ 点击 `monitored-host-01`
 2. 切换到「Triggers」标签页
 3. 点击「Create trigger」
@@ -67,18 +71,21 @@
 
 | 字段 | 值 |
 |------|-----|
-| Item | `Linux: Space utilization` 或手动输入 |
+| Item | `FS [/]: Space: Used, in %` |
 | Function | `last()` |
 | Result | `>=80` |
 
 完整表达式示例：
 ```
-last(/monitored-host-01/vfs.fs.size[/,pused])>=80
+last(/monitored-host-01/vfs.fs.dependent.size[/,pused])>=80
 ```
+
+> 💡 **Item Key 说明**：
+> `Linux by Zabbix agent active` 模板使用 Dependent Item Discovery 模式，磁盘空间百分比的 Key 是 `vfs.fs.dependent.size[/,pused]`（注意 `dependent` 前缀），而不是旧版的 `vfs.fs.size[/,pused]`。
 
 **Recovery expression**（防止 Flapping）：
 ```
-last(/monitored-host-01/vfs.fs.size[/,pused])<75
+last(/monitored-host-01/vfs.fs.dependent.size[/,pused])<75
 ```
 
 > 💡 **Hysteresis（滞后）**：Problem 阈值 80%，Recovery 阈值 75%，避免在临界值附近反复触发

@@ -32,11 +32,19 @@ Template（模板）是预定义的监控配置集合，包含：
 2. 点击 `monitored-host-01`
 3. 切换到「Templates」标签页
 4. 点击「Link new templates」
-5. 搜索 `Linux by Zabbix agent`
-6. 选择「Linux by Zabbix agent」
+5. 搜索 `Linux by Zabbix agent active`
+6. 选择「Linux by Zabbix agent active」
 
-   > 💡 **模板说明**：此模板同时支持 Passive 和 Active Agent 模式，不需要选择 "active" 版本。
-   > 模板中的 Items 会根据主机的 Agent 配置自动适配。
+   > ⚠️ **重要**：必须选择 **active** 版本的模板！
+   >
+   > Zabbix 提供两种 Linux 模板：
+   > | 模板名 | Item 类型 | 适用场景 |
+   > |--------|----------|----------|
+   > | `Linux by Zabbix agent` | Passive | Agent 配置了 `Server=` |
+   > | `Linux by Zabbix agent active` | Active | Agent 配置了 `ServerActive=` |
+   >
+   > 我们在 [Lesson 02](../02-agent-host/) 配置了 Active-only 模式，所以必须使用 Active 版本模板。
+   > **选错模板会导致所有监控项显示 "Without data"**——这是面试常考的排障场景。
 
 7. 点击「Update」
 
@@ -95,6 +103,35 @@ Template（模板）是预定义的监控配置集合，包含：
 
 > 🎯 **面试高频问题**：死活監視で使う Item は？
 
+### 3.0 排障技巧：Item 无数据怎么办？
+
+> 🎯 **面试高频场景**：Item 显示 "Without data"，如何排查？
+
+如果遇到 Item 显示 "Without data"，按以下顺序检查：
+
+**1. 检查 Agent 配置模式**
+```bash
+# 在 Monitored Host 上
+grep -E "^(Server|ServerActive)=" /etc/zabbix/zabbix_agent2.conf
+```
+- 有 `ServerActive=` → 需要 Active 类型 Items/模板
+- 有 `Server=` → 可以使用 Passive 类型 Items/模板
+
+**2. 检查模板版本**
+| 模板名 | Item 类型 | 适用场景 |
+|--------|----------|----------|
+| `Linux by Zabbix agent` | Passive | Agent 配置了 `Server=` |
+| `Linux by Zabbix agent active` | Active | Agent 配置了 `ServerActive=` |
+
+**3. 检查手动创建的 Item**
+| Item Type | 数据流向 | 适用场景 |
+|-----------|----------|----------|
+| `Zabbix agent` | Server → Agent（被动） | Agent 配置了 `Server=` |
+| `Zabbix agent (active)` | Agent → Server（主动） | Agent 配置了 `ServerActive=` |
+
+> 💡 **本课使用 `Linux by Zabbix agent active` 模板**，所有继承的 Items 都自动使用 Active 类型。
+> 手动创建的 Items 也需要选择 **`Zabbix agent (active)`** 类型以匹配 Agent 配置。
+
 ### 3.1 proc.num - 进程数量监控
 
 监控 httpd 进程是否运行：
@@ -118,12 +155,15 @@ systemctl status httpd
    | 字段 | 值 |
    |------|-----|
    | Name | `httpd process count` |
-   | Type | `Zabbix agent` |
+   | Type | `Zabbix agent (active)` |
    | Key | `proc.num[httpd]` |
    | Type of information | `Numeric (unsigned)` |
    | Update interval | `1m` |
    | History storage period | `14d` |
    | Trend storage period | `365d` |
+
+   > 💡 **为什么用 Active 类型？** 在 Lesson 02 中，我们配置了 Agent 为 Active 模式（`ServerActive`）。
+   > Active 类型的 Item 由 Agent 主动推送数据，与 Agent 配置一致。
 
 4. 点击「Add」
 
@@ -177,20 +217,20 @@ zabbix_agent2 -t 'proc.num[httpd]'
 | Key | `net.tcp.port[,80]` |
 | Type of information | `Numeric (unsigned)` |
 
-> 💡 **Agent 本地端口检查**：如需从 Agent 侧检查本机端口监听状态，使用 `net.tcp.listen[80]`（Type: Zabbix agent）。
+> 💡 **Agent 本地端口检查**：如需从 Agent 侧检查本机端口监听状态，使用 `net.tcp.listen[80]`（Type: Zabbix agent (active)）。
 
 ### 4.3 死活检查 Key 对比
 
 | Key | Item Type | 用途 | 返回值 |
 |-----|-----------|------|--------|
-| `proc.num[name]` | Zabbix agent | 进程数量 | 进程数（0=未运行） |
-| `net.tcp.listen[port]` | Zabbix agent | 本机端口监听 | 1=监听, 0=未监听 |
+| `proc.num[name]` | Zabbix agent (active) | 进程数量 | 进程数（0=未运行） |
+| `net.tcp.listen[port]` | Zabbix agent (active) | 本机端口监听 | 1=监听, 0=未监听 |
 | `net.tcp.service[service,,port]` | **Simple check** | 服务响应（Server 侧检测） | 1=正常, 0=异常 |
 | `net.tcp.port[,port]` | **Simple check** | 端口连接（Server 侧检测） | 1=连接成功, 0=失败 |
 | `net.tcp.service.perf[service,,port]` | **Simple check** | 响应时间 | 秒数 |
 
 > 💡 **Item Type 选择规则**：
-> - `proc.*`、`net.tcp.listen` = Agent 本地检查 → 选 **Zabbix agent**
+> - `proc.*`、`net.tcp.listen` = Agent 本地检查 → 选 **Zabbix agent (active)**（配合 Active 模式 Agent）
 > - `net.tcp.service`、`net.tcp.port` = Server 远程检查 → 选 **Simple check**
 
 ---

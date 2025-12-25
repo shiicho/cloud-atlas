@@ -61,7 +61,7 @@
 
 ### 1.2 查看 Filesystem Discovery
 
-Linux by Zabbix agent 模板已包含 LLD 规则。
+Linux by Zabbix agent active 模板已包含 LLD 规则。
 
 1. 「Data collection」→「Hosts」→ 点击 `monitored-host-01`
 2. 切换到「Discovery rules」标签页

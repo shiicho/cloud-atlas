@@ -205,11 +205,13 @@ DBPassword=YourZabbixDBPassword    # ← 改成 Step 1.2 设置的密码
 vim /etc/php-fpm.d/zabbix.conf
 ```
 
-找到并取消注释：
+在文件末尾添加以下行：
 
 ```ini
 php_value[date.timezone] = Asia/Tokyo
 ```
+
+> 💡 **提示**：在 vim 中按 `G` 跳到文件末尾，按 `o` 新建一行，输入上述配置后 `:wq` 保存退出
 
 ### 2.3 启动服务
 
