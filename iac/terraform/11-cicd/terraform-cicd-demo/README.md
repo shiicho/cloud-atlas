@@ -84,7 +84,7 @@ You should see your bucket name in the configuration:
 terraform {
   backend "s3" {
     bucket       = "tfstate-terraform-course-123456789012"  # Your bucket
-    key          = "iac/terraform/11-cicd/cicd-demo/terraform.tfstate"
+    key          = "11-cicd/cicd-demo/terraform.tfstate"
     region       = "ap-northeast-1"
     encrypt      = true
     use_lockfile = true

@@ -17,7 +17,7 @@
 terraform {
   backend "s3" {
     bucket       = "PLACEHOLDER"  # Replace with your bucket name!
-    key          = "iac/terraform/11-cicd/cicd-demo/terraform.tfstate"
+    key          = "11-cicd/cicd-demo/terraform.tfstate"
     region       = "ap-northeast-1"
     encrypt      = true
     use_lockfile = true  # Terraform 1.10+ S3 native locking
