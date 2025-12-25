@@ -69,7 +69,7 @@
 
 ### 2.0 前置：启用 rsyslog（Amazon Linux 2023）
 
-> ⚠️ **重要**：Amazon Linux 2023 默认使用 **systemd-journald**，不再预装 rsyslog。
+> ⚠️ **重要**：Amazon Linux 2023 默认使用 **systemd-journald**，不再预装 rsyslog。  
 > `/var/log/messages` 文件不存在！必须先安装 rsyslog。
 
 #### 为什么需要 rsyslog？
@@ -134,8 +134,8 @@ sudo systemctl restart rsyslog
 sudo systemctl restart zabbix-agent2
 ```
 
-> 💡 **为什么要重启 rsyslog？**
-> rsyslog 的 imjournal 模块首次启动时需要同步 journald 的读取位置。
+> 💡 **为什么要重启 rsyslog？**  
+> rsyslog 的 imjournal 模块首次启动时需要同步 journald 的读取位置。  
 > 重启可确保新的 `logger` 消息能正确写入 `/var/log/messages`。
 
 > 📚 **参考**：[AWS Docs - systemd journal](https://docs.aws.amazon.com/linux/al2023/ug/journald.html)
