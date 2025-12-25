@@ -1,9 +1,18 @@
 # 11 - CI/CD 集成
 
-> **目标**：在 GitHub Actions 中实现 Terraform 自动化工作流，PR 自动 plan、人工审批后 apply  
-> **前置**：已完成 [10 - 漂移检测](../10-drift/)  
-> **时间**：45-60 分钟  
+> **目标**：在 GitHub Actions 中实现 Terraform 自动化工作流，PR 自动 plan、人工审批后 apply
+> **前置**：已完成 [10 - 漂移检测](../10-drift/)
+> **时间**：45-60 分钟（概念） + 60 分钟（动手实验）
 > **费用**：GitHub Actions 免费额度内
+
+---
+
+## Hands-On Lab Available!
+
+> **Ready to experience CI/CD yourself?**
+> We've prepared a self-contained demo that you can copy, push to YOUR GitHub, and run a real CI/CD pipeline!
+>
+> **[Start the Hands-On Lab](terraform-cicd-demo/)** — Create PR, see plan comments, approve apply!
 
 ---
 
@@ -31,12 +40,12 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-> **💡 连接方式**（选择你熟悉的）：
-> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager
-> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`
-> - **VS Code**：Remote-SSH 连接（如已配置）
+> **💡 连接方式**（选择你熟悉的）：  
+> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager  
+> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`  
+> - **VS Code**：Remote-SSH 连接（如已配置）  
 >
-> **❓ 没有实例？** Stack 不存在或实例已终止？
+> **❓ 没有实例？** Stack 不存在或实例已终止？  
 > → [重新部署实验环境](../00-concepts/lab-setup.md)
 
 连接后，切换到课程用户并同步代码：
@@ -57,29 +66,27 @@ terraform state list  # 应为空
 
 ## Step 2 — 先跑起来：5 分钟看到效果
 
-> 我们先用最简单的方式跑通 GitHub Actions + Terraform，再理解细节。
+> 想要实际体验？跳转到 **[Hands-On Lab](terraform-cicd-demo/)**！
+>
+> 下面是概念理解，帮助你理解 CI/CD 流程。
 
-### 2.1 进入示例目录
+### 2.1 Demo 目录结构
 
-```bash
-cd ~/cloud-atlas/iac/terraform/11-cicd/code
-```
-
-查看文件结构：
+Hands-On Lab 使用的是 `terraform-cicd-demo/` 目录：
 
 ```
-code/
+terraform-cicd-demo/           # ← 你会复制这个文件夹
+├── README.md                  # 动手实验指南（13步）
 ├── .github/
 │   └── workflows/
-│       ├── terraform-plan.yml      # PR 时自动 plan
-│       └── terraform-apply.yml     # 手动触发 apply
+│       ├── terraform-plan.yml # PR 时自动 plan
+│       └── terraform-apply.yml# 合并后自动 apply
 ├── oidc-setup/
-│   └── github-oidc.yaml            # CloudFormation 配置 OIDC
-├── infracost/
-│   └── infracost.yml               # Infracost 配置
-├── main.tf                         # 示例资源
+│   └── github-oidc.yaml       # CloudFormation 配置 OIDC
+├── main.tf                    # 示例资源（S3 Bucket）
 ├── providers.tf
-└── backend.tf                      # S3 远程后端
+├── variables.tf
+└── outputs.tf
 ```
 
 ---
@@ -269,69 +276,25 @@ atlantis apply
 
 ---
 
-## 动手实践：构建 Plan-on-PR Pipeline
+## 动手实践
 
-### Step 1：配置 AWS OIDC Provider
+> **Complete Hands-On Lab Available!**
+>
+> We've prepared a self-contained demo repo folder: **[terraform-cicd-demo/](terraform-cicd-demo/)**
+>
+> Copy it, push to YOUR GitHub, and experience:
+> - PR triggers automatic `terraform plan`
+> - Plan results appear as PR comments
+> - Merge triggers `terraform apply` with approval gate
+>
+> **[Start the Lab Now →](terraform-cicd-demo/)**
 
-首先在 AWS 中创建 OIDC Identity Provider：
+### Quick Reference: Key Concepts in Practice
 
-```bash
-cd ~/cloud-atlas/iac/terraform/11-cicd/code/oidc-setup
-
-# 查看 CloudFormation 模板
-cat github-oidc.yaml
-```
-
-部署 OIDC Provider（一次性操作）：
-
-```bash
-aws cloudformation deploy \
-  --template-file github-oidc.yaml \
-  --stack-name github-oidc-terraform \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides \
-    GitHubOrg=your-github-org \
-    RepoName=your-repo-name
-```
-
-> **注意**：替换 `your-github-org` 和 `your-repo-name` 为你的实际值。
-
-### Step 2：配置 GitHub Secrets
-
-在 GitHub 仓库设置中添加：
-
-| Secret 名称 | 值 |
-|------------|-----|
-| `AWS_ROLE_ARN` | OIDC IAM Role ARN（CloudFormation 输出） |
-| `INFRACOST_API_KEY` | Infracost API Key（可选） |
-
-**获取 Role ARN**：
-
-```bash
-aws cloudformation describe-stacks \
-  --stack-name github-oidc-terraform \
-  --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' \
-  --output text
-```
-
-### Step 3：创建 GitHub Actions 工作流
-
-查看 Plan 工作流：
-
-```bash
-cat .github/workflows/terraform-plan.yml
-```
-
-**关键配置说明**：
+**OIDC Authentication** (used in the lab):
 
 ```yaml
-# 权限：允许 OIDC 认证 + 写入 PR 评论
-permissions:
-  id-token: write      # OIDC 令牌
-  contents: read       # 读取代码
-  pull-requests: write # 写入 PR 评论
-
-# OIDC 认证步骤
+# No Access Key needed! OIDC provides temporary credentials
 - name: Configure AWS credentials
   uses: aws-actions/configure-aws-credentials@v4
   with:
@@ -339,57 +302,22 @@ permissions:
     aws-region: ap-northeast-1
 ```
 
-### Step 4：测试工作流
-
-1. **创建测试分支**：
-
-```bash
-git checkout -b test-cicd
-```
-
-2. **修改资源**（例如添加标签）：
-
-```bash
-# 编辑 main.tf，添加一个标签
-vim main.tf
-```
-
-3. **推送并创建 PR**：
-
-```bash
-git add .
-git commit -m "test: add tag for CI/CD testing"
-git push -u origin test-cicd
-```
-
-4. **观察 GitHub Actions**：
-   - 进入 GitHub 仓库 > Actions
-   - 查看 "Terraform Plan" 工作流运行
-   - PR 中会出现 plan 结果评论
-
-### Step 5：配置 Production 环境审批
-
-1. **创建 GitHub Environment**：
-   - 仓库 Settings > Environments > New environment
-   - 名称：`production`
-   - 添加审批者（Required reviewers）
-
-2. **Apply 工作流使用 Environment**：
+**GitHub Environment Approval** (used in the lab):
 
 ```yaml
 jobs:
   apply:
-    environment: production  # 需要审批
+    environment: production  # Requires approval before running
     runs-on: ubuntu-latest
 ```
 
-> **⚠️ Cross-Workflow Artifacts 注意点**：  
->  
-> 标准的 `actions/download-artifact` 只能下载**当前 workflow run** 的 artifacts。  
-> 要在 Apply 工作流中使用 PR Plan 工作流生成的 plan 文件，需要使用 `dawidd6/action-download-artifact`  
-> 这个第三方 action 支持跨 workflow 下载 artifacts。  
->  
-> 这也是为什么很多团队选择将 plan 文件存储在 S3 而不是 GitHub Artifacts。
+**Plan Result as PR Comment** (you'll see this in the lab):
+
+The bot automatically posts a comment showing:
+- Format check status
+- Validation status
+- Full plan output
+- Resources to add/change/destroy
 
 ---
 
@@ -514,18 +442,19 @@ Error: Error acquiring the state lock
 
 ## 清理资源
 
-> ⚠️ **本课涉及 IAM Role 和 OIDC Provider**，请务必清理：
+> ⚠️ **如果你完成了 Hands-On Lab**，请务必清理：
+
+详细的清理步骤在 [terraform-cicd-demo/README.md](terraform-cicd-demo/README.md#step-13-cleanup-5-min) 中。
+
+**快速参考**：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/11-cicd/code
-
-# 1. 删除 Terraform 管理的资源（S3 Bucket 等）
+# 1. 删除 Terraform 管理的资源
+cd ~/my-terraform-cicd
 terraform destroy -auto-approve
 
-# 2. 删除 OIDC Provider 和 IAM Role（CloudFormation 创建的）
+# 2. 删除 OIDC CloudFormation Stack
 aws cloudformation delete-stack --stack-name github-oidc-terraform
-
-# 等待 stack 删除完成
 aws cloudformation wait stack-delete-complete --stack-name github-oidc-terraform
 
 # 3. 确认资源已删除

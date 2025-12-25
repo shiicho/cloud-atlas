@@ -1,0 +1,96 @@
+# terraform-apply.yml
+# Merge to main triggers terraform apply with approval gate
+#
+# This is YOUR repo's workflow! When you merge a PR:
+# 1. This workflow triggers automatically
+# 2. Waits for "production" environment approval
+# 3. Applies the Terraform changes
+#
+# Prerequisites:
+# - AWS_ROLE_ARN secret configured (from OIDC setup)
+# - "production" environment with Required Reviewers configured
+
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.tf'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-1
+  TF_VERSION: "1.14.3"
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+
+    # Approval gate - requires "production" environment approval
+    # Configure at: Settings > Environments > production > Required reviewers
+    environment: production
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: Checkout code
+      # -----------------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # -----------------------------------------------------------------------
+      # Step 2: Configure AWS credentials (OIDC)
+      # -----------------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-TerraformApply
+
+      # -----------------------------------------------------------------------
+      # Step 3: Setup Terraform
+      # -----------------------------------------------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # -----------------------------------------------------------------------
+      # Step 4: Initialize
+      # -----------------------------------------------------------------------
+      - name: Terraform Init
+        run: terraform init -no-color
+
+      # -----------------------------------------------------------------------
+      # Step 5: Plan (regenerate to ensure consistency)
+      # -----------------------------------------------------------------------
+      - name: Terraform Plan
+        run: terraform plan -no-color -out=tfplan
+
+      # -----------------------------------------------------------------------
+      # Step 6: Apply
+      # -----------------------------------------------------------------------
+      - name: Terraform Apply
+        run: |
+          echo "Applying Terraform changes..."
+          terraform apply -no-color tfplan
+
+      # -----------------------------------------------------------------------
+      # Step 7: Summary
+      # -----------------------------------------------------------------------
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## Apply Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Triggered by | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
