@@ -46,7 +46,7 @@ grep -q '/opt/bin' ~/.bashrc || echo "export PATH=/opt/bin:$PATH" >> ~/.bashrc
 
 ## 面试一句话
 
-> **問**：べき等性とは何ですか？
+> **問**：べき等性とは何ですか？  
 > **答**：同じ操作を何度実行しても、結果が同じになる性質です。Ansible や Terraform の設計原則です。
 
 ---

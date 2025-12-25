@@ -396,7 +396,7 @@ EOF
 cat ~/.git-credentials 2>/dev/null || echo "Credentials file removed"
 ```
 
-> **💡 Tip**: If you created a PAT specifically for this demo, also revoke it on GitHub:
+> **💡 Tip**: If you created a PAT specifically for this demo, also revoke it on GitHub:  
 > Settings > Developer settings > Personal access tokens > Delete the token
 
 #### 14e. Clean Up Local Files

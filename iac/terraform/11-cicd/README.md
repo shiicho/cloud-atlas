@@ -1,16 +1,16 @@
 # 11 - CI/CD 集成
 
-> **目标**：在 GitHub Actions 中实现 Terraform 自动化工作流，PR 自动 plan、人工审批后 apply
-> **前置**：已完成 [10 - 漂移检测](../10-drift/)
-> **时间**：45-60 分钟（概念） + 60 分钟（动手实验）
+> **目标**：在 GitHub Actions 中实现 Terraform 自动化工作流，PR 自动 plan、人工审批后 apply  
+> **前置**：已完成 [10 - 漂移检测](../10-drift/)  
+> **时间**：45-60 分钟（概念） + 60 分钟（动手实验）  
 > **费用**：GitHub Actions 免费额度内
 
 ---
 
 ## Hands-On Lab Available!
 
-> **Ready to experience CI/CD yourself?**
-> We've prepared a self-contained demo that you can copy, push to YOUR GitHub, and run a real CI/CD pipeline!
+> **Ready to experience CI/CD yourself?**  
+> We've prepared a self-contained demo that you can copy, push to YOUR GitHub, and run a real CI/CD pipeline!  
 >
 > **[Start the Hands-On Lab](terraform-cicd-demo/)** — Create PR, see plan comments, approve apply!
 
@@ -66,7 +66,7 @@ terraform state list  # 应为空
 
 ## Step 2 — 先跑起来：5 分钟看到效果
 
-> 想要实际体验？跳转到 **[Hands-On Lab](terraform-cicd-demo/)**！
+> 想要实际体验？跳转到 **[Hands-On Lab](terraform-cicd-demo/)**！  
 >
 > 下面是概念理解，帮助你理解 CI/CD 流程。
 
@@ -278,14 +278,14 @@ atlantis apply
 
 ## 动手实践
 
-> **Complete Hands-On Lab Available!**
+> **Complete Hands-On Lab Available!**  
 >
-> We've prepared a self-contained demo repo folder: **[terraform-cicd-demo/](terraform-cicd-demo/)**
+> We've prepared a self-contained demo repo folder: **[terraform-cicd-demo/](terraform-cicd-demo/)**  
 >
-> Copy it, push to YOUR GitHub, and experience:
-> - PR triggers automatic `terraform plan`
-> - Plan results appear as PR comments
-> - Merge triggers `terraform apply` with approval gate
+> Copy it, push to YOUR GitHub, and experience:  
+> - PR triggers automatic `terraform plan`  
+> - Plan results appear as PR comments  
+> - Merge triggers `terraform apply` with approval gate  
 >
 > **[Start the Lab Now →](terraform-cicd-demo/)**
 
