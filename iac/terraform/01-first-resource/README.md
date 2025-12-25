@@ -30,12 +30,12 @@ aws cloudformation describe-stacks \
   --output text
 ```
 
-> **💡 连接方式**（选择你熟悉的）：
-> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager
-> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`
-> - **VS Code**：Remote-SSH 连接（如已配置）
+> **💡 连接方式**（选择你熟悉的）：  
+> - **AWS Console**：EC2 → 选择实例 → Connect → Session Manager  
+> - **AWS CLI**：`aws ssm start-session --target <实例ID> --region ap-northeast-1`  
+> - **VS Code**：Remote-SSH 连接（如已配置）  
 >
-> **❓ 没有实例？** Stack 不存在或实例已终止？
+> **❓ 没有实例？** Stack 不存在或实例已终止？  
 > → [重新部署实验环境](../00-concepts/lab-setup.md)
 
 连接后，切换到课程用户并同步代码：

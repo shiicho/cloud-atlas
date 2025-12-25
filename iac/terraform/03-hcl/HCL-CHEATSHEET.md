@@ -251,9 +251,9 @@ aws_security_group
 
 ## 7. 一句话总结
 
-> **Block 是容器（Terraform 定义结构），Argument 是赋值（你定义内容）**
+> **Block 是容器（Terraform 定义结构），Argument 是赋值（你定义内容）**  
 >
-> - `lifecycle { }` ← Terraform 说："这里面只能放我规定的东西"
+> - `lifecycle { }` ← Terraform 说："这里面只能放我规定的东西"  
 > - `tags = { }` ← Terraform 说："你想放什么 key-value 都行"
 
 ---

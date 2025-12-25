@@ -1,8 +1,8 @@
 # 进阶实验：多环境布局实践
 
-> **目标**：动手部署 Directory Structure 和 Layered Architecture 示例，深入理解多环境管理
-> **前置**：已完成 [08 - 项目布局与多环境策略](./README.md) 的 Workspaces 部分
-> **时间**：30-40 分钟
+> **目标**：动手部署 Directory Structure 和 Layered Architecture 示例，深入理解多环境管理  
+> **前置**：已完成 [08 - 项目布局与多环境策略](./README.md) 的 Workspaces 部分  
+> **时间**：30-40 分钟  
 > **费用**：S3 Bucket（免费层）+ EC2 t3.micro（可能产生少量费用）
 
 ---
