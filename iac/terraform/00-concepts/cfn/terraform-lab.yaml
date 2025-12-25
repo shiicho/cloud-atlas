@@ -155,6 +155,8 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
         - PolicyName: S3CleanupPolicy
           PolicyDocument:
@@ -162,23 +164,23 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: arn:aws:logs:*:*:*
-              - Effect: Allow
-                Action:
                   - s3:ListBucket
                   - s3:ListBucketVersions
-                Resource: !GetAtt TfStateBucket.Arn
-              - Effect: Allow
-                Action:
                   - s3:DeleteObject
                   - s3:DeleteObjectVersion
-                Resource: !Sub "${TfStateBucket.Arn}/*"
+                Resource:
+                  - !GetAtt TfStateBucket.Arn
+                  - !Sub "${TfStateBucket.Arn}/*"
+
+  S3BucketCleanupLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Project}-S3BucketCleanup
+      RetentionInDays: 7
 
   S3BucketCleanupFunction:
     Type: AWS::Lambda::Function
+    DependsOn: S3BucketCleanupLogGroup
     Properties:
       FunctionName: !Sub ${Project}-S3BucketCleanup
       Description: Empties S3 bucket on CloudFormation stack deletion
@@ -266,41 +268,32 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        # SSM Session Manager access
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        # S3 full access (for Terraform S3 exercises)
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        # CloudFormation read access (for querying stack outputs)
-        - arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
-        # VPC full access (for Terraform VPC/networking exercises)
-        - arn:aws:iam::aws:policy/AmazonVPCFullAccess
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore      # SSM Session Manager
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess                # S3 exercises
+        - arn:aws:iam::aws:policy/AmazonVPCFullAccess               # VPC/networking exercises
+        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess       # CFN stack operations (lesson 11)
       Policies:
-        # Terraform learning permissions (scoped)
         - PolicyName: TerraformLearningPermissions
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              # EC2 permissions (for later lessons)
-              - Effect: Allow
+              # EC2: Describe + Instance lifecycle (lesson 08-layout)
+              - Sid: EC2Permissions
+                Effect: Allow
                 Action:
                   - ec2:Describe*
                   - ec2:CreateTags
                   - ec2:DeleteTags
-                  # EC2 Instance permissions (for lesson 08-layout Layer 3 Application)
                   - ec2:RunInstances
                   - ec2:TerminateInstances
                   - ec2:StartInstances
                   - ec2:StopInstances
                   - ec2:ModifyInstanceAttribute
                 Resource: '*'
-
-              # IAM permissions (for lesson 06-loops IAM user exercises)
-              - Effect: Allow
+              # IAM: User + Role + InstanceProfile + OIDC (lessons 06, 08, 11)
+              - Sid: IAMPermissions
+                Effect: Allow
                 Action:
-                  - iam:GetRole
-                  - iam:GetRolePolicy
-                  - iam:ListRolePolicies
-                  - iam:ListAttachedRolePolicies
                   - iam:CreateUser
                   - iam:DeleteUser
                   - iam:GetUser
@@ -308,18 +301,19 @@ Resources:
                   - iam:TagUser
                   - iam:UntagUser
                   - iam:ListGroupsForUser
-                  # IAM Role permissions (for lesson 08-layout Layer 3 Application)
                   - iam:CreateRole
                   - iam:DeleteRole
                   - iam:GetRole
                   - iam:TagRole
                   - iam:UntagRole
                   - iam:PassRole
+                  - iam:GetRolePolicy
                   - iam:PutRolePolicy
                   - iam:DeleteRolePolicy
-                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
                   - iam:AttachRolePolicy
                   - iam:DetachRolePolicy
+                  - iam:ListAttachedRolePolicies
                   - iam:CreateInstanceProfile
                   - iam:DeleteInstanceProfile
                   - iam:GetInstanceProfile
@@ -328,11 +322,17 @@ Resources:
                   - iam:AddRoleToInstanceProfile
                   - iam:RemoveRoleFromInstanceProfile
                   - iam:ListInstanceProfilesForRole
+                  - iam:CreateOpenIDConnectProvider
+                  - iam:DeleteOpenIDConnectProvider
+                  - iam:GetOpenIDConnectProvider
+                  - iam:ListOpenIDConnectProviders
+                  - iam:TagOpenIDConnectProvider
+                  - iam:UntagOpenIDConnectProvider
                   - sts:GetCallerIdentity
                 Resource: '*'
-
-              # RDS permissions (for lesson 08-layout layered architecture lab)
-              - Effect: Allow
+              # RDS: Subnet groups only (lesson 08-layout)
+              - Sid: RDSPermissions
+                Effect: Allow
                 Action:
                   - rds:CreateDBSubnetGroup
                   - rds:DeleteDBSubnetGroup
@@ -341,33 +341,6 @@ Resources:
                   - rds:AddTagsToResource
                   - rds:RemoveTagsFromResource
                   - rds:ListTagsForResource
-                Resource: '*'
-
-              # CloudFormation permissions (for lesson 11-cicd OIDC stack deployment)
-              - Effect: Allow
-                Action:
-                  - cloudformation:CreateStack
-                  - cloudformation:UpdateStack
-                  - cloudformation:DeleteStack
-                  - cloudformation:CreateChangeSet
-                  - cloudformation:ExecuteChangeSet
-                  - cloudformation:DeleteChangeSet
-                  - cloudformation:DescribeChangeSet
-                  - cloudformation:DescribeStacks
-                  - cloudformation:DescribeStackEvents
-                  - cloudformation:GetTemplate
-                  - cloudformation:ListStacks
-                Resource: '*'
-
-              # IAM OIDC Provider permissions (for lesson 11-cicd GitHub Actions OIDC)
-              - Effect: Allow
-                Action:
-                  - iam:CreateOpenIDConnectProvider
-                  - iam:DeleteOpenIDConnectProvider
-                  - iam:GetOpenIDConnectProvider
-                  - iam:ListOpenIDConnectProviders
-                  - iam:TagOpenIDConnectProvider
-                  - iam:UntagOpenIDConnectProvider
                 Resource: '*'
 
   InstanceProfile:
