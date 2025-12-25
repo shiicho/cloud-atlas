@@ -382,18 +382,15 @@ aws iam list-open-id-connect-providers
 The GitHub PAT you used is stored locally. Remove it:
 
 ```bash
-# Remove stored credentials
-# On Linux/macOS:
+# Remove stored credentials file
 rm ~/.git-credentials 2>/dev/null || true
 
-# Or selectively remove GitHub credentials:
-git credential reject <<EOF
-protocol=https
-host=github.com
-EOF
+# Remove credential helper config (set in Step 4)
+git config --global --unset credential.helper 2>/dev/null || true
 
-# Verify credentials removed
+# Verify cleanup
 cat ~/.git-credentials 2>/dev/null || echo "Credentials file removed"
+git config --global credential.helper 2>/dev/null || echo "Credential helper config removed"
 ```
 
 > **💡 Tip**: If you created a PAT specifically for this demo, also revoke it on GitHub:  
@@ -411,7 +408,8 @@ rm -rf ~/my-terraform-cicd
 - [ ] Terraform resources destroyed (`terraform destroy`)
 - [ ] CloudFormation OIDC stack deleted
 - [ ] GitHub repository deleted
-- [ ] Git credentials removed
+- [ ] Git credentials file removed (`~/.git-credentials`)
+- [ ] Git credential helper config removed (`git config --global --unset credential.helper`)
 - [ ] Local demo folder removed
 - [ ] (Optional) PAT revoked on GitHub
 
