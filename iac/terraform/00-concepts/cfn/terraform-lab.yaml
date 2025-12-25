@@ -269,6 +269,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore      # SSM Session Manager
+        - arn:aws:iam::aws:policy/AmazonSSMFullAccess               # SSM Parameter Store (lesson 12)
         - arn:aws:iam::aws:policy/AmazonS3FullAccess                # S3 exercises
         - arn:aws:iam::aws:policy/AmazonVPCFullAccess               # VPC/networking exercises
         - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess       # CFN stack operations (lesson 11)
