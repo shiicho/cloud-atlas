@@ -15,6 +15,7 @@ This folder is a complete, ready-to-use template. Copy it to a new location, ini
 Before starting, ensure you have:
 
 - [ ] GitHub account
+- [ ] **GitHub Personal Access Token (PAT)** with `repo` scope — [Create one here](https://github.com/settings/tokens/new?scopes=repo)
 - [ ] AWS account with admin access
 - [ ] AWS CLI configured (`aws sts get-caller-identity` works)
 - [ ] Git installed
@@ -72,8 +73,37 @@ After creating, connect your local repo:
 # Replace YOUR_USERNAME with your GitHub username
 git remote add origin https://github.com/YOUR_USERNAME/my-terraform-cicd.git
 git branch -M main
+```
+
+**Configure Git authentication** (first time only):
+
+GitHub no longer accepts passwords for HTTPS git operations. You need a Personal Access Token (PAT):
+
+<details>
+<summary><strong>📋 How to create a GitHub PAT (click to expand)</strong></summary>
+
+1. Go to [GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens/new)
+2. Click **"Generate new token"** → **"Generate new token (classic)"**
+3. Fill in:
+   - **Note**: `terraform-cicd-demo` (or any description)
+   - **Expiration**: 30 days (or your preference)
+   - **Select scopes**: Check **`repo`** (Full control of private repositories)
+4. Click **"Generate token"**
+5. **⚠️ Copy the token immediately** - you won't see it again!
+
+</details>
+
+```bash
+# Store credentials (will prompt once, then remember)
+git config --global credential.helper store
+
+# Now push - when prompted:
+#   Username: your GitHub username
+#   Password: paste your PAT (not your GitHub password!)
 git push -u origin main
 ```
+
+> **💡 Tip**: If you have [GitHub CLI](https://cli.github.com/) installed, you can run `gh auth login` for easier setup.
 
 **Checkpoint**: Refresh GitHub page - you should see all files including `.github/workflows/`.
 
