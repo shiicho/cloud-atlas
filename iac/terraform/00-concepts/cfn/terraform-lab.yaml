@@ -231,6 +231,33 @@ Resources:
                   - rds:ListTagsForResource
                 Resource: '*'
 
+              # CloudFormation permissions (for lesson 11-cicd OIDC stack deployment)
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:GetTemplate
+                  - cloudformation:ListStacks
+                Resource: '*'
+
+              # IAM OIDC Provider permissions (for lesson 11-cicd GitHub Actions OIDC)
+              - Effect: Allow
+                Action:
+                  - iam:CreateOpenIDConnectProvider
+                  - iam:DeleteOpenIDConnectProvider
+                  - iam:GetOpenIDConnectProvider
+                  - iam:ListOpenIDConnectProviders
+                  - iam:TagOpenIDConnectProvider
+                  - iam:UntagOpenIDConnectProvider
+                Resource: '*'
+
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -278,9 +305,13 @@ Resources:
           mv terraform-docs /usr/local/bin/
           rm terraform-docs.tar.gz
 
+          # Install Trivy security scanner (for lesson 12-security)
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
           # Verify installations
           terraform version
           terraform-docs --version
+          trivy --version
           aws --version
           git --version
 

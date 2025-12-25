@@ -85,28 +85,29 @@ code/
     └── kms.tf
 ```
 
-### 安装安全扫描工具
+### 确认安全扫描工具
+
+Lab 环境已预装 **Trivy** 安全扫描工具：
 
 ```bash
-# 推荐：安装 Trivy（Aqua Security，tfsec 的继承者）
-# macOS
-brew install trivy
+# 确认 Trivy 已安装
+trivy --version
+# Version: 0.68.x
+```
 
-# Linux
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+> **💡 Trivy 简介**：Aqua Security 推出的统一安全扫描工具，已整合 tfsec 功能。
+> 支持 Terraform、Docker、Kubernetes 等多种 IaC 和容器扫描。
 
-# Windows (使用 scoop 或 chocolatey)
-scoop install trivy
+**（可选）安装 checkov**：
 
-# 备用：tfsec（仍可用但不再积极开发）
-# brew install tfsec
+如果你想尝试另一款扫描工具，可以安装 checkov：
 
-# 安装 checkov（Bridgecrew/Palo Alto）
+```bash
 pip install checkov
 ```
 
-> **注意**: tfsec 已被 Aqua Security 合并到 Trivy 中。新项目推荐使用 Trivy。  
-> 迁移指南: https://github.com/aquasecurity/tfsec/blob/master/tfsec-to-trivy-migration-guide.md
+> **注意**: 本课主要使用 Trivy 进行演示。checkov 是 Bridgecrew/Palo Alto 的开源工具，
+> 支持多种合规框架（CIS、SOC2、HIPAA 等），可作为补充工具使用。
 
 ### 扫描不安全的代码
 
