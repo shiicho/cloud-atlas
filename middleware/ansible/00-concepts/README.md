@@ -3,7 +3,7 @@
 > **目标**：理解 Ansible 核心架构和 Agentless 设计哲学
 > **前置**：无（入门课程）
 > **时间**：30 分钟
-> **版本**：本教程基于 ansible-core 2.17+，Python 3.10+
+> **版本**：本教程基于 ansible-core 2.15+，Python 3.9+（Amazon Linux 2023）
 > **实战项目**：调研一家日本 SIer 的 Ansible 导入案例
 
 ---
@@ -62,7 +62,7 @@ Ansible 是一个开源的 **IT 自动化工具**，用于：
 │  (Web Server)   │ │  (DB Server)    │ │  (App Server)   │
 │                 │ │                 │ │                 │
 │  Requirements:  │ │  Requirements:  │ │  Requirements:  │
-│  - Python 3.10+ │ │  - Python 3.10+ │ │  - Python 3.10+ │
+│  - Python 3.9+  │ │  - Python 3.9+  │ │  - Python 3.9+  │
 │  - SSH Server   │ │  - SSH Server   │ │  - SSH Server   │
 └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```

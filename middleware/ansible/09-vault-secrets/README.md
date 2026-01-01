@@ -3,7 +3,7 @@
 > **目标**：掌握 Ansible Vault 加密和机密管理
 > **前置**：[08 · 错误处理](../08-error-handling/)
 > **时间**：30 分钟
-> **版本**：ansible-core 2.17+，amazon.aws >= 9.0.0
+> **版本**：ansible-core 2.15+，amazon.aws >= 8.0.0
 > **实战项目**：加密数据库密码
 
 ---

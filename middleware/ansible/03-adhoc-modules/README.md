@@ -3,7 +3,7 @@
 > **目标**：掌握 Ad-hoc 命令和核心模块
 > **前置**：[02 · Inventory 管理](../02-inventory/)（需要已部署 Managed Nodes）
 > **时间**：25 分钟
-> **版本**：ansible-core 2.17+，Python 3.10+
+> **版本**：ansible-core 2.15+，Python 3.9+
 
 ---
 

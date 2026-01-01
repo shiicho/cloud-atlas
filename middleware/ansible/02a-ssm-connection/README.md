@@ -3,7 +3,7 @@
 > **目标**：掌握 AWS SSM 连接插件作为 SSH 的替代方案
 > **前置**：[02 · インベントリ管理](../02-inventory/)、[AWS SSM 课程](../../../aws/ssm/)
 > **时间**：25 分钟
-> **版本**：ansible-core 2.17+，amazon.aws >= 9.0.0
+> **版本**：ansible-core 2.15+，amazon.aws >= 8.0.0
 > **性质**：选修 / AWS 专用
 
 ---

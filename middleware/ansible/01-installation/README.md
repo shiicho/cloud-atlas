@@ -3,7 +3,7 @@
 > **目标**：部署 Ansible Control Node，准备学习环境
 > **前置**：[00 · 概念与架构导入](../00-concepts/)
 > **时间**：15-20 分钟
-> **版本**：ansible-core 2.17+，Python 3.10+
+> **版本**：ansible-core 2.15+，Python 3.9+（Amazon Linux 2023 默认版本）
 > **费用**：约 $0.02/小时（1 台 t3.small）
 
 ---
@@ -34,8 +34,8 @@
 │   │   │ ansible-control │    ┌──────────────────┐       │    │
 │   │   │ (t3.small)      │    │ ans.local        │       │    │
 │   │   │                 │    │ └─ control.ans.  │       │    │
-│   │   │ - Ansible 2.17+ │    │    local         │       │    │
-│   │   │ - Python 3.11   │    └──────────────────┘       │    │
+│   │   │ - Ansible 2.15+ │    │    local         │       │    │
+│   │   │ - Python 3.9    │    └──────────────────┘       │    │
 │   │   │ - AWS CLI       │                               │    │
 │   │   └─────────────────┘                               │    │
 │   │                                                      │    │
@@ -113,12 +113,12 @@ ansible --version
 预期输出：
 
 ```
-ansible [core 2.17.x]
+ansible [core 2.15.x]
   config file = None
   configured module search path = ['/home/ansible/.ansible/plugins/modules', ...]
-  ansible python module location = /usr/lib/python3.11/site-packages/ansible
+  ansible python module location = /usr/lib/python3.9/site-packages/ansible
   executable location = /usr/bin/ansible
-  python version = 3.11.x
+  python version = 3.9.x
 ```
 
 > **说明**：`config file = None` 是正常的。进入课程目录后会自动加载 `ansible.cfg`。

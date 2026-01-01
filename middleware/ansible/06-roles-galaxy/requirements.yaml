@@ -18,9 +18,9 @@ roles:
 
 # Ansible Collections
 collections:
-  # AWS Collection (需要 ansible-core 2.17+)
+  # AWS Collection (需要 ansible-core 2.15+)
   - name: amazon.aws
-    version: ">=9.0.0"
+    version: ">=8.0.0"
 
   # General utilities (10.x 需要 ansible-core 2.16+)
   - name: community.general

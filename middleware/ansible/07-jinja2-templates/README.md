@@ -3,7 +3,7 @@
 > **目标**：掌握 Jinja2 模板技术
 > **前置**：[06 · Roles 与 Galaxy](../06-roles-galaxy/)
 > **时间**：35 分钟
-> **版本**：ansible-core 2.17+，Python 3.10+
+> **版本**：ansible-core 2.15+，Python 3.9+
 > **实战项目**：模板化 Nginx 配置
 
 ---

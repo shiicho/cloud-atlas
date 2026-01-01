@@ -3,7 +3,7 @@
 > **目标**：部署 Managed Nodes，掌握 Inventory 管理
 > **前置**：[01 · 环境构築](../01-installation/)
 > **时间**：30 分钟
-> **版本**：ansible-core 2.17+，Python 3.10+
+> **版本**：ansible-core 2.15+，Python 3.9+
 > **费用**：约 $0.02/小时（2x t3.micro）
 
 ---

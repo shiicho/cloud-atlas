@@ -3,7 +3,7 @@
 > **目标**：掌握 Role 结构和 Ansible Galaxy
 > **前置**：[05 · 变量与逻辑](../05-variables-logic/)
 > **时间**：40 分钟
-> **版本**：ansible-core 2.17+，Python 3.10+
+> **版本**：ansible-core 2.15+，Python 3.9+
 > **实战项目**：创建标准化 Role 库
 
 ---
