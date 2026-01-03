@@ -695,8 +695,8 @@ aws cloudformation describe-stacks --stack-name zabbix-lab
 
 | 方向 | 推荐课程 |
 |------|----------|
-| 日志分析深入 | [日志分析与故障排查](../../../skills/log-reading/) |
-| 日本 IT 文化 | [日本 IT 职场沟通](../../../skills/jp-communication/) |
+| 日志分析深入 | [日志分析与故障排查](../../../foundations/logs/) |
+| 日本 IT 文化 | [日本 IT 职场沟通](../../../japan/communication/) |
 | 高级 Zabbix | Zabbix 官方文档、HA 配置 |
 
 ---

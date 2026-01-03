@@ -413,7 +413,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 ```bash
 # 下载脚本（如果尚未克隆仓库）
 cd ~
-curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/zabbix/04-triggers-alerts/code/fill-disk.sh
+curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/enterprise/zabbix/04-triggers-alerts/code/fill-disk.sh
 chmod +x fill-disk.sh
 
 # 查看当前状态和帮助

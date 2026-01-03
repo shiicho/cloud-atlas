@@ -176,7 +176,7 @@ git config --global core.autocrlf true
 
 完成本课程后，推荐学习：
 
-1. **[Terraform 基础设施即代码](../../iac/terraform/)** — 使用 Git 管理 IaC
+1. **[Terraform 基础设施即代码](../../automation/terraform/)** — 使用 Git 管理 IaC
 2. **CI/CD with GitHub Actions**（规划中）— Git 触发自动化流水线
 3. **Git Advanced**（规划中）— Rebase、Hooks、Internals
 

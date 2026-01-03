@@ -51,7 +51,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/01-first-resource/code
+cd ~/cloud-atlas/automation/terraform/01-first-resource/code
 terraform state list
 ```
 
@@ -70,7 +70,7 @@ terraform destroy -auto-approve
 ### 2.1 创建资源（使用 Local State）
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code
+cd ~/cloud-atlas/automation/terraform/02-state/code
 terraform init
 terraform apply -auto-approve
 ```
@@ -361,7 +361,7 @@ resource "time_sleep" "wait" {
 **终端 1** 和 **终端 2** 都进入同一目录：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code
+cd ~/cloud-atlas/automation/terraform/02-state/code
 ```
 
 ### 5.3 模拟并发 Apply
@@ -485,7 +485,7 @@ S3 Versioning 提供 State 的历史记录，可用于：
 > 完成学习后，立即清理本课创建的资源！
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code
+cd ~/cloud-atlas/automation/terraform/02-state/code
 terraform destroy -auto-approve
 ```
 

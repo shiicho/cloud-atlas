@@ -447,7 +447,7 @@ Resources:
               # First time: sparse clone
               echo "📥 First time setup - cloning repository..."
               git clone --filter=blob:none --sparse $REPO_URL $REPO_DIR
-              cd $REPO_DIR && git sparse-checkout set iac/terraform
+              cd $REPO_DIR && git sparse-checkout set automation/terraform
               echo "✅ Course repository cloned!"
           else
               cd $REPO_DIR
@@ -472,7 +472,7 @@ Resources:
                   git reset --hard origin/main
 
                   # Re-apply sparse checkout
-                  git sparse-checkout set iac/terraform
+                  git sparse-checkout set automation/terraform
 
                   echo "✅ Course repository force-updated!"
                   echo "📁 Your previous work is in: $BACKUP_DIR"
@@ -480,7 +480,7 @@ Resources:
           fi
 
           echo ""
-          echo "📂 Course directory: $REPO_DIR/iac/terraform"
+          echo "📂 Course directory: $REPO_DIR/automation/terraform"
           SYNCEOF
           chmod +x /usr/local/bin/sync-course
 
@@ -531,7 +531,7 @@ Resources:
           ║  🚀 Quick Start:                                              ║
           ║     sudo su - terraform                                       ║
           ║     sync-course                                               ║
-          ║     cd ~/cloud-atlas/iac/terraform/01-first-resource/code     ║
+          ║     cd ~/cloud-atlas/automation/terraform/01-first-resource/code     ║
           ║                                                               ║
           ║  📝 Aliases: tf, tfi, tfp, tfa, tfd, tfo, tfs                 ║
           ║                                                               ║

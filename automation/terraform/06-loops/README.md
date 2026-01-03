@@ -49,7 +49,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/05-variables/code
+cd ~/cloud-atlas/automation/terraform/05-variables/code
 terraform state list  # 应为空
 ```
 
@@ -62,7 +62,7 @@ terraform state list  # 应为空
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/06-loops/code
+cd ~/cloud-atlas/automation/terraform/06-loops/code
 ls -la
 ```
 
@@ -501,7 +501,7 @@ jsonencode({ key = "value" })
 ## Step 8 — 清理资源（3 分钟）
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/06-loops/code
+cd ~/cloud-atlas/automation/terraform/06-loops/code
 terraform destroy -auto-approve
 ```
 

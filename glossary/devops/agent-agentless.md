@@ -59,4 +59,4 @@
 
 ---
 
-→ 相关：[Ansible 概念](../../middleware/ansible/00-concepts/) · [Zabbix Agent](../../middleware/zabbix/02-agent-host/)
+→ 相关：[Ansible 概念](../../automation/ansible/00-concepts/) · [Zabbix Agent](../../enterprise/zabbix/02-agent-host/)

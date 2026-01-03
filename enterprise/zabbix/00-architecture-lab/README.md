@@ -1,7 +1,7 @@
 # 00 · 环境与架构导入（Architecture & Lab Setup）
 
 > **目标**：理解 Zabbix 架构，部署实验环境  
-> **推荐**：[AWS SSM 01 · CloudFormation 部署](../../../aws/ssm/01-cfn-deploy/)（了解 AWS 控制台部署堆栈即可，本课也有详细步骤）  
+> **推荐**：[AWS SSM 01 · CloudFormation 部署](../../../cloud/aws-ssm/01-cfn-deploy/)（了解 AWS 控制台部署堆栈即可，本课也有详细步骤）  
 > **时间**：20-30 分钟  
 > **费用**：约 $0.03/小时（t3.small + t3.micro）；完成后请删除堆栈
 
@@ -151,7 +151,7 @@ Active Mode（主动模式）:
 mkdir -p ~/zabbix-course && cd ~/zabbix-course
 
 # 下载模板（如果未 clone 仓库）
-curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/zabbix/cfn/zabbix-lab.yaml
+curl -O https://raw.githubusercontent.com/shiicho/cloud-atlas/main/enterprise/zabbix/cfn/zabbix-lab.yaml
 ```
 
 ### 3.2 通过 AWS 控制台部署

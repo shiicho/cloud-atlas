@@ -70,7 +70,7 @@
 │   部署: 01-installation/cfn/control-node.yaml (via Console)             │
 │   包含: Ansible, aws-cli, git, 课程代码                                   │
 │                                                                          │
-│   ~/course/content/middleware/ansible/                                   │
+│   ~/course/content/automation/ansible/                                   │
 │   ├── 01-installation/                                                   │
 │   │   ├── README.md         ← 课程内容 + 部署说明                         │
 │   │   └── cfn/              ← CFN 模板                                   │
@@ -123,10 +123,10 @@
 # 使用 sparse checkout 只下载 Ansible 课程
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/repo
 cd ~/repo
-git sparse-checkout set middleware/ansible
+git sparse-checkout set automation/ansible
 
 # 创建快捷方式到 home 目录
-ln -s ~/repo/middleware/ansible/* ~/
+ln -s ~/repo/automation/ansible/* ~/
 ```
 
 现在你的 home 目录结构：

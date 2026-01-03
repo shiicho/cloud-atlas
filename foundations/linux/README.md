@@ -28,7 +28,7 @@
 - AWS 账号（免费套餐即可）
 - 无需本地安装任何软件
 - 使用 AWS Session Manager 浏览器终端
-- **推荐先学**：[SSM 系列 02 · Session Manager 免密登录](../../aws/ssm/02-session-manager/)
+- **推荐先学**：[SSM 系列 02 · Session Manager 免密登录](../../cloud/aws-ssm/02-session-manager/)
 
 ## 快速开始 / Quick Start
 
@@ -53,7 +53,7 @@
 
 ## 系列导航 / Related Series
 
-- [AWS SSM 系列](../../aws/ssm/) - 深入学习 Session Manager
+- [AWS SSM 系列](../../cloud/aws-ssm/) - 深入学习 Session Manager
 - [Linux 基础](../) - 更多 Linux 概念
 
 ---

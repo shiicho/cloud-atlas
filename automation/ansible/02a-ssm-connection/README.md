@@ -1,7 +1,7 @@
 # 02a · AWS SSM 连接（Zero-Trust Alternative）
 
 > **目标**：掌握 AWS SSM 连接插件作为 SSH 的替代方案
-> **前置**：[02 · インベントリ管理](../02-inventory/)、[AWS SSM 课程](../../../aws/ssm/)
+> **前置**：[02 · インベントリ管理](../02-inventory/)、[AWS SSM 课程](../../../cloud/aws-ssm/)
 > **时间**：25 分钟
 > **版本**：ansible-core 2.15+，amazon.aws >= 8.0.0
 > **性质**：选修 / AWS 专用
@@ -427,7 +427,7 @@ aws s3 rb s3://${BUCKET_NAME}
 
 ## 相关资源
 
-- [AWS SSM 课程 · Session Manager 免密登录](../../../aws/ssm/02-session-manager/)
+- [AWS SSM 课程 · Session Manager 免密登录](../../../cloud/aws-ssm/02-session-manager/)
 - [Ansible 官方文档 · aws_ssm connection](https://docs.ansible.com/ansible/latest/collections/amazon/aws/aws_ssm_connection.html)
 - [AWS 博客 · Zero Trust Automation](https://developers.redhat.com/articles/2025/09/22/zero-trust-automation-aws-ansible-and-terraform)
 

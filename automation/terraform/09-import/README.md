@@ -71,7 +71,7 @@ on linux_amd64
 首先，我们用 AWS CLI 模拟手动创建的资源（代表遗留系统）：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/09-import/code
+cd ~/cloud-atlas/automation/terraform/09-import/code
 
 # 运行脚本创建 EC2 实例（模拟手动创建）
 ./setup-existing-resources.sh
@@ -284,7 +284,7 @@ No changes. Your infrastructure matches the configuration.
 ### 4.1 查看示例
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/09-import/code/import-command
+cd ~/cloud-atlas/automation/terraform/09-import/code/import-command
 cat main.tf
 ```
 
@@ -384,7 +384,7 @@ terraform plan
 ### 5.1 进入示例目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/09-import/code/generated-config
+cd ~/cloud-atlas/automation/terraform/09-import/code/generated-config
 ls -la
 ```
 
@@ -598,7 +598,7 @@ terraformer import aws --resources=ec2_instance,s3 --regions=ap-northeast-1
 ### 8.2 步骤
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/09-import/code/import-block
+cd ~/cloud-atlas/automation/terraform/09-import/code/import-block
 
 # 1. 清理之前的 state（模拟"遗失"状态）
 rm -rf .terraform terraform.tfstate* generated.tf
@@ -637,7 +637,7 @@ terraform plan  # 应无差异
 ### 9.1 通过 Terraform 销毁
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/09-import/code/import-block
+cd ~/cloud-atlas/automation/terraform/09-import/code/import-block
 
 # 销毁导入的资源
 terraform destroy
@@ -672,11 +672,11 @@ terminated
 
 ```bash
 # 清理 import-command 目录
-cd ~/cloud-atlas/iac/terraform/09-import/code/import-command
+cd ~/cloud-atlas/automation/terraform/09-import/code/import-command
 rm -rf .terraform terraform.tfstate*
 
 # 清理 generated-config 目录
-cd ~/cloud-atlas/iac/terraform/09-import/code/generated-config
+cd ~/cloud-atlas/automation/terraform/09-import/code/generated-config
 rm -rf .terraform terraform.tfstate* generated.tf
 ```
 

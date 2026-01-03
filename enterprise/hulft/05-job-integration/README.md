@@ -641,7 +641,7 @@ Jobnet: SETTLEMENT_PROCESS
 ### 目录结构
 
 > **参考脚本**：本课程提供可复用的脚本模板，位于
-> `cloud-atlas/middleware/hulft/05-job-integration/scripts/` 目录：
+> `cloud-atlas/enterprise/hulft/05-job-integration/scripts/` 目录：
 > - `common.sh` - 日志和通用函数
 > - `load_to_db.sh` - 数据库加载 stub
 > - `notify_ops.sh` - 通知脚本模板

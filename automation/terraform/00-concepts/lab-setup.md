@@ -34,8 +34,8 @@ aws sts get-caller-identity
 # 克隆课程代码（如果尚未克隆）
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
 cd ~/cloud-atlas
-git sparse-checkout set iac/terraform
-cd iac/terraform/00-concepts/cfn
+git sparse-checkout set automation/terraform
+cd automation/terraform/00-concepts/cfn
 ```
 
 ### Step 2 — 部署 Stack
@@ -189,7 +189,7 @@ sync-course
 ```
 🔄 Syncing course repository...
 ✅ Course repository updated!
-📂 Course directory: /home/terraform/cloud-atlas/iac/terraform
+📂 Course directory: /home/terraform/cloud-atlas/automation/terraform
 ```
 
 > 💡 `sync-course` 会自动处理代码冲突：如果你修改过的文件与远程冲突，会自动备份到 `~/cloud-atlas-backup-*` 目录。
@@ -197,7 +197,7 @@ sync-course
 每个课程直接进入对应目录即可：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/01-first-resource/code
+cd ~/cloud-atlas/automation/terraform/01-first-resource/code
 ```
 
 ---

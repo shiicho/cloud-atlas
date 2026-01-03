@@ -33,7 +33,7 @@ Copy this folder to a new location outside the course repo:
 
 ```bash
 # On your lab instance (EC2 or local)
-cp -r ~/cloud-atlas/iac/terraform/11-cicd/terraform-cicd-demo ~/my-terraform-cicd
+cp -r ~/cloud-atlas/automation/terraform/11-cicd/terraform-cicd-demo ~/my-terraform-cicd
 cd ~/my-terraform-cicd
 
 # Verify all files exist

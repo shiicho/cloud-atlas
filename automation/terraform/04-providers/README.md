@@ -66,7 +66,7 @@ on linux_amd64
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/04-providers/code
+cd ~/cloud-atlas/automation/terraform/04-providers/code
 ls -la
 ```
 
@@ -413,7 +413,7 @@ terraform {
 ## Step 7 — 清理资源（2 分钟）
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/04-providers/code
+cd ~/cloud-atlas/automation/terraform/04-providers/code
 terraform destroy -auto-approve
 ```
 

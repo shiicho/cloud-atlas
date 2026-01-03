@@ -101,4 +101,4 @@
 
 ---
 
-→ 相关：[GitHub Actions OIDC](../../iac/terraform/11-cicd/) · [AWS IAM](../../aws/iam/) · [OAuth 2.0](./oauth.md)
+→ 相关：[GitHub Actions OIDC](../../automation/terraform/11-cicd/) · [AWS IAM](../../aws/iam/) · [OAuth 2.0](./oauth.md)

@@ -49,7 +49,7 @@
 
 **① 下载 CFN 模板**
 
-[cfn/control-node.yaml](https://raw.githubusercontent.com/shiicho/cloud-atlas/main/middleware/ansible/01-installation/cfn/control-node.yaml)
+[cfn/control-node.yaml](https://raw.githubusercontent.com/shiicho/cloud-atlas/main/automation/ansible/01-installation/cfn/control-node.yaml)
 
 **② 打开 CloudFormation Console**
 
@@ -165,10 +165,10 @@ Control Node  ──SSH──►  Managed Node
 # 使用 sparse checkout 只下载 Ansible 课程
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/repo
 cd ~/repo
-git sparse-checkout set middleware/ansible
+git sparse-checkout set automation/ansible
 
 # 创建快捷方式到 home 目录
-ln -sf ~/repo/middleware/ansible/* ~/
+ln -sf ~/repo/automation/ansible/* ~/
 
 # 验证
 ls ~/
@@ -237,7 +237,7 @@ ansible --version | grep config
 # ② 进入有 ansible.cfg 的项目目录（同样是当前目录配置）
 cd ~/01-installation
 ansible --version | grep config
-# → config file = /home/ansible/repo/middleware/ansible/01-installation/ansible.cfg
+# → config file = /home/ansible/repo/automation/ansible/01-installation/ansible.cfg
 
 # ① 使用环境变量（最高优先级，覆盖一切）
 touch /tmp/my-custom.cfg

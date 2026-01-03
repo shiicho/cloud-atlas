@@ -276,12 +276,12 @@ git clone --depth 1 git@github.com:用户名/大仓库.git
 # GitHub（海外用户）
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
 cd ~/cloud-atlas
-git sparse-checkout set devops/git
+git sparse-checkout set foundations/git
 
 # Gitee（中国大陆用户）
 git clone --filter=blob:none --sparse https://gitee.com/shiicho/cloud-atlas ~/cloud-atlas
 cd ~/cloud-atlas
-git sparse-checkout set devops/git
+git sparse-checkout set foundations/git
 ```
 
 > **注意**：直接使用 `sparse-checkout set`，不要用 `sparse-checkout init`（已弃用，可能在未来版本移除）。

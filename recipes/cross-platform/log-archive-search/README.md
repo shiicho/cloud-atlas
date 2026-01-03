@@ -87,7 +87,7 @@
 - [ ] AWS Account with CloudWatch, Firehose, S3, Athena, Glue permissions
 - [ ] AWS CLI configured (`aws configure`)
 - [ ] 已有 CloudWatch Log Group（如 `/aws/lambda/my-function`）
-- [ ] 推荐: 完成 [AWS SSM 系列](../../aws/ssm/)
+- [ ] 推荐: 完成 [AWS SSM 系列](../../cloud/aws-ssm/)
 
 ## 实现步骤 (Implementation)
 
@@ -274,9 +274,9 @@ aws s3 rb s3://my-logs-archive-<YOUR-ACCOUNT-ID>
 
 ## 相关内容 (Related)
 
-- **Course:** [AWS SSM Session Logging](../../aws/ssm/05-session-logging/)
-- **Course:** [Log Reading 日志分析](../../skills/log-reading/)
-- **Solution:** [Drift Auto-Remediation](../../solutions/aws/drift-remediation/)
+- **Course:** [AWS SSM Session Logging](../../cloud/aws-ssm/05-session-logging/)
+- **Course:** [Log Reading 日志分析](../../foundations/logs/)
+- **Solution:** [Drift Auto-Remediation](../../recipes/aws/drift-remediation/)
 
 ---
 

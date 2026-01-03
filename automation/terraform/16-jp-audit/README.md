@@ -54,7 +54,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/15-jp-change-mgmt/code
+cd ~/cloud-atlas/automation/terraform/15-jp-change-mgmt/code
 terraform state list  # 应为空
 ```
 
@@ -63,7 +63,7 @@ terraform state list  # 应为空
 ### 快速体验步骤
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/16-jp-audit/code/audit-logging-setup
+cd ~/cloud-atlas/automation/terraform/16-jp-audit/code/audit-logging-setup
 ```
 
 查看文件结构：
@@ -444,7 +444,7 @@ resource "aws_s3_bucket_object_lock_configuration" "cloudtrail" {
 ### Step 1：構成図テンプレートを確認
 
 ```bash
-cat ~/cloud-atlas/iac/terraform/16-jp-audit/code/templates/設計書-template.md
+cat ~/cloud-atlas/automation/terraform/16-jp-audit/code/templates/設計書-template.md
 ```
 
 **設計書テンプレート**（code/templates/ に完全版あり）:
@@ -481,7 +481,7 @@ terraform-docs で自動生成可能
 brew install terraform-docs
 
 # ドキュメント生成
-cd ~/cloud-atlas/iac/terraform/16-jp-audit/code/audit-logging-setup
+cd ~/cloud-atlas/automation/terraform/16-jp-audit/code/audit-logging-setup
 terraform-docs markdown . > README.md
 
 # 生成結果を確認
@@ -750,7 +750,7 @@ terraform force-unlock LOCK_ID
 > ⚠️ **本课涉及多个 AWS 资源**，请务必清理以避免费用：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/16-jp-audit/code/audit-logging-setup
+cd ~/cloud-atlas/automation/terraform/16-jp-audit/code/audit-logging-setup
 
 # 1. 清空 S3 Bucket 内容（必须先清空才能删除）
 TFSTATE_BUCKET=$(terraform output -raw state_bucket_name 2>/dev/null || echo "")

@@ -21,7 +21,7 @@
 ![update_stack_entry](./img/0_update_stack_specify_template.png)
 
 → 参数页，保持以下默认设置，点击 **下一步** 到【配置堆栈选项】页面
-- **LogGroupName**：`/aws/ssm/session`
+- **LogGroupName**：`/cloud/aws-ssm/session`
 - **LogRetentionInDays**：`30`
 
 ![update_stack_entry](./img/0_update_stack_specify_stack_details.png)
@@ -47,9 +47,9 @@ Systems Manager → **会话管理器** → **首选项** → **编辑**
 在【CloudWatch 日志记录】处，启用 **CloudWatch 日志记录**，并按照如下进行设置：
   - 选择您的首选日志记录选项：**流式传输会话日志（Recommended）**
   - 强制加密：取消勾选
-  - Find Log Groups：选择 **在文本框中输入日志组名称**  ，并输入前面 CloudFormation 中创建的日志组，例如默认的 `/aws/ssm/session`
+  - Find Log Groups：选择 **在文本框中输入日志组名称**  ，并输入前面 CloudFormation 中创建的日志组，例如默认的 `/cloud/aws-ssm/session`
 
-> 注意：如果你没有做 Step 0，或者 Step 0 中创建了不同名字的日志组，那么在文本框手填 `/aws/ssm/session` 会提示"**指定的日志组不存在**"
+> 注意：如果你没有做 Step 0，或者 Step 0 中创建了不同名字的日志组，那么在文本框手填 `/cloud/aws-ssm/session` 会提示"**指定的日志组不存在**"
 
 ![prefs_entry](./img/1_prefs_entry_cloudwatch_logging.png)
 
@@ -75,7 +75,7 @@ echo "hello from 会话管理器 $(hostname)"
 
 ## Step 3 — 在 CloudWatch Logs 验证
 
-打开 CloudWatch → **日志组** → 进入日志组 `/aws/ssm/session`
+打开 CloudWatch → **日志组** → 进入日志组 `/cloud/aws-ssm/session`
 
 ![cw_view](./img/3_cw_view_choose_loggroup.png)
 

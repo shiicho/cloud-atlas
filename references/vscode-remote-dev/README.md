@@ -973,7 +973,7 @@ echo "ssh-ed25519 AAAA..." >> ~/.ssh/authorized_keys
 
 本指南作为参考模块，被以下课程引用：
 
-- [Terraform 系列](../../iac/terraform/) - 实验环境连接
+- [Terraform 系列](../../automation/terraform/) - 实验环境连接
 - CloudFormation 系列（计划中）
 - Zabbix 系列（计划中）
 

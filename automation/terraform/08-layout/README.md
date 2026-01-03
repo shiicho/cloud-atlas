@@ -49,7 +49,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/07-modules/code/environments/dev
+cd ~/cloud-atlas/automation/terraform/07-modules/code/environments/dev
 terraform state list  # 应为空
 ```
 
@@ -62,7 +62,7 @@ terraform state list  # 应为空
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/workspaces
+cd ~/cloud-atlas/automation/terraform/08-layout/code/workspaces
 ls -la
 ```
 
@@ -232,7 +232,7 @@ resource "aws_s3_bucket" "demo" {
 ### 5.1 查看目录结构
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/directory-structure
+cd ~/cloud-atlas/automation/terraform/08-layout/code/directory-structure
 tree -L 3
 ```
 
@@ -367,7 +367,7 @@ terraform apply
 ### 6.2 查看分层目录结构
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered
 tree -L 3
 ```
 
@@ -683,7 +683,7 @@ my-infrastructure/
 
 ```bash
 # 清理 workspaces 示例
-cd ~/cloud-atlas/iac/terraform/08-layout/code/workspaces
+cd ~/cloud-atlas/automation/terraform/08-layout/code/workspaces
 
 # 清理 staging
 terraform workspace select staging

@@ -111,7 +111,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/dev
 terraform state list  # 应为空
 ```
 
@@ -120,7 +120,7 @@ terraform state list  # 应为空
 ### 快速体验：查看示例代码
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/15-jp-change-mgmt/code
+cd ~/cloud-atlas/automation/terraform/15-jp-change-mgmt/code
 ```
 
 查看文件结构：
@@ -383,7 +383,7 @@ code/
 Plan Role は**読み取り専用**で、誰でも安全に `terraform plan` を実行可能：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/15-jp-change-mgmt/code/iam-roles
+cd ~/cloud-atlas/automation/terraform/15-jp-change-mgmt/code/iam-roles
 cat plan-role.tf
 ```
 

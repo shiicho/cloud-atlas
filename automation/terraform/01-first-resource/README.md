@@ -67,7 +67,7 @@ on linux_amd64
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/01-first-resource/code
+cd ~/cloud-atlas/automation/terraform/01-first-resource/code
 ls -la
 ```
 

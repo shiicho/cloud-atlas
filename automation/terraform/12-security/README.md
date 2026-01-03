@@ -49,7 +49,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/11-cicd/code
+cd ~/cloud-atlas/automation/terraform/11-cicd/code
 terraform state list  # 应为空
 ```
 
@@ -62,7 +62,7 @@ terraform state list  # 应为空
 ### 2.1 进入示例目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/12-security/code
+cd ~/cloud-atlas/automation/terraform/12-security/code
 ```
 
 查看文件结构：
@@ -112,7 +112,7 @@ pip install checkov
 ### 扫描不安全的代码
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/12-security/code/bad
+cd ~/cloud-atlas/automation/terraform/12-security/code/bad
 
 # 运行 Trivy（推荐）
 trivy config .
@@ -412,7 +412,7 @@ aws ssm get-parameter \
 **Bad（反模式）**：
 
 ```bash
-cat ~/cloud-atlas/iac/terraform/12-security/code/bad/main.tf
+cat ~/cloud-atlas/automation/terraform/12-security/code/bad/main.tf
 ```
 
 ```hcl
@@ -433,7 +433,7 @@ resource "aws_db_instance" "main" {
 **Good（最佳实践）**：
 
 ```bash
-cat ~/cloud-atlas/iac/terraform/12-security/code/good/main.tf
+cat ~/cloud-atlas/automation/terraform/12-security/code/good/main.tf
 ```
 
 ```hcl
@@ -460,13 +460,13 @@ resource "aws_db_instance" "main" {
 
 ```bash
 # 扫描 bad 代码
-cd ~/cloud-atlas/iac/terraform/12-security/code/bad
+cd ~/cloud-atlas/automation/terraform/12-security/code/bad
 trivy config .
 
 # 输出：3 issues (HIGH: 1, MEDIUM: 2)
 
 # 扫描 good 代码
-cd ~/cloud-atlas/iac/terraform/12-security/code/good
+cd ~/cloud-atlas/automation/terraform/12-security/code/good
 trivy config .
 
 # 输出：0 issues
@@ -475,7 +475,7 @@ trivy config .
 ### Step 4：配置 State 安全
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/12-security/code/state-security
+cd ~/cloud-atlas/automation/terraform/12-security/code/state-security
 cat main.tf
 ```
 
@@ -759,7 +759,7 @@ terraform apply -target=aws_db_instance.main
 > ⚠️ **本课创建了 SSM Parameter 和 KMS Key**，请务必清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/12-security/code
+cd ~/cloud-atlas/automation/terraform/12-security/code
 
 # 删除安全相关资源
 terraform destroy -auto-approve

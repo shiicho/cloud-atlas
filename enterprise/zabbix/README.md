@@ -2,7 +2,7 @@
 
 > **目标**：从零开始掌握 Zabbix 企业级监控，培养日本 IT 业界所需的運用監視技能  
 > **适合**：运维工程师、SRE、基础设施工程师  
-> **前置**：[AWS SSM 01 · CloudFormation 部署](../../aws/ssm/01-cfn-deploy/)（了解堆栈部署即可）
+> **前置**：[AWS SSM 01 · CloudFormation 部署](../../cloud/aws-ssm/01-cfn-deploy/)（了解堆栈部署即可）
 
 ## 系列概览
 

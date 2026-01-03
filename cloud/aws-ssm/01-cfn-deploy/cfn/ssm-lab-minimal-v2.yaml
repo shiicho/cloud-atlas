@@ -25,7 +25,7 @@ Parameters:
 
   LogGroupName:
     Type: String
-    Default: /aws/ssm/session
+    Default: /cloud/aws-ssm/session
     Description: CloudWatch Logs LogGroup for Session Manager streaming logs.
 
   LogRetentionInDays:

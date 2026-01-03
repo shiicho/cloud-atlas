@@ -1,7 +1,7 @@
 # 00 · HULFT 概念与架构（vs SFTP/FTPS Comparison）
 
 > **目标**：理解 HULFT store-and-forward 与传统文件传输的核心区别
-> **前置**：[Linux 基础知识](../../linux/bash/)（文件系统、权限）
+> **前置**：[Linux 基础知识](../../foundations/linux/)（文件系统、权限）
 > **适用**：日本 SIer/银行 IT 岗位面试准备
 > **时长**：约 30 分钟
 > **费用**：无（纯概念课程，无云资源）

@@ -115,8 +115,8 @@
 
 ```bash
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set iac/terraform
-cd ~/cloud-atlas/iac/terraform/01-first-resource/code
+cd ~/cloud-atlas && git sparse-checkout set automation/terraform
+cd ~/cloud-atlas/automation/terraform/01-first-resource/code
 terraform init
 terraform plan
 ```

@@ -58,7 +58,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/10-drift/code/drift-detect
+cd ~/cloud-atlas/automation/terraform/10-drift/code/drift-detect
 terraform state list  # 应为空
 ```
 

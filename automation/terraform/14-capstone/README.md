@@ -136,7 +136,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/13-testing/code
+cd ~/cloud-atlas/automation/terraform/13-testing/code
 terraform state list  # 应为空
 ```
 
@@ -147,7 +147,7 @@ terraform state list  # 应为空
 ### 1.1 项目目录结构
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/14-capstone/code
+cd ~/cloud-atlas/automation/terraform/14-capstone/code
 tree -L 2
 ```
 
@@ -303,7 +303,7 @@ Terraform has been successfully initialized!
 ### 2.3 部署 Dev 环境
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/dev
 
 # 1. 检查变量
 cat terraform.tfvars
@@ -487,7 +487,7 @@ resource "aws_instance" "legacy" {
 ### 4.1 部署 Staging 环境（可选）
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/staging
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/staging
 
 # 更新 backend.tf 中的 Bucket 名称
 BUCKET=$(aws cloudformation describe-stacks \
@@ -508,7 +508,7 @@ terraform apply  # 需要 15-20 分钟
 > **⚠️ 成本警告**：Prod 环境使用 Multi-AZ RDS 和多个 NAT Gateway，成本更高！
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/prod
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/prod
 
 # 更新 backend.tf
 sed -i "s/tfstate-terraform-lab-REPLACE_WITH_YOUR_BUCKET/$BUCKET/" backend.tf
@@ -528,7 +528,7 @@ terraform apply
 **检测 Drift**：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/dev
 
 # 检测 Drift
 terraform plan -refresh-only
@@ -635,15 +635,15 @@ cat .terraform.lock.hcl | grep -A5 "provider"
 # 按环境逆序清理（如果部署了多个环境）
 
 # 1. Prod（如果部署了）
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/prod
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/prod
 terraform destroy -auto-approve
 
 # 2. Staging（如果部署了）
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/staging
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/staging
 terraform destroy -auto-approve
 
 # 3. Dev
-cd ~/cloud-atlas/iac/terraform/14-capstone/code/environments/dev
+cd ~/cloud-atlas/automation/terraform/14-capstone/code/environments/dev
 terraform destroy -auto-approve
 ```
 

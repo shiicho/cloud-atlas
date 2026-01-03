@@ -948,7 +948,7 @@ git config --global core.autocrlf input
 
 ### 相关课程
 
-- [Terraform 15 · 日本 IT 変更管理](../../iac/terraform/15-jp-change-mgmt/) - OIDC 权限分离
+- [Terraform 15 · 日本 IT 変更管理](../../automation/terraform/15-jp-change-mgmt/) - OIDC 权限分离
 - [Git 00 · 概念导入](../00-concepts/) - Git 基础理念
 - [Git 05 · Pull Request](../05-pull-requests/) - PR 工作流详解
 
@@ -964,7 +964,7 @@ git config --global core.autocrlf input
 
 本课使用的模板文件已在练习中创建，你也可以从以下路径获取完整版本：
 
-> **路径说明**：模板位于 `cloud-atlas/devops/git/06-japan-it/templates/`
+> **路径说明**：模板位于 `cloud-atlas/foundations/git/06-japan-it/templates/`
 
 | 文件 | 路径 | 用途 |
 |------|------|------|

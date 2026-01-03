@@ -910,7 +910,7 @@ rm -rf /tmp/readonly-test
 
 - [Docker 00 · 概念导入](../00-concepts/) - Docker 架构与设计
 - [Docker 05 · Compose](../05-compose/) - 多容器编排
-- [Terraform 15 · 日本 IT 変更管理](../../iac/terraform/15-jp-change-mgmt/) - OIDC 权限分离
+- [Terraform 15 · 日本 IT 変更管理](../../automation/terraform/15-jp-change-mgmt/) - OIDC 权限分离
 
 ---
 

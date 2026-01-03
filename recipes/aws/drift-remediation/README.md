@@ -82,7 +82,7 @@
 
 - [ ] AWS Account with CloudFormation, Lambda, EventBridge, SNS permissions
 - [ ] AWS CLI configured (`aws configure`)
-- [ ] 推荐: 完成 [CloudFormation 基础课程](../../iac/cloudformation/)
+- [ ] 推荐: 完成 [CloudFormation 基础课程](../../automation/cloudformation/)
 - [ ] (可选) Slack Incoming Webhook URL
 
 ## 实现步骤 (Implementation)
@@ -256,7 +256,7 @@ aws sns delete-topic --topic-arn arn:aws:sns:ap-northeast-1:<YOUR-ACCOUNT-ID>:dr
 
 ## 相关内容 (Related)
 
-- **Course:** [CloudFormation Drift 检测与导入](../../iac/cloudformation/05-drift-import/)
+- **Course:** [CloudFormation Drift 检测与导入](../../automation/cloudformation/05-drift-import/)
 - **Solution:** [Cost Anomaly Alert](../cost-anomaly-alert/)
 
 ---

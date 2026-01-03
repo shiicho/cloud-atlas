@@ -49,7 +49,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/06-loops/code
+cd ~/cloud-atlas/automation/terraform/06-loops/code
 terraform state list  # 应为空
 ```
 
@@ -62,7 +62,7 @@ terraform state list  # 应为空
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/07-modules/code
+cd ~/cloud-atlas/automation/terraform/07-modules/code
 ls -la
 ```
 
@@ -426,7 +426,7 @@ terraform-docs markdown table ./modules/vpc > ./modules/vpc/README.md
 
 ```bash
 # 清理 dev 环境
-cd ~/cloud-atlas/iac/terraform/07-modules/code/environments/dev
+cd ~/cloud-atlas/automation/terraform/07-modules/code/environments/dev
 terraform destroy -auto-approve
 
 # 如果部署了 prod，也要清理

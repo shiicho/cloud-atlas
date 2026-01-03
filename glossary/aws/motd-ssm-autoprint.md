@@ -14,7 +14,7 @@ SSM 默认启动的是 交互式、非登录 的 sh，且 不走 PAM。
 
 因此 不会读取 /etc/profile / /etc/profile.d/*.sh，也不会触发常见的 pam_motd 打印。
 
-所以我们在 [04 · Parameter Store（创建/读取/在脚本中使用）](../../aws/ssm/04-parameter-store/) 已经存在的 /etc/motd.d/10-cloud-atlas 不会自动被打印。
+所以我们在 [04 · Parameter Store（创建/读取/在脚本中使用）](../../cloud/aws-ssm/04-parameter-store/) 已经存在的 /etc/motd.d/10-cloud-atlas 不会自动被打印。
 
 你仍可手动查看或切到登录 bash 来看到 MOTD；也可以配置 SSM shell profile 让每次会话自动显示。
 

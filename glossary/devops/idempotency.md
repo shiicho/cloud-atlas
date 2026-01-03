@@ -51,4 +51,4 @@ grep -q '/opt/bin' ~/.bashrc || echo "export PATH=/opt/bin:$PATH" >> ~/.bashrc
 
 ---
 
-→ 相关：[Ansible Ad-hoc 命令](../../middleware/ansible/03-adhoc-modules/) · [Terraform 概念](../../devops/terraform/00-concepts/)
+→ 相关：[Ansible Ad-hoc 命令](../../automation/ansible/03-adhoc-modules/) · [Terraform 概念](../../devops/terraform/00-concepts/)

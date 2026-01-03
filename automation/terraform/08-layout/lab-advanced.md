@@ -25,7 +25,7 @@
 **命令：**
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/directory-structure
+cd ~/cloud-atlas/automation/terraform/08-layout/code/directory-structure
 tree -L 3
 ```
 
@@ -77,7 +77,7 @@ diff environments/staging/terraform.tfvars environments/prod/terraform.tfvars
 
 ```bash
 # 进入 dev 环境目录
-cd ~/cloud-atlas/iac/terraform/08-layout/code/directory-structure/environments/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/directory-structure/environments/dev
 
 # 初始化
 terraform init
@@ -311,7 +311,7 @@ terraform state list  # 应为空
 **命令：**
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered
 tree -L 3
 ```
 
@@ -366,7 +366,7 @@ cat 02-foundations/dev/data.tf
 **命令：**
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/01-network/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/01-network/dev
 
 # 初始化
 terraform init
@@ -490,7 +490,7 @@ ls -la terraform.tfstate
 **命令：**
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/02-foundations/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/02-foundations/dev
 
 # 初始化
 terraform init
@@ -626,7 +626,7 @@ aws ec2 describe-subnets \
 **命令：**
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/03-application/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/03-application/dev
 
 # 初始化
 terraform init
@@ -791,7 +791,7 @@ terraform output | head -3
 
 ```bash
 # Step 8.1: 销毁 Layer 3 (Application)
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/03-application/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/03-application/dev
 terraform destroy -auto-approve
 ```
 
@@ -803,7 +803,7 @@ Destroy complete! Resources: 6 destroyed.
 
 ```bash
 # Step 8.2: 销毁 Layer 2 (Foundations)
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/02-foundations/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/02-foundations/dev
 terraform destroy -auto-approve
 ```
 
@@ -815,7 +815,7 @@ Destroy complete! Resources: 5 destroyed.
 
 ```bash
 # Step 8.3: 销毁 Layer 1 (Network)
-cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/01-network/dev
+cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/01-network/dev
 terraform destroy -auto-approve
 ```
 
@@ -831,7 +831,7 @@ Destroy complete! Resources: 11 destroyed.
 # 确认所有资源已清理
 for layer in 01-network 02-foundations 03-application; do
   echo "=== $layer ==="
-  (cd ~/cloud-atlas/iac/terraform/08-layout/code/layered/$layer/dev && terraform state list)
+  (cd ~/cloud-atlas/automation/terraform/08-layout/code/layered/$layer/dev && terraform state list)
 done
 ```
 

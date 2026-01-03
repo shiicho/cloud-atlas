@@ -1,7 +1,7 @@
 # 00 · 环境准备（Environment Setup）
 
 > **目标**：一键部署 Bash 练习环境  
-> **前置**：了解 Session Manager 基本操作（参考 [SSM 02 · 免密登录](../../../aws/ssm/02-session-manager/)）  
+> **前置**：了解 Session Manager 基本操作（参考 [SSM 02 · 免密登录](../../../cloud/aws-ssm/02-session-manager/)）  
 > **时间**：5 分钟  
 > **费用**：t3.micro 免费套餐；用完记得删除 Stack
 
@@ -36,7 +36,7 @@
 
 浏览器会打开一个终端窗口。
 
-> 📖 **详细步骤**：参考 [SSM 02 · Session Manager 免密登录](../../../aws/ssm/02-session-manager/)
+> 📖 **详细步骤**：参考 [SSM 02 · Session Manager 免密登录](../../../cloud/aws-ssm/02-session-manager/)
 
 ## Step 3 — 验证环境
 
@@ -99,7 +99,7 @@ pwd
 - 等待 EC2 完全启动（2-3 分钟）
 - 确认 Stack 状态为 `CREATE_COMPLETE`
 - 检查 EC2 状态为 `running`
-- 更多排查：参考 [SSM 02 · Session Manager 免密登录](../../../aws/ssm/02-session-manager/)
+- 更多排查：参考 [SSM 02 · Session Manager 免密登录](../../../cloud/aws-ssm/02-session-manager/)
 
 ### 想用自己的 Linux 环境？
 

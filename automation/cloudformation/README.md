@@ -71,7 +71,7 @@
 ```bash
 # Sparse checkout（仅下载 CloudFormation 课程）
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set iac/cloudformation
+cd ~/cloud-atlas && git sparse-checkout set automation/cloudformation
 ```
 
 ### 费用提示
@@ -103,4 +103,4 @@ cd ~/cloud-atlas && git sparse-checkout set iac/cloudformation
 
 ## 系列导航
 
-[AWS SSM 入门](../../aws/ssm/) | [Terraform 入门](../terraform/) | **CloudFormation（本课程）**
+[AWS SSM 入门](../../cloud/aws-ssm/) | [Terraform 入门](../terraform/) | **CloudFormation（本课程）**

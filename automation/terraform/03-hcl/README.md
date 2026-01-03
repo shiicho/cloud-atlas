@@ -51,7 +51,7 @@ sync-course
 确认上一课的资源已清理：
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/02-state/code/02-s3-backend
+cd ~/cloud-atlas/automation/terraform/02-state/code/02-s3-backend
 terraform state list
 # 如果有资源，先清理（保留后端基础设施）
 ```
@@ -65,7 +65,7 @@ terraform state list
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/03-hcl/code
+cd ~/cloud-atlas/automation/terraform/03-hcl/code
 ls -la
 ```
 
@@ -415,7 +415,7 @@ resource "aws_subnet" "public" {
 > 完成学习后，立即清理！
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/03-hcl/code
+cd ~/cloud-atlas/automation/terraform/03-hcl/code
 
 # 如果有 prevent_destroy，先注释掉
 vim lifecycle-demo.tf  # 注释 prevent_destroy = true

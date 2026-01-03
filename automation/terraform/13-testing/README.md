@@ -80,7 +80,7 @@ chmod +x opa && sudo mv opa /usr/local/bin/
 ### 2.1 进入示例代码目录
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/13-testing/code
+cd ~/cloud-atlas/automation/terraform/13-testing/code
 ls -la
 ```
 
@@ -274,7 +274,7 @@ rm broken.tf
 ### 5.1 查看 tflint 配置
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/13-testing/code
+cd ~/cloud-atlas/automation/terraform/13-testing/code
 cat .tflint.hcl
 ```
 
@@ -429,7 +429,7 @@ rm aws-check.tf
 ### 6.2 查看测试文件
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/13-testing/code/sample-module
+cd ~/cloud-atlas/automation/terraform/13-testing/code/sample-module
 cat tests/s3_bucket.tftest.hcl
 ```
 
@@ -793,7 +793,7 @@ check-added-large-files...............................................Passed
 ## Step 9 - 清理（2 分钟）
 
 ```bash
-cd ~/cloud-atlas/iac/terraform/13-testing/code
+cd ~/cloud-atlas/automation/terraform/13-testing/code
 
 # 删除测试文件
 rm -f bad-example.tf
