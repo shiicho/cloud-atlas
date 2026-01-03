@@ -1,8 +1,8 @@
 # 01 - 安装配置与第一个容器
 
-> **目标**：安装 Docker，运行你的第一个容器，掌握容器生命周期管理
-> **前置**：已阅读 [00 - 概念导入](../00-concepts/)
-> **时间**：30-35 分钟
+> **目标**：安装 Docker，运行你的第一个容器，掌握容器生命周期管理  
+> **前置**：已阅读 [00 - 概念导入](../00-concepts/)  
+> **时间**：30-35 分钟  
 > **费用**：Free（本地操作）
 
 ---
@@ -34,19 +34,19 @@ Docker version 29.x.x, build xxxxxx
 
 > **版本说明**：显示 `Docker version 29.x.x` 或更高版本。本课程兼容 Docker Engine 26+（Docker 25 及更早版本已停止支持）。
 
-> **没有安装 Docker？**
+> **没有安装 Docker？**  
 >
-> **Windows / macOS（推荐 Docker Desktop）**：
-> - 下载 [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-> - Windows 需要启用 WSL2
-> - macOS 直接安装即可
+> **Windows / macOS（推荐 Docker Desktop）**：  
+> - 下载 [Docker Desktop](https://www.docker.com/products/docker-desktop/)  
+> - Windows 需要启用 WSL2  
+> - macOS 直接安装即可  
 >
-> **Linux（Docker Engine）**：
-> ```bash
-> # Ubuntu/Debian
-> curl -fsSL https://get.docker.com | sudo sh
-> sudo usermod -aG docker $USER
-> # 重新登录后生效
+> **Linux（Docker Engine）**：  
+> ```bash  
+> # Ubuntu/Debian  
+> curl -fsSL https://get.docker.com | sudo sh  
+> sudo usermod -aG docker $USER  
+> # 重新登录后生效  
 > ```
 
 验证 Docker 服务正在运行：
@@ -440,7 +440,7 @@ root@b2c3d4e5f6a7:/# cat /etc/nginx/nginx.conf | head -5
 root@b2c3d4e5f6a7:/# exit
 ```
 
-> **注意**：`exec` 进入容器后 `exit`，容器不会停止。因为主进程（nginx）还在运行。
+> **注意**：`exec` 进入容器后 `exit`，容器不会停止。因为主进程（nginx）还在运行。  
 >
 > 对比 `docker run -it`，那个场景下主进程就是 bash，exit 后容器就停止了。
 
@@ -708,10 +708,10 @@ docker exec -it <container> sh        # 如果没有 bash
 
 **面试可能问到**：
 
-> Q: コンテナが起動しない時、どう調査しますか？
-> （容器启动失败时怎么排查？）
+> Q: コンテナが起動しない時、どう調査しますか？  
+> （容器启动失败时怎么排查？）  
 >
-> A: まず `docker logs` でログを確認します。次に `docker inspect` で設定を確認します。
+> A: まず `docker logs` でログを確認します。次に `docker inspect` で設定を確認します。  
 > （首先用 `docker logs` 查看日志，然后用 `docker inspect` 确认配置。）
 
 ---

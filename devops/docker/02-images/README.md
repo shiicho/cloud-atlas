@@ -1,8 +1,8 @@
 # 02 · 镜像与 Dockerfile
 
-> **目标**：掌握 Docker 镜像管理和 Dockerfile 编写，理解构建缓存优化
-> **前置**：已完成 [01 · 第一个容器](../01-first-container/)
-> **时间**：45 分钟
+> **目标**：掌握 Docker 镜像管理和 Dockerfile 编写，理解构建缓存优化  
+> **前置**：已完成 [01 · 第一个容器](../01-first-container/)  
+> **时间**：45 分钟  
 > **费用**：Free（本地 Docker 环境）
 
 ---
@@ -217,7 +217,7 @@ REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
 nginx        1.28      a1b2c3d4e5f6   3 weeks ago   187MB
 ```
 
-> **反模式警告**：不要使用 `docker pull nginx`（默认拉取 :latest）。
+> **反模式警告**：不要使用 `docker pull nginx`（默认拉取 :latest）。  
 > `:latest` 不代表"最新版"，只是一个普通标签，可能随时变化。
 
 ### 3.3 给镜像打标签
@@ -726,11 +726,11 @@ docker history myapp:1.0
 
 面试时可能被问到：
 
-> **Q: Docker イメージを軽量化する方法は？**
+> **Q: Docker イメージを軽量化する方法は？**  
 >
 > A: Alpine ベースイメージを使う、RUN 命令を結合して層を減らす、.dockerignore で不要ファイルを除外、--no-cache-dir でキャッシュを無効化。マルチステージビルドも有効（上級テクニック）。
 
-> **Q: Dockerfile のベストプラクティスは？**
+> **Q: Dockerfile のベストプラクティスは？**  
 >
 > A: 頻繁に変わるコマンドは後ろに配置（キャッシュ活用）、具体的なバージョンタグを使う、不要なパッケージは入れない、.dockerignore を必ず作成。
 
