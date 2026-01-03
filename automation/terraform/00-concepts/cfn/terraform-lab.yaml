@@ -373,6 +373,15 @@ Resources:
                 Action:
                   - autoscaling:*
                 Resource: '*'
+              # Service-Linked Role creation (for ASG)
+              - Sid: ServiceLinkedRolePermissions
+                Effect: Allow
+                Action:
+                  - iam:CreateServiceLinkedRole
+                Resource: 'arn:aws:iam::*:role/aws-service-role/autoscaling.amazonaws.com/*'
+                Condition:
+                  StringLike:
+                    iam:AWSServiceName: autoscaling.amazonaws.com
               # CloudWatch: Alarms and logs (lesson 14-capstone)
               - Sid: CloudWatchPermissions
                 Effect: Allow
