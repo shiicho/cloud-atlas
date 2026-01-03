@@ -389,10 +389,52 @@ Resources:
                   - cloudwatch:PutMetricAlarm
                   - cloudwatch:DeleteAlarms
                   - cloudwatch:DescribeAlarms
+                  - cloudwatch:ListTagsForResource
+                  - cloudwatch:TagResource
+                  - cloudwatch:UntagResource
                   - logs:CreateLogGroup
                   - logs:DeleteLogGroup
                   - logs:DescribeLogGroups
                   - logs:PutRetentionPolicy
+                Resource: '*'
+              # KMS: Key management for State encryption (lesson 16-jp-audit)
+              - Sid: KMSPermissions
+                Effect: Allow
+                Action:
+                  - kms:CreateKey
+                  - kms:DeleteKey
+                  - kms:DescribeKey
+                  - kms:GetKeyPolicy
+                  - kms:GetKeyRotationStatus
+                  - kms:ListResourceTags
+                  - kms:PutKeyPolicy
+                  - kms:ScheduleKeyDeletion
+                  - kms:TagResource
+                  - kms:UntagResource
+                  - kms:EnableKeyRotation
+                  - kms:DisableKeyRotation
+                  - kms:CreateAlias
+                  - kms:DeleteAlias
+                  - kms:ListAliases
+                  - kms:UpdateAlias
+                Resource: '*'
+              # CloudTrail: API audit logging (lesson 16-jp-audit)
+              - Sid: CloudTrailPermissions
+                Effect: Allow
+                Action:
+                  - cloudtrail:CreateTrail
+                  - cloudtrail:DeleteTrail
+                  - cloudtrail:DescribeTrails
+                  - cloudtrail:GetTrail
+                  - cloudtrail:GetTrailStatus
+                  - cloudtrail:ListTrails
+                  - cloudtrail:PutEventSelectors
+                  - cloudtrail:GetEventSelectors
+                  - cloudtrail:StartLogging
+                  - cloudtrail:StopLogging
+                  - cloudtrail:AddTags
+                  - cloudtrail:RemoveTags
+                  - cloudtrail:ListTags
                 Resource: '*'
 
   InstanceProfile:
