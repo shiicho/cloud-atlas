@@ -1,63 +1,70 @@
-# Linux 基础系列 | Linux Foundations
+# Linux 系列 | Linux Series
 
 Linux 是云计算和 DevOps 的基石。本系列从零开始，带你系统掌握 Linux 运维技能。
 
 > **面向日本 IT 运维场景**：每课配实战项目，聚焦运维巡检、日志分析、自动化报警等实际工作需求。
 
-## Bash 脚本入门 / Bash Scripting for Beginners
+## 课程模块 / Course Modules
 
-从零开始学习 Bash 脚本编程，6 节课带你掌握 Linux 自动化必备技能。
+### Tier 1: Survivor（生存必备）
 
-| # | 课程 | 主题 | 实战项目 |
-|---|------|------|----------|
-| 00 | [环境准备](./_archived/linux-bash-v1/00-setup/) | 一键部署练习环境 | CloudFormation 部署 EC2 |
-| 01 | [第一个脚本](./_archived/linux-bash-v1/01-first-script/) | shebang、执行权限、变量 | 系统概要报告 |
-| 02 | [变量与文件系统](./_archived/linux-bash-v1/02-filesystem/) | 路径、重定向、磁盘操作 | 磁盘空间快照 |
-| 03 | [管道与文本](./_archived/linux-bash-v1/03-pipes/) | 管道、排序、日志基础 | Web 日志 Top 分析 |
-| 04 | [条件与循环](./_archived/linux-bash-v1/04-loops/) | if/for/while、数组 | 批量服务器检查 |
-| 05 | [函数与参数](./_archived/linux-bash-v1/05-functions/) | 函数封装、getopts | 健康检查脚本 |
-| 06 | [文本进阶与自动化](./_archived/linux-bash-v1/06-automation/) | grep/sed/awk、cron | 日志报警雏形 |
+| 模块 | 课程 | 内容 |
+|------|------|------|
+| LX01 | [Linux 基础](./foundations/) | CLI 导航、文件操作、权限管理 |
+| LX02 | [文本处理](./text-processing/) | grep/sed/awk、日志分析 |
+| LX03 | [Shell 脚本](./shell-scripting/) | Bash 编程、自动化脚本 |
 
-## 适合谁 / Who Is This For
+### Tier 2: Operator（日常运维）
 
-- Linux 新手，想学自动化
-- 在日本 IT 行业工作或求职的运维/SRE
-- 开发者，想提升命令行效率
-- 任何对 Shell 脚本感兴趣的人
+| 模块 | 课程 | 内容 |
+|------|------|------|
+| LX04 | [Systemd](./systemd/) | 服务管理、日志查看 |
+| LX05 | [网络基础](./networking/) | 配置、诊断、防火墙 |
+| LX06 | [存储管理](./storage/) | LVM、文件系统、备份 |
 
-## 环境要求 / Prerequisites
+### Tier 3: Troubleshooter（问题诊断）
 
-- AWS 账号（免费套餐即可）
-- 无需本地安装任何软件
-- 使用 AWS Session Manager 浏览器终端
-- **推荐先学**：[SSM 系列 02 · Session Manager 免密登录](../cloud/aws-ssm/02-session-manager/)
+| 模块 | 课程 | 内容 |
+|------|------|------|
+| LX07 | 性能分析 | CPU/内存/IO 分析 |
+| LX08 | 日志诊断 | 问题定位、日志聚合 |
+
+### Tier 4: Administrator（系统管理）
+
+| 模块 | 课程 | 内容 |
+|------|------|------|
+| LX09 | 用户与安全 | PAM、SELinux、加固 |
+| LX10 | 包与引导 | 包管理、启动流程 |
+
+### Tier 5: Specialist（专业进阶）
+
+| 模块 | 课程 | 内容 |
+|------|------|------|
+| LX11 | 云原生 Linux | cloud-init、容器 |
+| LX12 | 企业级实践 | HA、LDAP、合规 |
 
 ## 快速开始 / Quick Start
 
 ```bash
-# 1. 部署练习环境（见 00-setup）
-#    Deploy the lab environment (see 00-setup)
+# 1. 部署练习环境
+git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
+cd ~/cloud-atlas && git sparse-checkout set foundations/linux
 
-# 2. 通过 Session Manager 连接 EC2
-#    Connect to EC2 via Session Manager
-
-# 3. 开始第一课！
-#    Start lesson 01!
+# 2. 从 LX01 开始
+cd foundations/linux/foundations
 ```
 
-## 完成后你能 / After This Series
+## 旧版课程 / Legacy Course
 
-- 编写运维巡检脚本（系统报告、磁盘快照）
-- 分析 Web 日志定位问题（Top IP、Top 路径）
-- 批量检查服务器健康状态
-- 实现简单的日志报警自动化
-- 为 SRE/运维岗位面试加分
+Looking for the original 7-lesson Bash course? It's archived here:
+- [Bash 脚本入门 v1](./_archived/linux-bash-v1/) - 原 6+1 课快速入门
 
 ## 系列导航 / Related Series
 
 - [AWS SSM 系列](../cloud/aws-ssm/) - 深入学习 Session Manager
 - [Terraform 系列](../automation/terraform/) - 基础设施即代码
+- [Ansible 系列](../automation/ansible/) - 配置管理自动化
 
 ---
 
-*预计学习时间：每课 20-30 分钟，全系列约 3 小时*
+*12 模块 · 132 节课 · 对标 LPIC-1/RHCSA/RHCE*
