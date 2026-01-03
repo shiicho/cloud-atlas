@@ -29,7 +29,7 @@ docker run -d \
   --name mysql-temp \
   -e MYSQL_ROOT_PASSWORD=secret123 \
   -e MYSQL_DATABASE=testdb \
-  mysql:8.0
+  mysql:8.4
 
 # 2. 等待 MySQL 启动完成（约 30 秒）
 docker logs -f mysql-temp
@@ -67,7 +67,7 @@ docker run -d \
   --name mysql-temp \
   -e MYSQL_ROOT_PASSWORD=secret123 \
   -e MYSQL_DATABASE=testdb \
-  mysql:8.0
+  mysql:8.4
 
 # 等待启动
 sleep 30
@@ -220,7 +220,7 @@ docker run -d \
   -e MYSQL_ROOT_PASSWORD=secret123 \
   -e MYSQL_DATABASE=testdb \
   -v mysql-data:/var/lib/mysql \
-  mysql:8.0
+  mysql:8.4
 ```
 
 **关键参数**：`-v mysql-data:/var/lib/mysql`
@@ -260,7 +260,7 @@ docker run -d \
   -e MYSQL_ROOT_PASSWORD=secret123 \
   -e MYSQL_DATABASE=testdb \
   -v mysql-data:/var/lib/mysql \
-  mysql:8.0
+  mysql:8.4
 
 # 等待启动
 sleep 30
@@ -386,7 +386,7 @@ docker run -d \
   -p 3000:3000 \
   -v $(pwd):/app \
   -w /app \
-  node:20 \
+  node:22 \
   npm start
 ```
 
@@ -611,7 +611,7 @@ docker run -d \
   -v mysql-prod-data:/var/lib/mysql \
   -v $(pwd)/init.sql:/docker-entrypoint-initdb.d/init.sql:ro \
   -p 3306:3306 \
-  mysql:8.0
+  mysql:8.4
 ```
 
 **关键点**：
@@ -667,7 +667,7 @@ docker run -d \
   -e MYSQL_ROOT_PASSWORD=prod_secret_123 \
   -v mysql-prod-data:/var/lib/mysql \
   -p 3306:3306 \
-  mysql:8.0
+  mysql:8.4
 
 # 等待启动
 sleep 20
@@ -710,7 +710,7 @@ docker rm -f mysql-prod
 
 ```bash
 # 错误！数据写入容器层
-docker run -d --name mysql-bad mysql:8.0
+docker run -d --name mysql-bad mysql:8.4
 ```
 
 **问题**：容器删除 = 数据丢失
@@ -721,7 +721,7 @@ docker run -d --name mysql-bad mysql:8.0
 docker run -d \
   --name mysql-good \
   -v mysql-data:/var/lib/mysql \
-  mysql:8.0
+  mysql:8.4
 ```
 
 ### 反模式 2：生产环境使用 Bind Mount
@@ -731,7 +731,7 @@ docker run -d \
 docker run -d \
   --name mysql-prod \
   -v /home/user/mysql-data:/var/lib/mysql \
-  mysql:8.0
+  mysql:8.4
 ```
 
 **问题**：
@@ -745,7 +745,7 @@ docker run -d \
 docker run -d \
   --name mysql-prod \
   -v mysql-prod-data:/var/lib/mysql \
-  mysql:8.0
+  mysql:8.4
 ```
 
 ### 反模式 3：忘记 Volume 清理
@@ -854,9 +854,9 @@ docker run --rm \
 
 ## 延伸阅读
 
-- [Docker Volumes](https://docs.docker.com/storage/volumes/) - 官方文档
-- [Bind Mounts](https://docs.docker.com/storage/bind-mounts/) - 官方文档
-- [Best practices for writing Dockerfiles](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) - 包含数据管理建议
+- [Docker Volumes](https://docs.docker.com/engine/storage/volumes/) - 官方文档
+- [Bind Mounts](https://docs.docker.com/engine/storage/bind-mounts/) - 官方文档
+- [Best practices for writing Dockerfiles](https://docs.docker.com/build/building/best-practices/) - 包含数据管理建议
 
 ---
 

@@ -695,7 +695,7 @@ docker run -p 127.0.0.1:8080:80 nginx
 # 不要暴露数据库端口到外部
 docker run --network app-network \
   -e MYSQL_ROOT_PASSWORD=secret \
-  mysql:8.0
+  mysql:8.4
 # 注意：没有 -p，只能容器间访问
 ```
 
@@ -833,10 +833,10 @@ docker exec container cat /etc/resolv.conf
 
 ## 延伸阅读
 
-- [Docker Networking Overview](https://docs.docker.com/network/) - 官方网络文档
-- [Docker Network Drivers](https://docs.docker.com/network/drivers/) - 网络驱动详解
+- [Docker Networking Overview](https://docs.docker.com/engine/network/) - 官方网络文档
+- [Docker Network Drivers](https://docs.docker.com/engine/network/drivers/) - 网络驱动详解
 - [Container Networking From Scratch](https://www.youtube.com/watch?v=6v_BDHIgOY8) - 底层原理（视频）
-- [Networking with Standalone Containers](https://docs.docker.com/network/network-tutorial-standalone/) - 官方教程
+- [Networking with Standalone Containers](https://docs.docker.com/engine/network/tutorials/standalone/) - 官方教程
 
 ---
 

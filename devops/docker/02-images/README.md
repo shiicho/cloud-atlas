@@ -214,7 +214,7 @@ docker images nginx
 
 ```
 REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
-nginx        1.25      a1b2c3d4e5f6   3 weeks ago   187MB
+nginx        1.28      a1b2c3d4e5f6   3 weeks ago   187MB
 ```
 
 > **反模式警告**：不要使用 `docker pull nginx`（默认拉取 :latest）。
@@ -738,9 +738,9 @@ docker history myapp:1.0
 
 ## 延伸阅读
 
-- [Dockerfile reference](https://docs.docker.com/engine/reference/dockerfile/)
-- [Best practices for Dockerfile](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
-- [.dockerignore reference](https://docs.docker.com/engine/reference/builder/#dockerignore-file)
+- [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
+- [Best practices for Dockerfile](https://docs.docker.com/build/building/best-practices/)
+- [.dockerignore reference](https://docs.docker.com/build/building/context/#dockerignore-files)
 
 ---
 

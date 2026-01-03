@@ -503,6 +503,57 @@ docker compose restart web
 docker compose down
 ```
 
+### 4.7 开发工作流：Compose Watch（推荐）
+
+Docker Compose v2.22+ 引入了 `--watch` 模式，自动监控文件变化并同步/重建容器，无需手动重启。
+
+**为什么比 bind mount 更好？**
+- 跨平台一致性（Windows/Mac 的 bind mount 有同步延迟）
+- 明确控制哪些变化触发重建 vs 仅同步
+- 开发/生产配置分离更清晰
+
+**三种 action 模式：**
+
+| Action | 用途 | 示例场景 |
+|--------|------|----------|
+| `sync` | 仅同步文件（Hot Reload） | React/Flask 开发模式 |
+| `rebuild` | 重新构建镜像 | Go/Rust 编译型语言 |
+| `sync+restart` | 同步后重启进程 | 修改 nginx.conf 配置 |
+
+**配置示例：**
+
+```yaml
+services:
+  api:
+    build: ./api
+    develop:
+      watch:
+        - action: sync
+          path: ./api
+          target: /app
+          ignore:
+            - __pycache__
+            - "*.pyc"
+        - action: rebuild
+          path: ./api/requirements.txt
+```
+
+**使用方法：**
+
+```bash
+# 启动并监控文件变化
+docker compose up --watch
+
+# 或后台运行
+docker compose up -d --watch
+```
+
+**实际效果：**
+1. 修改 `./api/app.py` → 自动同步到容器，Flask 热重载
+2. 修改 `./api/requirements.txt` → 自动重新构建镜像
+
+> **提示**：Compose Watch 是开发环境利器，生产环境请使用标准 `docker compose up -d`。
+
 ---
 
 ## Step 5 - 环境变量管理（5 分钟）
@@ -645,7 +696,7 @@ services:
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `test` | 检查命令 | `["CMD-SHELL", "curl -f http://localhost/health"]` |
+| `test` | 检查命令 | `["CMD-SHELL", "wget -q --spider http://localhost/health"]` |
 | `interval` | 检查间隔 | `10s` |
 | `timeout` | 超时时间 | `5s` |
 | `retries` | 失败重试次数 | `3` |
@@ -666,14 +717,16 @@ healthcheck:
 healthcheck:
   test: ["CMD", "redis-cli", "ping"]
 
-# HTTP 服务
+# Nginx (alpine 镜像没有 curl，使用 wget)
 healthcheck:
-  test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+  test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
 
-# Nginx
+# Python slim (没有 curl，使用 Python 内置模块)
 healthcheck:
-  test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+  test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
 ```
+
+> **注意**：不同基础镜像包含不同工具。`alpine` 镜像通常有 `wget` 但没有 `curl`；`python:slim` 镜像可以用 Python 内置模块。
 
 ---
 
@@ -749,7 +802,7 @@ def info():
     return jsonify({
         'service': 'demo-api',
         'version': '1.0.0',
-        'environment': os.environ.get('FLASK_ENV', 'development')
+        'environment': os.environ.get('APP_ENV', 'development')
     })
 
 if __name__ == '__main__':
@@ -758,8 +811,8 @@ EOF
 
 cat > api/requirements.txt << 'EOF'
 flask==3.1.2
-psycopg2-binary==2.9.9
-gunicorn==21.2.0
+psycopg2-binary==2.9.11
+gunicorn==23.0.0
 EOF
 
 cat > api/Dockerfile << 'EOF'
@@ -880,7 +933,8 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      # Note: nginx:alpine 没有 curl，使用 wget
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -894,7 +948,7 @@ services:
       context: ./api
       dockerfile: Dockerfile
     environment:
-      - FLASK_ENV=${FLASK_ENV:-production}
+      - APP_ENV=${APP_ENV:-production}
       - DEBUG=${DEBUG:-false}
       - DB_HOST=db
       - DB_PORT=5432
@@ -905,7 +959,8 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      # Note: python:slim 没有 curl，使用 Python 内置模块
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -953,7 +1008,7 @@ EOF
 cat > .env << 'EOF'
 # Application settings
 WEB_PORT=8080
-FLASK_ENV=development
+APP_ENV=development
 DEBUG=false
 
 # Database settings (CHANGE THESE IN PRODUCTION!)
@@ -969,7 +1024,7 @@ cat > .env.example << 'EOF'
 
 # Application settings
 WEB_PORT=8080
-FLASK_ENV=development
+APP_ENV=development
 DEBUG=false
 
 # Database settings (CHANGE THESE IN PRODUCTION!)
@@ -1129,6 +1184,7 @@ Change Request → Review → Staging Test → Approval → Production Deploy
 - [ ] 配置 `depends_on` 和 `healthcheck`
 - [ ] 部署三层应用（Web + API + Database）
 - [ ] 使用 `docker compose exec` 进入容器调试
+- [ ] 了解 `docker compose up --watch` 开发工作流
 
 ---
 
@@ -1188,6 +1244,7 @@ docker compose config
 
 - [Docker Compose 官方文档](https://docs.docker.com/compose/)
 - [Compose File Reference](https://docs.docker.com/compose/compose-file/)
+- [Use Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/) - 开发环境文件监控
 - [Compose Best Practices](https://docs.docker.com/compose/production/)
 - [12-Factor App - Config](https://12factor.net/config)
 - [06 - 日本 IT 运维实践](../06-japan-it/) - 下一课

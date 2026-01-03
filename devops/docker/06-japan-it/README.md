@@ -326,7 +326,7 @@ docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 # docker-compose.monitoring.yml
 services:
   prometheus:
-    image: prom/prometheus:v3.4.0
+    image: prom/prometheus:v3.5.0
     ports:
       - "9090:9090"
     volumes:
@@ -335,14 +335,14 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
 
   grafana:
-    image: grafana/grafana:12.3.0
+    image: grafana/grafana:12.3.1
     ports:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.51.0
+    image: ghcr.io/google/cadvisor:v0.55.1
     ports:
       - "8080:8080"
     volumes:
@@ -413,10 +413,12 @@ cat > /tmp/healthcheck-compose.yml << 'EOF'
 services:
   web:
     image: nginx:1.28
+    container_name: web  # 指定容器名，方便 docker inspect
     ports:
       - "8080:80"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      # 注意：nginx:alpine 没有 curl，使用 wget
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

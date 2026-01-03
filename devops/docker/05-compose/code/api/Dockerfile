@@ -1,5 +1,5 @@
 # Flask API Dockerfile
-# Multi-stage build for smaller image size
+# Optimized for small image size using python:slim base
 
 FROM python:3.11-slim
 

@@ -70,7 +70,7 @@ def info():
     return jsonify({
         'service': 'demo-api',
         'version': '1.0.0',
-        'environment': os.environ.get('FLASK_ENV', 'development')
+        'environment': os.environ.get('APP_ENV', 'development')
     })
 
 

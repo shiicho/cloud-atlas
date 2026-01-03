@@ -29,10 +29,10 @@ docker --version
 ```
 
 ```
-Docker version 24.x.x, build xxxxxx
+Docker version 29.x.x, build xxxxxx
 ```
 
-> **版本说明**：显示 `Docker version 2x.x.x` 或更高版本即可。本课程兼容 Docker 20.10+。
+> **版本说明**：显示 `Docker version 29.x.x` 或更高版本。本课程兼容 Docker Engine 26+（Docker 25 及更早版本已停止支持）。
 
 > **没有安装 Docker？**
 >
@@ -57,7 +57,7 @@ docker info | head -5
 
 ```
 Client: Docker Engine - Community
- Version:    24.0.7
+ Version:    29.0.0
  Context:    default
  Debug Mode: false
 ```
@@ -317,10 +317,10 @@ docker rm -f web-server
 ### 3.6 清理所有停止的容器
 
 ```bash
-# 查看会被删除的容器
-docker container prune --dry-run
+# 查看已停止的容器（这些会被清理）
+docker ps -a --filter "status=exited"
 
-# 执行清理
+# 执行清理（会提示确认）
 docker container prune
 ```
 
@@ -474,7 +474,7 @@ root@b2c3d4e5f6a7:/# exit
 docker pull nginx:1.28
 ```
 
-> **最佳实践**：使用明确的版本标签（如 `1.25`），而不是 `latest`。
+> **最佳实践**：使用明确的版本标签（如 `1.28`），而不是 `latest`。
 
 **2. 运行容器**
 
