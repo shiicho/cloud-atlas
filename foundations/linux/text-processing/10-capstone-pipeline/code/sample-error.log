@@ -1,0 +1,35 @@
+[2026-01-04 08:00:15] [error] [client 10.0.2.50] Authentication failed for user: invalid credentials
+[2026-01-04 08:00:16] [error] [client 10.0.2.50] Authentication failed for user: invalid credentials
+[2026-01-04 08:00:17] [error] [client 10.0.2.50] Authentication failed for user: invalid credentials
+[2026-01-04 08:02:00] [warn] [client 203.0.113.42] Suspicious request: /wp-admin (path not found)
+[2026-01-04 08:02:01] [warn] [client 203.0.113.42] Suspicious request: /phpmyadmin (path not found)
+[2026-01-04 08:02:02] [warn] [client 203.0.113.42] Suspicious request: /.env (path not found)
+[2026-01-04 08:02:03] [warn] [client 203.0.113.42] Suspicious request: /config.php (path not found)
+[2026-01-04 08:30:00] [warn] [client 192.168.1.100] Slow query detected: /api/heavy-query took 5234ms
+[2026-01-04 08:30:45] [warn] [client 192.168.1.100] Large response: /api/export returned 245000 bytes
+[2026-01-04 08:41:00] [error] [client 192.168.1.102] Database connection error: Connection refused to db.internal:5432
+[2026-01-04 08:41:05] [error] [client 192.168.1.102] Database connection error: Connection refused to db.internal:5432
+[2026-01-04 08:45:00] [warn] [client 203.0.113.42] Suspicious request: /admin/config (path not found)
+[2026-01-04 08:45:01] [warn] [client 203.0.113.42] Suspicious request: /backup.sql (path not found)
+[2026-01-04 08:45:02] [warn] [client 203.0.113.42] Suspicious request: /.git/config (path not found)
+[2026-01-04 08:45:03] [warn] [client 203.0.113.42] Suspicious request: /debug (path not found)
+[2026-01-04 09:10:30] [warn] [client 10.0.2.60] Resource not found: /api/products/789
+[2026-01-04 09:15:10] [error] [client 192.168.1.103] Service unavailable: upstream server temporarily unavailable
+[2026-01-04 09:15:15] [error] [client 192.168.1.103] Service unavailable: upstream server temporarily unavailable
+[2026-01-04 09:30:05] [warn] [client 203.0.113.50] Rate limit exceeded: 429 Too Many Requests
+[2026-01-04 09:30:06] [warn] [client 203.0.113.50] Rate limit exceeded: 429 Too Many Requests
+[2026-01-04 10:00:00] [warn] [client 203.0.113.42] Suspicious request: /xmlrpc.php (path not found)
+[2026-01-04 10:00:01] [warn] [client 203.0.113.42] Suspicious request: /xmlrpc.php (path not found)
+[2026-01-04 10:00:02] [warn] [client 203.0.113.42] Suspicious request: /wp-login.php (path not found)
+[2026-01-04 10:11:00] [warn] [client 172.16.0.25] Permission denied: bulk-delete operation requires elevated privileges
+[2026-01-04 11:00:00] [warn] [client 203.0.113.42] Suspicious request: /admin (path not found)
+[2026-01-04 11:00:01] [warn] [client 203.0.113.42] Suspicious request: /administrator (path not found)
+[2026-01-04 11:00:02] [warn] [client 203.0.113.42] Suspicious request: /manage (path not found)
+[2026-01-04 11:00:03] [warn] [client 203.0.113.42] Suspicious request: /panel (path not found)
+[2026-01-04 11:30:30] [error] [client 192.168.1.108] Internal server error: NullPointerException in ProductService.getById()
+[2026-01-04 11:30:35] [error] [client 192.168.1.108] Internal server error: NullPointerException in ProductService.getById()
+[2026-01-04 12:25:00] [warn] [client 203.0.113.42] Suspicious request: /api/v1 (path not found)
+[2026-01-04 12:25:01] [warn] [client 203.0.113.42] Suspicious request: /api/v2 (path not found)
+[2026-01-04 12:25:02] [warn] [client 203.0.113.42] Suspicious request: /graphql (path not found)
+[2026-01-04 12:36:00] [warn] [client 172.16.0.25] Permission denied: system restart requires super-admin role
+[2026-01-04 12:55:30] [error] [client 192.168.1.111] Service unavailable: backend service unhealthy

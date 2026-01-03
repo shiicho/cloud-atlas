@@ -1,0 +1,26 @@
+2026-01-04 09:00:01 INFO  Application starting...
+2026-01-04 09:00:02 INFO  Loading configuration from /etc/myapp/config.yaml
+2026-01-04 09:00:03 INFO  Database connection established
+2026-01-04 09:00:15 WARN  Cache miss ratio is high: 45%
+2026-01-04 09:01:22 ERROR Failed to process request: timeout after 30s
+2026-01-04 09:01:22 ERROR Stack trace:
+2026-01-04 09:01:22 ERROR   at RequestHandler.process(handler.java:142)
+2026-01-04 09:01:22 ERROR   at ThreadPool.execute(pool.java:89)
+2026-01-04 09:01:23 INFO  Retry attempt 1 of 3
+2026-01-04 09:01:25 INFO  Request processed successfully after retry
+2026-01-04 09:05:00 INFO  Health check: OK
+2026-01-04 09:10:01 error Database connection lost
+2026-01-04 09:10:02 ERROR Attempting reconnection...
+2026-01-04 09:10:05 INFO  Database reconnected
+2026-01-04 09:15:00 INFO  Scheduled cleanup task completed
+2026-01-04 09:20:33 WARNING Memory usage at 85%
+2026-01-04 09:25:00 INFO  Health check: OK
+2026-01-04 09:30:00 INFO  Processing batch job: order_sync
+2026-01-04 09:30:15 INFO  Batch job completed: 150 records processed
+2026-01-04 09:35:00 INFO  Health check: OK
+2026-01-04 09:40:22 WARN  Slow query detected: 2.5s for /api/reports
+2026-01-04 09:45:00 INFO  Health check: OK
+2026-01-04 09:50:11 ERROR Connection pool exhausted
+2026-01-04 09:50:12 ERROR Unable to acquire database connection
+2026-01-04 09:50:15 INFO  Pool recovered after 3s
+2026-01-04 09:55:00 INFO  Health check: OK

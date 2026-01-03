@@ -1,20 +1,22 @@
-# Bash 脚本入门系列 | Bash Scripting for Beginners
+# Linux 基础系列 | Linux Foundations
+
+Linux 是云计算和 DevOps 的基石。本系列从零开始，带你系统掌握 Linux 运维技能。
+
+> **面向日本 IT 运维场景**：每课配实战项目，聚焦运维巡检、日志分析、自动化报警等实际工作需求。
+
+## Bash 脚本入门 / Bash Scripting for Beginners
 
 从零开始学习 Bash 脚本编程，6 节课带你掌握 Linux 自动化必备技能。
 
-> **面向日本 IT 运维场景**：每课配实战项目，聚焦运用巡检、日志分析、自动化报警等实际工作需求。
-
-## 系列概览 / Series Overview
-
 | # | 课程 | 主题 | 实战项目 |
 |---|------|------|----------|
-| 00 | [环境准备](./00-setup/) | 一键部署练习环境 | CloudFormation 部署 EC2 |
-| 01 | [第一个脚本](./01-first-script/) | shebang、执行权限、变量 | 系统概要报告 |
-| 02 | [变量与文件系统](./02-filesystem/) | 路径、重定向、磁盘操作 | 磁盘空间快照 |
-| 03 | [管道与文本](./03-pipes/) | 管道、排序、日志基础 | Web 日志 Top 分析 |
-| 04 | [条件与循环](./04-loops/) | if/for/while、数组 | 批量服务器检查 |
-| 05 | [函数与参数](./05-functions/) | 函数封装、getopts | 健康检查脚本 |
-| 06 | [文本进阶与自动化](./06-automation/) | grep/sed/awk、cron | 日志报警雏形 |
+| 00 | [环境准备](./_archived/linux-bash-v1/00-setup/) | 一键部署练习环境 | CloudFormation 部署 EC2 |
+| 01 | [第一个脚本](./_archived/linux-bash-v1/01-first-script/) | shebang、执行权限、变量 | 系统概要报告 |
+| 02 | [变量与文件系统](./_archived/linux-bash-v1/02-filesystem/) | 路径、重定向、磁盘操作 | 磁盘空间快照 |
+| 03 | [管道与文本](./_archived/linux-bash-v1/03-pipes/) | 管道、排序、日志基础 | Web 日志 Top 分析 |
+| 04 | [条件与循环](./_archived/linux-bash-v1/04-loops/) | if/for/while、数组 | 批量服务器检查 |
+| 05 | [函数与参数](./_archived/linux-bash-v1/05-functions/) | 函数封装、getopts | 健康检查脚本 |
+| 06 | [文本进阶与自动化](./_archived/linux-bash-v1/06-automation/) | grep/sed/awk、cron | 日志报警雏形 |
 
 ## 适合谁 / Who Is This For
 
@@ -28,7 +30,7 @@
 - AWS 账号（免费套餐即可）
 - 无需本地安装任何软件
 - 使用 AWS Session Manager 浏览器终端
-- **推荐先学**：[SSM 系列 02 · Session Manager 免密登录](../../cloud/aws-ssm/02-session-manager/)
+- **推荐先学**：[SSM 系列 02 · Session Manager 免密登录](../cloud/aws-ssm/02-session-manager/)
 
 ## 快速开始 / Quick Start
 
@@ -53,8 +55,8 @@
 
 ## 系列导航 / Related Series
 
-- [AWS SSM 系列](../../cloud/aws-ssm/) - 深入学习 Session Manager
-- [Linux 基础](../) - 更多 Linux 概念
+- [AWS SSM 系列](../cloud/aws-ssm/) - 深入学习 Session Manager
+- [Terraform 系列](../automation/terraform/) - 基础设施即代码
 
 ---
 
