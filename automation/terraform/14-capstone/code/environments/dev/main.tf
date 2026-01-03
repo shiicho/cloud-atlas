@@ -104,7 +104,7 @@ module "app" {
 
   # 实例配置 - Dev 使用小实例
   instance_type    = var.app_instance_type
-  root_volume_size = 20
+  root_volume_size = 30  # AL2023 AMI 快照需要 >= 30GB
 
   # ASG 配置 - Dev 使用最小规模
   min_size         = var.app_min_size
@@ -139,6 +139,9 @@ module "database" {
   environment         = local.environment
   vpc_id              = module.vpc.vpc_id
   database_subnet_ids = module.vpc.database_subnet_ids
+
+  # 使用 VPC 模块创建的 DB Subnet Group（避免重复创建）
+  db_subnet_group_name = module.vpc.database_subnet_group_name
 
   # 引擎配置
   engine         = var.db_engine
