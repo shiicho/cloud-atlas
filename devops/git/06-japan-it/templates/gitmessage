@@ -1,0 +1,82 @@
+# <type>: <subject>
+#
+# =============================================
+# Conventional Commits Format
+# =============================================
+#
+# Types:
+#   feat     - New feature (新機能)
+#   fix      - Bug fix (バグ修正)
+#   docs     - Documentation only (ドキュメント)
+#   style    - Formatting, no code change (フォーマット)
+#   refactor - Code restructure, no behavior change (リファクタリング)
+#   perf     - Performance improvement (性能改善)
+#   test     - Adding tests (テスト追加)
+#   build    - Build system changes (ビルド)
+#   ci       - CI configuration (CI設定)
+#   chore    - Maintenance, dependencies (メンテナンス)
+#   revert   - Revert previous commit (リバート)
+#
+# =============================================
+# Subject Guidelines
+# =============================================
+#
+# - Use imperative mood: "add" not "added" or "adds"
+# - No period at the end
+# - Max 50 characters
+# - Capitalize first letter (optional but consistent)
+#
+# Examples:
+#   feat: add VPC module for production environment
+#   fix: correct security group ingress rule
+#   docs: update README with setup instructions
+#   refactor: simplify error handling in main.tf
+#   chore: update terraform to version 1.14.3
+#
+# =============================================
+# Body (Optional)
+# =============================================
+#
+# - Wrap at 72 characters
+# - Explain what and why, not how
+# - Separate from subject with blank line
+#
+# Example:
+#
+#   feat: add VPC module for production environment
+#
+#   This module creates a VPC with public and private subnets
+#   across multiple availability zones. It follows the company's
+#   network architecture standards for production workloads.
+#
+#   The module outputs VPC ID and subnet IDs for downstream
+#   resources to reference.
+#
+# =============================================
+# Footer (Optional)
+# =============================================
+#
+# - Reference issues: Closes #123, Fixes #456
+# - Breaking changes: BREAKING CHANGE: description
+# - Co-authors: Co-authored-by: Name <email>
+#
+# Example:
+#
+#   Closes #123
+#   Related to #456
+#   BREAKING CHANGE: remove deprecated output variables
+#
+# =============================================
+# Japanese Style Examples (日本語スタイル)
+# =============================================
+#
+# If your team uses Japanese commit messages:
+#
+#   feat: VPC モジュールを追加
+#   fix: セキュリティグループのルールを修正
+#   docs: デプロイ手順書を更新
+#
+# Or mixed style:
+#
+#   feat: add VPC module (VPCモジュール追加)
+#

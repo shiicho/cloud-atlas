@@ -1,0 +1,144 @@
+# =============================================
+# CODEOWNERS - Code Ownership and Review Routing
+# =============================================
+#
+# This file defines who must review PRs for specific paths.
+# GitHub will automatically request reviews from these owners.
+#
+# Syntax:
+#   <pattern> <owner1> <owner2> ...
+#
+# Owners can be:
+#   - @username (individual)
+#   - @org/team-name (team)
+#   - email@example.com
+#
+# Order matters - later rules override earlier ones.
+#
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Last updated: 2026-01
+# =============================================
+
+# ---------------------------------------------
+# Default Owner (Fallback)
+# ---------------------------------------------
+# All files not matched by later rules
+* @your-org/infra-team
+
+# ---------------------------------------------
+# Production Environment (Strict Review)
+# ---------------------------------------------
+# Production changes require senior engineer approval
+/environments/prod/ @your-org/senior-engineers @your-org/infra-managers
+
+# Production variables need extra scrutiny
+/environments/prod/*.tfvars @your-org/senior-engineers
+
+# ---------------------------------------------
+# Staging Environment
+# ---------------------------------------------
+# Staging is less strict but still needs review
+/environments/staging/ @your-org/infra-team
+
+# ---------------------------------------------
+# Development Environment
+# ---------------------------------------------
+# Development is most permissive
+/environments/dev/ @your-org/infra-team
+
+# ---------------------------------------------
+# Modules (Shared Infrastructure)
+# ---------------------------------------------
+# Module changes affect all environments - careful review needed
+/modules/ @your-org/senior-engineers @your-org/infra-team
+
+# Networking modules need network team review
+/modules/vpc/ @your-org/network-team @your-org/senior-engineers
+/modules/transit-gateway/ @your-org/network-team @your-org/senior-engineers
+
+# Database modules need DBA review
+/modules/rds/ @your-org/dba-team @your-org/senior-engineers
+/modules/aurora/ @your-org/dba-team @your-org/senior-engineers
+
+# ---------------------------------------------
+# Security-Related Files
+# ---------------------------------------------
+# Security group changes need security review
+**/security*.tf @your-org/security-team
+**/iam*.tf @your-org/security-team
+**/kms*.tf @your-org/security-team
+
+# WAF and Shield configurations
+/modules/waf/ @your-org/security-team
+/modules/shield/ @your-org/security-team
+
+# ---------------------------------------------
+# CI/CD Configuration
+# ---------------------------------------------
+# Workflow changes need DevOps team approval
+/.github/workflows/ @your-org/devops-team
+
+# GitHub Actions config
+/.github/ @your-org/devops-team
+
+# Pre-commit configuration
+/.pre-commit-config.yaml @your-org/devops-team
+
+# ---------------------------------------------
+# Documentation
+# ---------------------------------------------
+# Docs can be reviewed by anyone on the team
+/docs/ @your-org/infra-team
+README.md @your-org/infra-team
+
+# Architecture docs need senior review
+/docs/architecture*.md @your-org/senior-engineers
+
+# Runbooks need ops team review
+/docs/runbook*.md @your-org/ops-team
+
+# ---------------------------------------------
+# Root Configuration Files
+# ---------------------------------------------
+# These files affect the entire project
+.gitignore @your-org/devops-team
+.gitmessage @your-org/devops-team
+CODEOWNERS @your-org/infra-managers
+
+# Terraform version constraints
+versions.tf @your-org/senior-engineers
+
+# Provider configuration
+providers.tf @your-org/senior-engineers
+
+# ---------------------------------------------
+# Cost-Sensitive Resources
+# ---------------------------------------------
+# Resources that can incur significant cost
+**/eks*.tf @your-org/senior-engineers @your-org/finops-team
+**/rds*.tf @your-org/senior-engineers @your-org/finops-team
+**/elasticache*.tf @your-org/senior-engineers @your-org/finops-team
+
+# ---------------------------------------------
+# Compliance-Related
+# ---------------------------------------------
+# CloudTrail, Config, GuardDuty configurations
+/modules/cloudtrail/ @your-org/security-team @your-org/compliance-team
+/modules/config/ @your-org/security-team @your-org/compliance-team
+/modules/guardduty/ @your-org/security-team @your-org/compliance-team
+
+# ---------------------------------------------
+# Examples (Uncomment and modify as needed)
+# ---------------------------------------------
+
+# Specific file ownership
+# /environments/prod/main.tf @cto @infra-lead
+
+# Team aliases
+# @your-org/senior-engineers = @alice @bob @charlie
+# @your-org/infra-team = @your-org/senior-engineers @dave @eve
+# @your-org/security-team = @security-lead @security-engineer
+
+# Email-based ownership (for external contractors)
+# /vendor/ contractor@example.com

@@ -1,0 +1,101 @@
+# ===========================================
+# .dockerignore - Exclude files from build context
+# Docker Fundamentals - Lesson 02
+# ===========================================
+#
+# Purpose:
+# 1. Speed up builds by reducing context size
+# 2. Prevent sensitive files from being copied
+# 3. Avoid including unnecessary files in image
+#
+
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.eggs/
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# -----------------------------
+# Git
+# -----------------------------
+.git/
+.gitignore
+.gitattributes
+
+# -----------------------------
+# IDE / Editor
+# -----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# -----------------------------
+# Docker
+# -----------------------------
+Dockerfile*
+docker-compose*.yml
+.docker/
+
+# -----------------------------
+# Sensitive files
+# -----------------------------
+.env
+.env.*
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+
+# -----------------------------
+# Logs and temp files
+# -----------------------------
+*.log
+*.tmp
+*.temp
+logs/
+tmp/
+
+# -----------------------------
+# OS files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Documentation
+# -----------------------------
+README.md
+docs/
+*.md
+
+# -----------------------------
+# Tests (not needed in production)
+# -----------------------------
+tests/
+test_*.py
+*_test.py
+conftest.py
