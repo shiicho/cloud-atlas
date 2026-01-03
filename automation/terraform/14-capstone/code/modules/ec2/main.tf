@@ -91,7 +91,7 @@ resource "aws_security_group" "ec2" {
 
 # 入站规则：来自 ALB 的流量
 resource "aws_vpc_security_group_ingress_rule" "from_alb" {
-  count = var.alb_security_group_id != null ? 1 : 0
+  count = var.enable_alb_ingress ? 1 : 0
 
   security_group_id            = aws_security_group.ec2.id
   description                  = "Allow traffic from ALB"

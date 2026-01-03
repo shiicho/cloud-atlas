@@ -93,7 +93,7 @@ resource "aws_security_group" "rds" {
 
 # 入站规则：来自应用层的数据库流量
 resource "aws_vpc_security_group_ingress_rule" "from_app" {
-  count = var.app_security_group_id != null ? 1 : 0
+  count = var.enable_app_ingress ? 1 : 0
 
   security_group_id            = aws_security_group.rds.id
   description                  = "Allow database traffic from application layer"

@@ -142,6 +142,12 @@ variable "app_security_group_id" {
   default     = null
 }
 
+variable "enable_app_ingress" {
+  description = "是否启用来自应用层的入站规则（解决 count 在 plan 时无法确定的问题）"
+  type        = bool
+  default     = false
+}
+
 variable "allowed_cidr_blocks" {
   description = "允许访问的 CIDR 块列表（调试用）"
   type        = list(string)

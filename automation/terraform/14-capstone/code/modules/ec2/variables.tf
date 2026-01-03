@@ -158,6 +158,12 @@ variable "alb_security_group_id" {
   default     = null
 }
 
+variable "enable_alb_ingress" {
+  description = "是否启用来自 ALB 的入站规则（解决 count 在 plan 时无法确定的问题）"
+  type        = bool
+  default     = false
+}
+
 variable "enable_ssh_access" {
   description = "是否启用 SSH 访问"
   type        = bool

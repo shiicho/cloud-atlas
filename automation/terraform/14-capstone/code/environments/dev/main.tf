@@ -114,6 +114,7 @@ module "app" {
   # 连接到 ALB
   target_group_arns     = [module.alb.target_group_arn]
   alb_security_group_id = module.alb.security_group_id
+  enable_alb_ingress    = true
 
   # 自动扩缩
   enable_autoscaling   = true
@@ -154,6 +155,7 @@ module "database" {
 
   # 网络安全
   app_security_group_id = module.app.security_group_id
+  enable_app_ingress    = true
 
   # Dev 环境配置
   multi_az                = false # 省钱
