@@ -279,7 +279,7 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              # EC2: Describe + Instance lifecycle (lesson 08-layout)
+              # EC2: Full EC2 permissions (lessons 08-layout, 14-capstone)
               - Sid: EC2Permissions
                 Effect: Allow
                 Action:
@@ -291,6 +291,11 @@ Resources:
                   - ec2:StartInstances
                   - ec2:StopInstances
                   - ec2:ModifyInstanceAttribute
+                  - ec2:CreateLaunchTemplate
+                  - ec2:DeleteLaunchTemplate
+                  - ec2:ModifyLaunchTemplate
+                  - ec2:CreateLaunchTemplateVersion
+                  - ec2:DeleteLaunchTemplateVersions
                 Resource: '*'
               # IAM: User + Role + InstanceProfile + OIDC (lessons 06, 08, 11)
               - Sid: IAMPermissions
@@ -332,7 +337,7 @@ Resources:
                   - iam:UntagOpenIDConnectProvider
                   - sts:GetCallerIdentity
                 Resource: '*'
-              # RDS: Subnet groups only (lesson 08-layout)
+              # RDS: Full RDS permissions (lessons 08-layout, 14-capstone)
               - Sid: RDSPermissions
                 Effect: Allow
                 Action:
@@ -340,9 +345,45 @@ Resources:
                   - rds:DeleteDBSubnetGroup
                   - rds:DescribeDBSubnetGroups
                   - rds:ModifyDBSubnetGroup
+                  - rds:CreateDBInstance
+                  - rds:DeleteDBInstance
+                  - rds:DescribeDBInstances
+                  - rds:ModifyDBInstance
+                  - rds:StartDBInstance
+                  - rds:StopDBInstance
+                  - rds:RebootDBInstance
+                  - rds:CreateDBParameterGroup
+                  - rds:DeleteDBParameterGroup
+                  - rds:DescribeDBParameterGroups
+                  - rds:DescribeDBParameters
+                  - rds:ModifyDBParameterGroup
                   - rds:AddTagsToResource
                   - rds:RemoveTagsFromResource
                   - rds:ListTagsForResource
+                Resource: '*'
+              # ELB: ALB and Target Groups (lesson 14-capstone)
+              - Sid: ELBPermissions
+                Effect: Allow
+                Action:
+                  - elasticloadbalancing:*
+                Resource: '*'
+              # Auto Scaling: ASG and policies (lesson 14-capstone)
+              - Sid: AutoScalingPermissions
+                Effect: Allow
+                Action:
+                  - autoscaling:*
+                Resource: '*'
+              # CloudWatch: Alarms and logs (lesson 14-capstone)
+              - Sid: CloudWatchPermissions
+                Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarms
+                  - cloudwatch:DescribeAlarms
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:DescribeLogGroups
+                  - logs:PutRetentionPolicy
                 Resource: '*'
 
   InstanceProfile:
