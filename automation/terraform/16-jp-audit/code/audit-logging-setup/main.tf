@@ -116,6 +116,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
     id     = "expire-old-versions"
     status = "Enabled"
 
+    # フィルター設定（全オブジェクト対象）
+    # Note: AWS Provider 5.90+ では空 filter {} ではなく prefix = "" が必要
+    filter {
+      prefix = ""
+    }
+
     # 非現行バージョンを指定日数後に削除
     noncurrent_version_expiration {
       noncurrent_days = var.state_version_retention_days
@@ -171,6 +177,12 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
   rule {
     id     = "log-retention"
     status = "Enabled"
+
+    # フィルター設定（全オブジェクト対象）
+    # Note: AWS Provider 5.90+ では空 filter {} ではなく prefix = "" が必要
+    filter {
+      prefix = ""
+    }
 
     # 90日後に Glacier に移行（ISMAP 要件）
     transition {
