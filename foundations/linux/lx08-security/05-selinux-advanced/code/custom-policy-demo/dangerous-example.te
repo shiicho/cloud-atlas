@@ -1,0 +1,153 @@
+# =============================================================================
+# dangerous-example.te - Examples of DANGEROUS SELinux Policy Rules
+# =============================================================================
+#
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# WARNING: DO NOT USE THIS FILE!
+#
+# This file contains examples of dangerous policy rules that audit2allow
+# might generate. These are shown ONLY for educational purposes to help
+# you recognize and reject dangerous policies.
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+# If audit2allow generates rules similar to these, DO NOT accept them!
+# Instead, investigate why the denial happened and find a safer solution.
+#
+# =============================================================================
+
+policy_module(dangerous_example, 1.0)
+
+require {
+    type httpd_t;
+    type shadow_t;
+    type passwd_file_t;
+    type etc_t;
+    type bin_t;
+    type shell_exec_t;
+    type user_home_t;
+    type admin_home_t;
+    type var_t;
+    type sshd_key_t;
+}
+
+# =============================================================================
+# DANGER 1: Access to Password Files
+# =============================================================================
+#
+# If you see rules like these, your web server was trying to read password
+# files. This could mean:
+#   - Your application has a vulnerability
+#   - An attacker is trying to exploit the system
+#   - NEVER grant this access!
+#
+# Instead: Investigate WHY httpd is trying to read /etc/shadow
+
+# DANGEROUS! Allows reading password hashes
+allow httpd_t shadow_t:file { read open getattr };
+
+# DANGEROUS! Allows reading user database
+allow httpd_t passwd_file_t:file { read open getattr };
+
+# =============================================================================
+# DANGER 2: Wildcard Permissions
+# =============================================================================
+#
+# Wildcard permissions (*) grant ALL operations on a type.
+# This is almost never appropriate.
+#
+# Instead: Grant only specific permissions needed
+
+# DANGEROUS! Allows all file operations on etc
+allow httpd_t etc_t:file *;
+
+# DANGEROUS! Allows all directory operations
+allow httpd_t var_t:dir *;
+
+# =============================================================================
+# DANGER 3: Execute Arbitrary Binaries
+# =============================================================================
+#
+# If httpd is trying to execute shell commands, this could be:
+#   - Command injection vulnerability
+#   - Malicious code execution
+#   - NEVER grant this!
+#
+# Instead: Fix the application to not execute arbitrary commands
+
+# DANGEROUS! Allows executing any binary
+allow httpd_t bin_t:file { execute execute_no_trans };
+
+# DANGEROUS! Allows executing shells
+allow httpd_t shell_exec_t:file { execute execute_no_trans };
+
+# =============================================================================
+# DANGER 4: Access to User Home Directories
+# =============================================================================
+#
+# Web servers should NOT need access to user home directories.
+# If they do, you likely have a path traversal vulnerability.
+#
+# Instead: Configure the web server to use proper document roots
+
+# DANGEROUS! Allows reading user files
+allow httpd_t user_home_t:file { read open getattr };
+allow httpd_t user_home_t:dir { read open search };
+
+# DANGEROUS! Allows reading admin/root files
+allow httpd_t admin_home_t:file { read open getattr };
+allow httpd_t admin_home_t:dir { read open search };
+
+# =============================================================================
+# DANGER 5: Access to SSH Keys
+# =============================================================================
+#
+# NO application except sshd should access SSH host keys.
+# If you see this, something is very wrong.
+#
+# Instead: This should never happen - investigate immediately
+
+# DANGEROUS! Allows reading SSH host keys
+allow httpd_t sshd_key_t:file { read open getattr };
+
+# =============================================================================
+# DANGER 6: Dangerous Capabilities
+# =============================================================================
+#
+# Capabilities like CAP_SYS_ADMIN, CAP_NET_ADMIN are almost never needed.
+# They grant near-root privileges.
+#
+# Instead: Identify the specific operation needed
+
+# DANGEROUS! Near-root privileges
+# allow httpd_t self:capability { sys_admin net_admin };
+
+# =============================================================================
+# WHAT TO DO IF AUDIT2ALLOW GENERATES THESE
+# =============================================================================
+#
+# 1. DO NOT install the policy!
+#
+# 2. Investigate why the denial happened:
+#    - Check application logs
+#    - Review recent code changes
+#    - Look for vulnerabilities
+#
+# 3. Consider these alternatives:
+#    - Is there a Boolean that enables this feature safely?
+#    - Can you change the file context instead?
+#    - Is this actually a security incident?
+#
+# 4. If the access is truly needed:
+#    - Document why it's necessary
+#    - Get security team approval
+#    - Create the most restrictive policy possible
+#    - Monitor for abuse
+#
+# 5. Report to security team if:
+#    - The denials look like attack attempts
+#    - You can't explain why the access was attempted
+#    - The pattern matches known exploits
+#
+# =============================================================================
+# Remember: SELinux is protecting you. Don't disable the protection!
+# =============================================================================

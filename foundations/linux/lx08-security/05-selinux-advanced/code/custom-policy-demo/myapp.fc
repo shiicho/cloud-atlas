@@ -1,0 +1,59 @@
+# =============================================================================
+# myapp.fc - File Context Definitions for myapp
+# =============================================================================
+#
+# This file defines the SELinux file contexts for myapp files and directories.
+# After installing the policy, run:
+#   restorecon -Rv /opt/myapp /var/log/myapp
+#
+# =============================================================================
+
+# Executable file
+# Match: /opt/myapp/bin/myapp (exactly)
+# Type: myapp_exec_t (executable, will transition to myapp_t domain)
+/opt/myapp/bin/myapp    --    system_u:object_r:myapp_exec_t:s0
+
+# Data directory and all files within
+# Match: /opt/myapp/data and everything under it
+# Type: myapp_data_t (data files, read access)
+/opt/myapp/data(/.*)?         system_u:object_r:myapp_data_t:s0
+
+# Configuration files
+# Match: /opt/myapp/etc and everything under it
+# Type: myapp_data_t (same as data, could define separate config_t if needed)
+/opt/myapp/etc(/.*)?          system_u:object_r:myapp_data_t:s0
+
+# Log directory and all files within
+# Match: /var/log/myapp and everything under it
+# Type: myapp_log_t (log files, write access)
+/var/log/myapp(/.*)?          system_u:object_r:myapp_log_t:s0
+
+# PID file (for systemd)
+# Match: /run/myapp.pid
+# Type: myapp_var_run_t (would need to add this type to .te)
+# /run/myapp\.pid              system_u:object_r:myapp_var_run_t:s0
+
+# =============================================================================
+# File Context Syntax Reference
+# =============================================================================
+#
+# Pattern Types:
+#   /path/to/file           - Match exactly
+#   /path/to/dir(/.*)?      - Match directory and everything under it
+#   /path/to/file\.ext      - Escape special regex characters
+#
+# File Type Specifiers:
+#   --   Regular file
+#   -d   Directory
+#   -l   Symbolic link
+#   -c   Character device
+#   -b   Block device
+#   -s   Socket
+#   -p   Named pipe (FIFO)
+#   (none) - All file types
+#
+# Context Format:
+#   user:role:type:level
+#   system_u:object_r:myapp_t:s0  (typical for system files)
+#
+# =============================================================================

@@ -1,0 +1,92 @@
+# =============================================================================
+# myapp.service - MyApp Web Application Service
+# =============================================================================
+# Production-ready systemd unit file for a web application
+#
+# Features:
+#   - Type=notify for proper startup detection
+#   - Proper dependencies and ordering
+#   - Restart policy with rate limiting
+#   - Non-root user execution
+#   - Journal logging
+#
+# Created for: systemd 深入课程 - 综合项目
+# =============================================================================
+
+[Unit]
+Description=MyApp Web Application Service
+Documentation=https://example.com/myapp/docs
+
+# Dependencies: Start after network is ready
+After=network-online.target
+Wants=network-online.target
+
+# If you have database dependency:
+# After=network-online.target postgresql.service
+# Wants=network-online.target postgresql.service
+
+[Service]
+# -----------------------------------------------------------------------------
+# Service Type
+# -----------------------------------------------------------------------------
+# Type=notify: The service sends READY=1 when fully initialized
+# This ensures systemd waits for actual readiness, not just process start
+Type=notify
+NotifyAccess=main
+
+# -----------------------------------------------------------------------------
+# User and Group
+# -----------------------------------------------------------------------------
+# NEVER run as root in production!
+User=myapp
+Group=myapp
+
+# -----------------------------------------------------------------------------
+# Working Directory and Environment
+# -----------------------------------------------------------------------------
+WorkingDirectory=/opt/myapp
+
+# Environment variables (non-sensitive)
+Environment=APP_ENV=production
+Environment=LOG_LEVEL=info
+
+# For sensitive data, use EnvironmentFile with proper permissions
+# EnvironmentFile=/opt/myapp/config/secrets
+# Make sure secrets file has 0600 permissions!
+
+# -----------------------------------------------------------------------------
+# Execution
+# -----------------------------------------------------------------------------
+ExecStart=/opt/myapp/bin/myapp
+ExecReload=/bin/kill -HUP $MAINPID
+
+# -----------------------------------------------------------------------------
+# Restart Policy
+# -----------------------------------------------------------------------------
+# Restart on failure, but not on clean exit
+Restart=on-failure
+RestartSec=5
+
+# Prevent restart loops (restart storm protection)
+# Max 5 restarts in 300 seconds, then give up
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# -----------------------------------------------------------------------------
+# Timeouts
+# -----------------------------------------------------------------------------
+# Time to wait for startup notification
+TimeoutStartSec=60
+
+# Time to wait for graceful shutdown
+TimeoutStopSec=30
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myapp
+
+[Install]
+WantedBy=multi-user.target

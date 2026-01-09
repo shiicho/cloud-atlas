@@ -1,0 +1,134 @@
+#!/usr/sbin/nft -f
+# =============================================================================
+# Default-Deny Firewall Configuration
+# =============================================================================
+#
+# Description: Production-ready default-deny firewall
+# Purpose: Allow only SSH and HTTP/HTTPS, deny everything else
+# Platform: RHEL 9 / AlmaLinux 9 / Debian 11+ / Ubuntu 22.04+
+#
+# Installation:
+#   1. Validate: sudo nft -c -f default-deny.nft
+#   2. Apply:    sudo nft -f default-deny.nft
+#   3. Persist:  sudo cp default-deny.nft /etc/nftables.conf
+#   4. Enable:   sudo systemctl enable --now nftables
+#
+# SAFETY WARNING:
+#   Always keep a second SSH session open when applying firewall rules!
+#   Set up auto-recovery before testing:
+#     nohup bash -c 'sleep 300 && nft flush ruleset && nft -f /etc/nftables.conf' &
+#
+# =============================================================================
+
+# Clear all existing rules (atomic operation)
+flush ruleset
+
+# =============================================================================
+# Table: inet filter (IPv4 + IPv6 unified)
+# =============================================================================
+table inet filter {
+
+    # -------------------------------------------------------------------------
+    # Chain: input - Inbound traffic control
+    # Policy: DROP (default deny - this is the key security feature)
+    # -------------------------------------------------------------------------
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # =====================================================================
+        # 1. Connection Tracking (CRITICAL - must be first!)
+        # =====================================================================
+        # Allows response packets for connections initiated by us
+        # Without this rule, even allowed connections would fail after handshake
+        ct state established,related accept comment "Allow established/related"
+
+        # Drop packets that don't belong to any known connection
+        # These are often malformed or malicious packets
+        ct state invalid drop comment "Drop invalid packets"
+
+        # =====================================================================
+        # 2. Loopback Interface
+        # =====================================================================
+        # Local processes need to communicate with each other
+        # Never block loopback - it breaks many services
+        iif "lo" accept comment "Allow loopback interface"
+
+        # =====================================================================
+        # 3. SSH Access (port 22)
+        # =====================================================================
+        # Remote server management
+        # Consider adding IP restrictions for production:
+        #   ip saddr { 10.0.0.0/8 } tcp dport 22 accept
+        tcp dport 22 accept comment "SSH"
+
+        # =====================================================================
+        # 4. Web Services (HTTP/HTTPS)
+        # =====================================================================
+        tcp dport 80 accept comment "HTTP"
+        tcp dport 443 accept comment "HTTPS"
+
+        # =====================================================================
+        # 5. ICMP (ping) - Rate Limited
+        # =====================================================================
+        # Allow ping for network troubleshooting
+        # Rate limited to prevent ping flood attacks
+        ip protocol icmp icmp type {
+            echo-request,
+            echo-reply,
+            destination-unreachable
+        } limit rate 10/second accept comment "ICMPv4 essential"
+
+        # IPv6 ICMP - Required for IPv6 to function properly
+        ip6 nexthdr icmpv6 icmpv6 type {
+            echo-request,
+            echo-reply,
+            nd-neighbor-solicit,
+            nd-neighbor-advert
+        } accept comment "ICMPv6 essential"
+
+        # =====================================================================
+        # 6. Logging (rate limited to prevent log flooding)
+        # =====================================================================
+        # Log dropped packets for troubleshooting
+        # Rate limit prevents disk filling during attacks
+        log prefix "[nftables DROP] " limit rate 3/minute comment "Log drops"
+
+        # Final implicit drop (policy: drop)
+    }
+
+    # -------------------------------------------------------------------------
+    # Chain: forward - Transit traffic control
+    # Policy: DROP (this is not a router)
+    # -------------------------------------------------------------------------
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # Uncomment if this machine acts as a router/gateway:
+        # ct state established,related accept
+        # ct state invalid drop
+        # iifname "eth0" oifname "eth1" accept
+    }
+
+    # -------------------------------------------------------------------------
+    # Chain: output - Outbound traffic control
+    # Policy: ACCEPT (allow all outbound by default)
+    # -------------------------------------------------------------------------
+    chain output {
+        type filter hook output priority 0; policy accept;
+
+        # For high-security environments, restrict outbound:
+        # ct state established,related accept
+        # ct state invalid drop
+        # tcp dport { 53, 80, 443 } accept comment "DNS, HTTP, HTTPS"
+        # udp dport 53 accept comment "DNS"
+        # log prefix "[nftables OUTPUT DROP] " limit rate 1/minute drop
+    }
+}
+
+# =============================================================================
+# End of configuration
+# =============================================================================
+# Validation: nft -c -f default-deny.nft
+# Apply:      nft -f default-deny.nft
+# Verify:     nft list ruleset
+# =============================================================================

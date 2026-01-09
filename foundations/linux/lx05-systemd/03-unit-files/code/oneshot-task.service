@@ -1,0 +1,51 @@
+# /etc/systemd/system/oneshot-task.service
+#
+# Example of Type=oneshot service
+# Use for one-time tasks, initialization scripts, or database migrations
+#
+# Characteristics:
+#   - Runs to completion and exits
+#   - RemainAfterExit=yes keeps status as "active" after completion
+#   - Useful for tasks that must run before other services start
+
+[Unit]
+Description=Database Migration Task
+Documentation=https://docs.example.com/migrations
+
+# Run after database is ready
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+
+# Run as the application user
+User=appuser
+Group=appgroup
+
+# Working directory
+WorkingDirectory=/opt/myapp
+
+# Environment
+EnvironmentFile=/etc/myapp/secrets
+
+# The migration command
+ExecStart=/opt/myapp/bin/migrate-database
+
+# Keep service in "active" state after completion
+# This is useful for services that check "is-active" status
+RemainAfterExit=yes
+
+# Timeout for long-running migrations
+TimeoutStartSec=600
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=db-migration
+
+[Install]
+# This can be a dependency of other services
+# WantedBy=myapp.service
+# Or run as part of a target
+WantedBy=multi-user.target

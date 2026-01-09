@@ -1,0 +1,156 @@
+# =============================================================================
+# cap-demo.service - Example systemd Service with Capabilities
+# =============================================================================
+#
+# PURPOSE: Demonstrate running a non-root service with CAP_NET_BIND_SERVICE
+#
+# INSTALLATION:
+#   1. Create service user: sudo useradd -r -s /sbin/nologin capdemo
+#   2. Create app directory: sudo mkdir -p /opt/capdemo
+#   3. Copy server script: sudo cp server.py /opt/capdemo/
+#   4. Set ownership: sudo chown -R capdemo:capdemo /opt/capdemo
+#   5. Copy this file: sudo cp cap-demo.service /etc/systemd/system/
+#   6. Reload systemd: sudo systemctl daemon-reload
+#   7. Start service: sudo systemctl start cap-demo
+#
+# VERIFICATION:
+#   # Check service status
+#   sudo systemctl status cap-demo
+#
+#   # Check listening port
+#   ss -tlnp | grep :80
+#
+#   # Check process capabilities
+#   PID=$(systemctl show cap-demo -p MainPID --value)
+#   sudo cat /proc/$PID/status | grep Cap
+#   sudo capsh --decode=$(sudo cat /proc/$PID/status | grep CapEff | awk '{print $2}')
+#
+# CLEANUP:
+#   sudo systemctl stop cap-demo
+#   sudo systemctl disable cap-demo
+#   sudo rm /etc/systemd/system/cap-demo.service
+#   sudo userdel capdemo
+#   sudo rm -rf /opt/capdemo
+#
+# =============================================================================
+
+[Unit]
+Description=Capability Demo Service (non-root binding port 80)
+Documentation=man:capabilities(7)
+After=network.target
+
+[Service]
+Type=simple
+
+# =============================================================================
+# User/Group Configuration
+# =============================================================================
+# Run as non-root user for security
+User=capdemo
+Group=capdemo
+
+# Working directory
+WorkingDirectory=/opt/capdemo
+
+# =============================================================================
+# Capabilities Configuration (Key Section!)
+# =============================================================================
+
+# AmbientCapabilities: Capabilities granted to this service
+# This is how non-root processes get specific privileges
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+# CapabilityBoundingSet: Maximum capabilities this service can ever have
+# Acts as an upper limit - even if code tries, it cannot exceed this
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# NoNewPrivileges: Prevent gaining new privileges via execve
+# This blocks SUID/SGID exploitation - ALWAYS use with AmbientCapabilities!
+NoNewPrivileges=true
+
+# =============================================================================
+# Additional Security Hardening
+# =============================================================================
+
+# Protect system directories
+ProtectSystem=strict
+# Options: true (mount /usr, /boot read-only)
+#          strict (all except /dev, /proc, /sys read-only)
+#          full (like strict + /etc read-only)
+
+# Protect home directories
+ProtectHome=true
+
+# Private /tmp directory
+PrivateTmp=true
+
+# Make /dev read-only (allow specific devices if needed)
+PrivateDevices=true
+
+# Restrict kernel module loading
+ProtectKernelModules=true
+
+# Restrict kernel tuning
+ProtectKernelTunables=true
+
+# Protect kernel logs
+ProtectKernelLogs=true
+
+# Protect control groups
+ProtectControlGroups=true
+
+# Restrict hostname changes
+ProtectHostname=true
+
+# Restrict clock changes
+ProtectClock=true
+
+# Restrict realtime scheduling
+RestrictRealtime=true
+
+# Restrict SUID/SGID files
+RestrictSUIDSGID=true
+
+# Limit network families
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+# Restrict namespaces
+RestrictNamespaces=true
+
+# Memory execution policy
+MemoryDenyWriteExecute=true
+
+# Lock personality
+LockPersonality=true
+
+# =============================================================================
+# Resource Limits
+# =============================================================================
+
+# Limit file descriptors
+LimitNOFILE=1024
+
+# Limit processes
+LimitNPROC=64
+
+# =============================================================================
+# Execution
+# =============================================================================
+
+# The actual command to run
+ExecStart=/usr/bin/python3 /opt/capdemo/server.py
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Environment variables
+Environment=PYTHONUNBUFFERED=1
+
+# Standard output/error logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cap-demo
+
+[Install]
+WantedBy=multi-user.target

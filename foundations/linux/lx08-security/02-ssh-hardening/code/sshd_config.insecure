@@ -1,0 +1,170 @@
+# =============================================================================
+# SSH INSECURE Configuration - FOR DEMONSTRATION ONLY
+# =============================================================================
+#
+# WARNING: DO NOT USE THIS IN PRODUCTION!
+#
+# This configuration demonstrates common security misconfigurations.
+# Each insecure setting is marked with "INSECURE" and an explanation.
+#
+# Purpose: Educational comparison with sshd_config.secure
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Authentication Settings - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Allow root login
+# Risk: Direct target for brute-force, no accountability
+# Correct: PermitRootLogin no
+PermitRootLogin yes
+
+# INSECURE: Allow password authentication
+# Risk: Brute-force attacks, weak passwords
+# Correct: PasswordAuthentication no
+PasswordAuthentication yes
+
+# INSECURE: Allow empty passwords (worst case)
+# Risk: Anyone can login without password
+# Correct: PermitEmptyPasswords no
+PermitEmptyPasswords yes
+
+# INSECURE: Disable public key authentication
+# Risk: Forces password auth, removes best security option
+# Correct: PubkeyAuthentication yes
+# PubkeyAuthentication no
+
+# -----------------------------------------------------------------------------
+# 2. Connection Limits - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Too many authentication attempts allowed
+# Risk: Enables brute-force attacks
+# Correct: MaxAuthTries 3
+MaxAuthTries 10
+
+# INSECURE: Long login grace time
+# Risk: Connection exhaustion attacks
+# Correct: LoginGraceTime 60
+LoginGraceTime 300
+
+# INSECURE: No connection limits
+# Risk: DoS via connection exhaustion
+# Correct: MaxStartups 10:30:60
+# MaxStartups 100
+
+# INSECURE: No idle timeout
+# Risk: Abandoned sessions, resource waste
+# Correct: ClientAliveInterval 300, ClientAliveCountMax 2
+# ClientAliveInterval 0
+# ClientAliveCountMax 99
+
+# -----------------------------------------------------------------------------
+# 3. Cryptographic Settings - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Allow deprecated algorithms (OpenSSH < 8.8)
+# Risk: SHA-1 collision attacks, weak encryption
+# Correct: Use only modern algorithms (ed25519, rsa-sha2-*)
+#
+# These are the old defaults that include weak algorithms:
+# PubkeyAcceptedAlgorithms +ssh-rsa
+# HostKeyAlgorithms +ssh-rsa
+#
+# If you need legacy support, DO NOT include:
+# - ssh-dss (DSA - completely broken)
+# - ssh-rsa with SHA-1 (collision attacks possible)
+
+# INSECURE: Include weak ciphers
+# Risk: Encryption can be broken
+# Correct: Only use AEAD ciphers
+# Ciphers aes128-ctr,aes192-ctr,aes256-ctr,3des-cbc
+
+# INSECURE: Include weak MACs
+# Risk: Message integrity compromise
+# Correct: Only use ETM MACs
+# MACs hmac-sha1,hmac-md5
+
+# -----------------------------------------------------------------------------
+# 4. Logging and Monitoring - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Minimal logging
+# Risk: Cannot detect attacks or audit access
+# Correct: LogLevel VERBOSE
+LogLevel QUIET
+
+# INSECURE: Don't show last login
+# Risk: Users won't notice unauthorized access
+# Correct: PrintLastLog yes
+PrintLastLog no
+
+# -----------------------------------------------------------------------------
+# 5. Network Settings - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Listen on all interfaces without restriction
+# Risk: Exposes SSH to untrusted networks
+# Correct: Restrict with ListenAddress or firewall
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# -----------------------------------------------------------------------------
+# 6. Forwarding and Tunneling - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Allow X11 forwarding
+# Risk: X11 protocol vulnerabilities, data exfiltration
+# Correct: X11Forwarding no
+X11Forwarding yes
+
+# INSECURE: Allow all forwarding
+# Risk: Can be used to bypass firewalls, pivot attacks
+# Correct: Disable unless needed
+AllowTcpForwarding yes
+AllowAgentForwarding yes
+GatewayPorts yes
+PermitTunnel yes
+
+# -----------------------------------------------------------------------------
+# 7. Environment Settings - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: Allow user environment variables
+# Risk: LD_PRELOAD attacks, environment manipulation
+# Correct: PermitUserEnvironment no
+PermitUserEnvironment yes
+
+# -----------------------------------------------------------------------------
+# 8. Access Control - INSECURE
+# -----------------------------------------------------------------------------
+
+# INSECURE: No user/group restrictions
+# Risk: Any valid user can SSH in
+# Correct: Use AllowUsers or AllowGroups
+# (No AllowUsers/AllowGroups configured)
+
+# INSECURE: Allow all network sources
+# Risk: Internet-wide exposure
+# (No Match Address restrictions)
+
+# =============================================================================
+# SECURITY COMPARISON TABLE
+# =============================================================================
+#
+# | Setting                  | Insecure    | Secure              |
+# |--------------------------|-------------|---------------------|
+# | PermitRootLogin          | yes         | no                  |
+# | PasswordAuthentication   | yes         | no                  |
+# | PermitEmptyPasswords     | yes         | no                  |
+# | MaxAuthTries             | 10          | 3                   |
+# | LoginGraceTime           | 300         | 60                  |
+# | LogLevel                 | QUIET       | VERBOSE             |
+# | X11Forwarding            | yes         | no                  |
+# | PermitUserEnvironment    | yes         | no                  |
+# | Key Algorithms           | legacy+weak | ed25519,rsa-sha2-*  |
+#
+# =============================================================================
+# End of INSECURE Configuration
+# =============================================================================

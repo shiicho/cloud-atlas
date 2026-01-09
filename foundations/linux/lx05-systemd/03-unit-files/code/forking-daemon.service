@@ -1,0 +1,60 @@
+# /etc/systemd/system/forking-daemon.service
+#
+# Example of Type=forking service
+# Use ONLY for traditional daemons that fork and exit parent process
+#
+# IMPORTANT: Modern applications should NOT use this!
+# Most Node.js, Python, Go apps should use Type=simple or Type=notify
+#
+# Type=forking is for:
+#   - Legacy daemons with --daemon or -d flags
+#   - Applications that write PID files and daemonize themselves
+
+[Unit]
+Description=Legacy Forking Daemon
+Documentation=https://docs.example.com/legacy
+
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Type=forking - parent process forks and exits, child is the actual service
+Type=forking
+
+# REQUIRED for forking: Tell systemd where to find the PID file
+# The daemon must write its child PID to this file
+PIDFile=/var/run/legacy-daemon.pid
+
+# Run as specific user
+User=daemon
+Group=daemon
+
+# The --daemon flag tells the app to fork and daemonize
+ExecStart=/opt/legacy/bin/daemon --daemon --pidfile /var/run/legacy-daemon.pid
+
+# Stop command
+ExecStop=/bin/kill -TERM $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+# =============================================================================
+# ANTI-PATTERN WARNING
+# =============================================================================
+#
+# Do NOT use Type=forking for:
+#   - Python applications (use Type=simple)
+#   - Node.js applications (use Type=simple)
+#   - Go applications (use Type=simple)
+#   - Any modern application that runs in foreground
+#
+# Signs you're using the wrong Type:
+#   - Service times out on start
+#   - "Main process exited, code=exited, status=0/SUCCESS" but service fails
+#   - PIDFile doesn't exist or contains wrong PID
+#
+# Solution: Remove Type=forking and PIDFile, use Type=simple (default)

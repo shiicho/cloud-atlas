@@ -1,0 +1,60 @@
+# /etc/systemd/system/mywebapp.service
+#
+# Example Unit file for a Python web application
+# This demonstrates best practices for Type=simple services
+#
+# Usage:
+#   1. Copy to /etc/systemd/system/mywebapp.service
+#   2. Create user: sudo useradd -r -s /sbin/nologin mywebapp
+#   3. Create directories and set permissions
+#   4. sudo systemctl daemon-reload
+#   5. sudo systemctl enable --now mywebapp
+
+[Unit]
+# Basic information
+Description=My Web Application
+Documentation=https://example.com/docs
+
+# Dependencies and ordering
+# After= controls order, Wants= ensures dependency is started
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Service type - simple is default and works for most apps
+Type=simple
+
+# Run as non-root user for security
+User=mywebapp
+Group=mywebapp
+
+# Working directory
+WorkingDirectory=/opt/mywebapp
+
+# Environment variables
+# Use EnvironmentFile for secrets - never put secrets in Environment=!
+EnvironmentFile=/etc/mywebapp/env
+
+# Main command to start the service
+ExecStart=/usr/bin/python3 /opt/mywebapp/server.py
+
+# Restart policy
+# on-failure: restart only if exit code is non-zero or killed by signal
+Restart=on-failure
+
+# Wait 5 seconds before restarting (prevents tight restart loops)
+RestartSec=5
+
+# Restart limits (prevents restart storms)
+# Max 5 restarts within 300 seconds (5 minutes)
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mywebapp
+
+[Install]
+# Enable for multi-user (non-GUI) target
+WantedBy=multi-user.target

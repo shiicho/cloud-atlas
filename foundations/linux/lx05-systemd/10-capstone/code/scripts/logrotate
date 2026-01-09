@@ -1,0 +1,34 @@
+#!/bin/bash
+# =============================================================================
+# MyApp Log Rotation Script
+# =============================================================================
+# Rotates and cleans up old log files
+
+LOG_DIR="/var/log/myapp"
+MAX_LOG_FILES=7
+MAX_LOG_SIZE_MB=100
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+log "Starting log rotation..."
+
+# Rotate logs if they exceed size limit
+for logfile in "$LOG_DIR"/*.log; do
+    if [ -f "$logfile" ]; then
+        SIZE_MB=$(du -m "$logfile" 2>/dev/null | cut -f1)
+        if [ "${SIZE_MB:-0}" -gt "$MAX_LOG_SIZE_MB" ]; then
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            mv "$logfile" "${logfile}.${TIMESTAMP}"
+            gzip "${logfile}.${TIMESTAMP}"
+            log "Rotated: $logfile (${SIZE_MB}MB)"
+        fi
+    fi
+done
+
+# Clean up old rotated logs
+find "$LOG_DIR" -name "*.log.*.gz" -mtime +$MAX_LOG_FILES -delete
+log "Cleaned up logs older than $MAX_LOG_FILES days"
+
+log "Log rotation completed"

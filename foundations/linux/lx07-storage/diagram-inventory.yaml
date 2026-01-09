@@ -1,0 +1,41 @@
+# LX07-STORAGE Diagram Inventory
+# Generated: 2026-01-04
+# Total: 10 ASCII diagrams to convert to PNG
+
+diagrams:
+
+  batch_1:  # Lessons 01, 02
+    - file: "01-block-devices-naming/README.md"
+      marker: "<!-- DIAGRAM: device-naming-hierarchy -->"
+      output: "01-block-devices-naming/images/device-naming-hierarchy.png"
+    - file: "01-block-devices-naming/README.md"
+      marker: "<!-- DIAGRAM: persistent-naming-decision -->"
+      output: "01-block-devices-naming/images/persistent-naming-decision.png"
+    - file: "02-partitioning/README.md"
+      marker: "<!-- DIAGRAM: mbr-vs-gpt-layout -->"
+      output: "02-partitioning/images/mbr-vs-gpt-layout.png"
+
+  batch_2:  # Lessons 04, 05, 07
+    - file: "04-mounting-fstab/README.md"
+      marker: "<!-- DIAGRAM: fstab-fields -->"
+      output: "04-mounting-fstab/images/fstab-fields.png"
+    - file: "05-lvm-architecture/README.md"
+      marker: "<!-- DIAGRAM: lvm-three-layer-architecture -->"
+      output: "05-lvm-architecture/images/lvm-three-layer-architecture.png"
+    - file: "07-lvm-snapshots/README.md"
+      marker: "<!-- DIAGRAM: cow-mechanism -->"
+      output: "07-lvm-snapshots/images/cow-mechanism.png"
+
+  batch_3:  # Lessons 10, 12
+    - file: "10-backup-strategies/README.md"
+      marker: "<!-- DIAGRAM: link-dest-mechanism -->"
+      output: "10-backup-strategies/images/link-dest-mechanism.png"
+    - file: "10-backup-strategies/README.md"
+      marker: "<!-- DIAGRAM: rsync-snapshot-workflow -->"
+      output: "10-backup-strategies/images/rsync-snapshot-workflow.png"
+    - file: "10-backup-strategies/README.md"
+      marker: "<!-- DIAGRAM: 3-2-1-rule -->"
+      output: "10-backup-strategies/images/3-2-1-rule.png"
+    - file: "12-capstone/README.md"
+      marker: "<!-- DIAGRAM: lvm-raid-architectures -->"
+      output: "12-capstone/images/lvm-raid-architectures.png"

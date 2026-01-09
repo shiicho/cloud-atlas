@@ -1,0 +1,221 @@
+# =============================================================================
+# SSH Hardened Configuration - 2025 Best Practices
+# =============================================================================
+#
+# This configuration follows:
+# - CIS Benchmark for RHEL/CentOS
+# - Mozilla OpenSSH Guidelines
+# - OpenSSH 9.x recommendations
+#
+# IMPORTANT: Before applying this configuration:
+# 1. Ensure you have console access as a backup
+# 2. Test with: sshd -t
+# 3. Keep current session open while testing
+#
+# Created: 2025
+# Last Updated: 2025
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Authentication Settings
+# -----------------------------------------------------------------------------
+
+# Disable root login - use sudo instead for accountability
+# CIS Benchmark 5.2.10
+PermitRootLogin no
+
+# Disable password authentication - key-only is more secure
+# CIS Benchmark 5.2.5
+PasswordAuthentication no
+
+# Disable empty passwords - never allow this
+# CIS Benchmark 5.2.4
+PermitEmptyPasswords no
+
+# Enable public key authentication
+PubkeyAuthentication yes
+
+# Disable host-based authentication
+# CIS Benchmark 5.2.9
+HostbasedAuthentication no
+
+# Ignore rhosts files
+# CIS Benchmark 5.2.8
+IgnoreRhosts yes
+
+# Disable keyboard-interactive auth (can be used to bypass PasswordAuth)
+KbdInteractiveAuthentication no
+
+# Disable challenge-response authentication
+ChallengeResponseAuthentication no
+
+# Disable PAM (optional - enable if you need PAM features)
+# UsePAM no
+
+# -----------------------------------------------------------------------------
+# 2. Connection Limits
+# -----------------------------------------------------------------------------
+
+# Maximum authentication attempts per connection
+# CIS Benchmark 5.2.7
+MaxAuthTries 3
+
+# Time allowed to complete authentication (seconds)
+# CIS Benchmark 5.2.20
+LoginGraceTime 60
+
+# Maximum concurrent unauthenticated connections
+# Format: start:rate:full
+# After 10 unauthenticated connections, drop 30% of new connections
+# At 60 connections, drop all new connections
+MaxStartups 10:30:60
+
+# Maximum sessions per network connection
+MaxSessions 4
+
+# Client alive settings - disconnect idle sessions
+# Send alive check every 300 seconds (5 minutes)
+ClientAliveInterval 300
+# Disconnect after 2 failed alive checks (10 minutes total)
+ClientAliveCountMax 2
+
+# -----------------------------------------------------------------------------
+# 3. Cryptographic Settings (2025 Recommendations)
+# -----------------------------------------------------------------------------
+
+# Accepted public key algorithms (most secure first)
+# - ssh-ed25519: Best choice, fast and secure
+# - sk-ssh-ed25519: FIDO2 hardware keys
+# - rsa-sha2-*: For compatibility with older systems
+PubkeyAcceptedAlgorithms ssh-ed25519,sk-ssh-ed25519@openssh.com,rsa-sha2-512,rsa-sha2-256
+
+# Host key algorithms
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
+# Key exchange algorithms (forward secrecy)
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+
+# Symmetric ciphers (authenticated encryption)
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+
+# Message authentication codes (encrypt-then-MAC only)
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+
+# Minimum RSA key size (if using RSA)
+# RequiredRSASize 3072
+
+# -----------------------------------------------------------------------------
+# 4. Logging and Monitoring
+# -----------------------------------------------------------------------------
+
+# Log level - VERBOSE provides more detail for security auditing
+# CIS Benchmark 5.2.3
+LogLevel VERBOSE
+
+# Syslog facility
+SyslogFacility AUTH
+
+# Print last login information
+PrintLastLog yes
+
+# Don't print /etc/motd (often contains sensitive info)
+PrintMotd no
+
+# -----------------------------------------------------------------------------
+# 5. Network Settings
+# -----------------------------------------------------------------------------
+
+# SSH protocol version (2 only, 1 is insecure)
+# Note: Protocol 1 is completely removed in modern OpenSSH
+# Protocol 2
+
+# Listen on specific interfaces (uncomment and modify as needed)
+# ListenAddress 0.0.0.0
+# ListenAddress ::
+
+# TCP port (default 22, consider changing for obscurity)
+Port 22
+
+# Address family (inet = IPv4, inet6 = IPv6, any = both)
+AddressFamily any
+
+# Disable TCP keepalive at TCP level (use ClientAlive* instead)
+TCPKeepAlive yes
+
+# -----------------------------------------------------------------------------
+# 6. Forwarding and Tunneling
+# -----------------------------------------------------------------------------
+
+# Disable X11 forwarding (security risk unless needed)
+# CIS Benchmark 5.2.6
+X11Forwarding no
+
+# Disable TCP forwarding (uncomment if not needed)
+# AllowTcpForwarding no
+
+# Disable agent forwarding (uncomment if not needed)
+# AllowAgentForwarding no
+
+# Disable stream local forwarding
+# AllowStreamLocalForwarding no
+
+# Disable gateway ports
+GatewayPorts no
+
+# Disable tunnel devices
+PermitTunnel no
+
+# -----------------------------------------------------------------------------
+# 7. Environment Settings
+# -----------------------------------------------------------------------------
+
+# Don't allow users to set environment variables
+PermitUserEnvironment no
+
+# Accept only specific environment variables
+AcceptEnv LANG LC_*
+
+# -----------------------------------------------------------------------------
+# 8. Access Control (uncomment and customize)
+# -----------------------------------------------------------------------------
+
+# Allow only specific users
+# AllowUsers admin deploy
+
+# Allow only specific groups
+# AllowGroups sshusers wheel sudo
+
+# Deny specific users
+# DenyUsers guest test
+
+# Deny specific groups
+# DenyGroups noremote
+
+# -----------------------------------------------------------------------------
+# 9. Subsystems
+# -----------------------------------------------------------------------------
+
+# SFTP subsystem
+Subsystem sftp /usr/libexec/openssh/sftp-server
+
+# For RHEL/CentOS, also consider:
+# Subsystem sftp internal-sftp
+
+# -----------------------------------------------------------------------------
+# 10. Match Blocks (conditional settings)
+# -----------------------------------------------------------------------------
+
+# Example: Allow password auth from internal network only
+# Match Address 10.0.0.0/8,192.168.0.0/16
+#     PasswordAuthentication yes
+
+# Example: Restrict SFTP-only users
+# Match Group sftponly
+#     ChrootDirectory /sftp/%u
+#     ForceCommand internal-sftp
+#     AllowTcpForwarding no
+#     X11Forwarding no
+
+# =============================================================================
+# End of Configuration
+# =============================================================================

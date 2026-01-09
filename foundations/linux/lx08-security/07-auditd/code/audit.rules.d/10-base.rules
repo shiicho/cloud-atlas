@@ -1,0 +1,119 @@
+# =============================================================================
+# 10-base.rules - Audit Base Configuration
+# =============================================================================
+# Purpose: Basic audit system setup and critical system file monitoring
+# Reference: CIS Benchmark, NIST SP 800-53
+# Course: LX08-SECURITY Lesson 07 - auditd
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Audit System Configuration
+# -----------------------------------------------------------------------------
+
+# Delete all existing rules (start fresh)
+-D
+
+# Set buffer size (increase for busy systems)
+# Default is 320, 8192 is good for production
+-b 8192
+
+# Set failure mode
+# 0 = silent (no action on failure)
+# 1 = printk (log to dmesg)
+# 2 = panic (halt system) - use for high-security only
+-f 1
+
+# -----------------------------------------------------------------------------
+# Identity and Authentication Files
+# -----------------------------------------------------------------------------
+
+# User account files
+# Any modification to these files should be investigated
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+
+# PAM configuration - authentication chain
+-w /etc/pam.d/ -p wa -k pam_config
+
+# NSS configuration - name service switch
+-w /etc/nsswitch.conf -p wa -k identity
+
+# SSSD configuration (AD/LDAP integration)
+-w /etc/sssd/sssd.conf -p wa -k identity
+
+# -----------------------------------------------------------------------------
+# Login and Session Tracking
+# -----------------------------------------------------------------------------
+
+# Login records (last/lastb commands read these)
+-w /var/log/lastlog -p wa -k logins
+-w /var/run/faillock/ -p wa -k logins
+
+# Session files (wtmp/btmp)
+# wtmp: successful logins
+# btmp: failed logins
+-w /var/log/wtmp -p wa -k session
+-w /var/log/btmp -p wa -k session
+
+# Tallylog (legacy, before faillock)
+-w /var/log/tallylog -p wa -k logins
+
+# -----------------------------------------------------------------------------
+# Privilege Escalation Monitoring
+# -----------------------------------------------------------------------------
+
+# sudo and su usage - most common privilege escalation
+-w /usr/bin/sudo -p x -k privilege_escalation
+-w /usr/bin/su -p x -k privilege_escalation
+
+# sudoedit (separate from sudo on some systems)
+-w /usr/bin/sudoedit -p x -k privilege_escalation
+
+# pkexec (Polkit privilege escalation)
+-w /usr/bin/pkexec -p x -k privilege_escalation
+
+# Privilege escalation syscalls (setuid/setgid)
+# These capture when a process changes its UID/GID
+-a always,exit -F arch=b64 -S setuid,setgid,setreuid,setregid,setresuid,setresgid -k privilege_change
+-a always,exit -F arch=b32 -S setuid,setgid,setreuid,setregid,setresuid,setresgid -k privilege_change
+
+# -----------------------------------------------------------------------------
+# Time Change Monitoring
+# -----------------------------------------------------------------------------
+
+# System time changes can be used to manipulate logs
+-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -k time_change
+-a always,exit -F arch=b32 -S adjtimex,settimeofday,clock_settime,stime -k time_change
+
+# /etc/localtime changes
+-w /etc/localtime -p wa -k time_change
+
+# -----------------------------------------------------------------------------
+# Kernel Module Loading
+# -----------------------------------------------------------------------------
+
+# Module loading can be used to install rootkits
+-w /sbin/insmod -p x -k kernel_modules
+-w /sbin/rmmod -p x -k kernel_modules
+-w /sbin/modprobe -p x -k kernel_modules
+
+# Syscalls for module operations
+-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -k kernel_modules
+-a always,exit -F arch=b32 -S init_module,finit_module,delete_module -k kernel_modules
+
+# -----------------------------------------------------------------------------
+# Network Configuration Changes
+# -----------------------------------------------------------------------------
+
+# Network configuration files
+-w /etc/hosts -p wa -k network_config
+-w /etc/hostname -p wa -k network_config
+-w /etc/resolv.conf -p wa -k network_config
+-w /etc/sysconfig/network -p wa -k network_config
+-w /etc/sysconfig/network-scripts/ -p wa -k network_config
+
+# Firewall configuration
+-w /etc/firewalld/ -p wa -k firewall_config
+-w /etc/nftables/ -p wa -k firewall_config

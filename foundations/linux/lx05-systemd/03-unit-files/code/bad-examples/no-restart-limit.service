@@ -1,0 +1,68 @@
+# /etc/systemd/system/bad-example-restart.service
+#
+# =====================================================
+# ANTI-PATTERN: Restart=always without limits
+# DO NOT USE THIS IN PRODUCTION!
+# =====================================================
+#
+# This file demonstrates what NOT to do with restart policies
+
+[Unit]
+Description=Bad Example - No Restart Limits (DO NOT USE!)
+
+[Service]
+Type=simple
+User=appuser
+ExecStart=/opt/app/server
+
+# =====================================================
+# BAD: Restart=always without any limits
+# =====================================================
+#
+# Problems with this approach:
+# 1. If the app has a config error, it will restart forever
+# 2. Each restart attempt consumes CPU and I/O
+# 3. Log files grow rapidly with repeated failure messages
+# 4. May cause thundering herd if many services do this
+# 5. Makes it hard to notice the problem (service appears "active")
+#
+Restart=always
+
+# =====================================================
+# ALSO BAD: RestartSec missing or too short
+# =====================================================
+#
+# Without RestartSec, the service restarts immediately
+# This creates a tight loop that can:
+# - Consume 100% CPU
+# - Fill up logs in seconds
+# - Make the system unresponsive
+#
+# RestartSec=0  # BAD - no delay
+# RestartSec=1  # Often too short for production
+
+[Install]
+WantedBy=multi-user.target
+
+# =====================================================
+# CORRECT APPROACH: Use restart limits
+# =====================================================
+#
+# [Service]
+# Restart=on-failure          # Only restart on actual failures
+# RestartSec=5                 # Wait 5 seconds between restarts
+# StartLimitIntervalSec=300    # Within 5 minute window
+# StartLimitBurst=5            # Allow max 5 restarts
+#
+# After 5 restarts in 5 minutes:
+# - Service enters 'failed' state
+# - Admin is alerted by monitoring
+# - Manual intervention required:
+#   systemctl reset-failed myapp
+#   systemctl start myapp
+#
+# This prevents:
+# - Infinite restart loops
+# - Resource exhaustion
+# - Log spam
+# - Silent failures

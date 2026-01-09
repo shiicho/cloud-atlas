@@ -1,0 +1,92 @@
+# /etc/systemd/system/production-app.service
+#
+# Production-grade Unit file template with all recommended settings
+# This is a comprehensive example for production deployments
+#
+# Features:
+#   - Type=notify for accurate readiness reporting
+#   - Secure environment handling with EnvironmentFile
+#   - Pre-start validation with ExecStartPre
+#   - Restart policies with rate limiting
+#   - Proper logging configuration
+
+[Unit]
+# Descriptive information
+Description=Production Application Service
+Documentation=https://docs.example.com
+Documentation=man:myapp(8)
+
+# Dependencies
+# Always use network-online.target (not network.target!) for network services
+After=network-online.target
+Wants=network-online.target
+
+# If this app depends on a database
+# After=postgresql.service
+# Wants=postgresql.service
+
+[Service]
+# Type=notify - application signals readiness via sd_notify()
+# Use this if your app supports systemd notification
+# Otherwise use Type=simple
+Type=notify
+NotifyAccess=main
+
+# Security: Run as non-root
+User=appuser
+Group=appgroup
+
+# Working directory
+WorkingDirectory=/opt/myapp
+
+# Environment configuration
+# IMPORTANT: Use EnvironmentFile for secrets, never Environment=!
+EnvironmentFile=/etc/myapp/secrets
+# Non-sensitive config can use Environment=
+Environment=NODE_ENV=production
+
+# Pre-start validation
+# Check config before starting - fail fast if config is invalid
+ExecStartPre=/opt/myapp/bin/check-config
+
+# Main process
+ExecStart=/opt/myapp/bin/server
+
+# Post-start actions (optional)
+# ExecStartPost=/opt/myapp/bin/notify-monitoring
+
+# Reload command (for services that support config reload)
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Graceful shutdown
+ExecStop=/opt/myapp/bin/graceful-stop
+TimeoutStopSec=30
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Restart rate limiting
+# Maximum 5 restarts within 300 seconds (5 minutes)
+# After exceeding, service enters 'failed' state
+# Requires manual: systemctl reset-failed && systemctl start
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Exit status handling
+# Treat these exit codes as success (no restart)
+SuccessExitStatus=0 SIGTERM
+# Don't restart on exit code 255 (indicates config error)
+RestartPreventExitStatus=255
+
+# Resource limits (optional, adjust as needed)
+# LimitNOFILE=65535
+# LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myapp
+
+[Install]
+WantedBy=multi-user.target

@@ -1,11 +1,11 @@
 # Bash 脚本入门 | Bash Scripting for Beginners
 
-> **ARCHIVED**: This course has been superseded by the Linux World curriculum (LX04-SHELL).
-> Content remains available for existing learners.
+> **ARCHIVED**: This course has been superseded by the Linux World curriculum (LX04-SHELL).  
+> Content remains available for existing learners.  
 
 从零开始学习 Bash 脚本编程，6 节课带你掌握 Linux 自动化必备技能。
 
-> **面向日本 IT 运维场景**：每课配实战项目，聚焦运维巡检、日志分析、自动化报警等实际工作需求。
+> **面向日本 IT 运维场景**：每课配实战项目，聚焦运维巡检、日志分析、自动化报警等实际工作需求。  
 
 ## 课程大纲 / Course Outline
 

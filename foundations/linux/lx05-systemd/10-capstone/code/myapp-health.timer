@@ -1,0 +1,25 @@
+# =============================================================================
+# myapp-health.timer - Health Check Timer for MyApp
+# =============================================================================
+# Runs health check every 5 minutes
+# Uses Monotonic timer (OnUnitActiveSec) for interval-based execution
+# =============================================================================
+
+[Unit]
+Description=MyApp Health Check Timer
+# Only activate if main service is active
+After=myapp.service
+Requires=myapp.service
+
+[Timer]
+# First check 1 minute after timer starts
+OnActiveSec=1min
+
+# Then check every 5 minutes
+OnUnitActiveSec=5min
+
+# Accuracy: 30 seconds is fine for health checks
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

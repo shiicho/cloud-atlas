@@ -1,0 +1,68 @@
+#!/bin/bash
+# =============================================================================
+# MyApp - Simulated Web Application
+# =============================================================================
+# This script simulates a web application for systemd training
+# It supports Type=notify by sending READY=1 after initialization
+
+set -e
+
+APP_NAME="myapp"
+PID_FILE="/var/lib/myapp/myapp.pid"
+LOG_FILE="/var/log/myapp/myapp.log"
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Signal handlers
+cleanup() {
+    log "Received shutdown signal, stopping..."
+    rm -f "$PID_FILE"
+    log "MyApp stopped gracefully"
+    exit 0
+}
+
+reload_config() {
+    log "Received SIGHUP, reloading configuration..."
+    # Simulate config reload
+    sleep 1
+    log "Configuration reloaded"
+}
+
+trap cleanup SIGTERM SIGINT
+trap reload_config SIGHUP
+
+# Initialization phase
+log "MyApp starting..."
+log "PID: $$"
+echo $$ > "$PID_FILE"
+
+# Simulate initialization (loading config, connecting to DB, etc.)
+log "Loading configuration..."
+sleep 1
+log "Connecting to database..."
+sleep 1
+log "Initializing cache..."
+sleep 1
+
+# Notify systemd that we're ready (for Type=notify)
+if [ -n "$NOTIFY_SOCKET" ]; then
+    log "Sending READY notification to systemd"
+    systemd-notify --ready --status="MyApp is running"
+fi
+
+log "MyApp is now ready and accepting connections"
+
+# Main loop - simulate a running web server
+counter=0
+while true; do
+    sleep 30
+    counter=$((counter + 1))
+    log "Heartbeat #$counter - MyApp is healthy"
+
+    # Update systemd status periodically
+    if [ -n "$NOTIFY_SOCKET" ]; then
+        systemd-notify --status="Running: $counter heartbeats"
+    fi
+done

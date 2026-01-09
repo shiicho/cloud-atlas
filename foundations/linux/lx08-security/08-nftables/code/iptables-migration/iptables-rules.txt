@@ -1,0 +1,100 @@
+# =============================================================================
+# Sample iptables Rules for Migration to nftables
+# =============================================================================
+#
+# Description: Typical iptables ruleset from RHEL 7/CentOS 7 era
+# Purpose: Demonstrate iptables-to-nftables migration
+#
+# Usage:
+#   1. Review these rules
+#   2. Translate: iptables-restore-translate < iptables-rules.txt > nftables-rules.nft
+#   3. Compare with manually optimized nftables-rules.nft
+#
+# =============================================================================
+
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# =============================================================================
+# Connection Tracking (stateful filtering)
+# =============================================================================
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -m state --state INVALID -j DROP
+
+# =============================================================================
+# Loopback Interface
+# =============================================================================
+-A INPUT -i lo -j ACCEPT
+
+# =============================================================================
+# SSH Access (from trusted networks only)
+# =============================================================================
+# Private networks (RFC 1918)
+-A INPUT -s 10.0.0.0/8 -p tcp --dport 22 -j ACCEPT
+-A INPUT -s 172.16.0.0/12 -p tcp --dport 22 -j ACCEPT
+-A INPUT -s 192.168.0.0/16 -p tcp --dport 22 -j ACCEPT
+
+# Rate limiting for SSH (alternative approach)
+# -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --set --name SSH
+# -A INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 60 --hitcount 4 --name SSH -j DROP
+# -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# =============================================================================
+# Web Services
+# =============================================================================
+-A INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT
+
+# Application ports (example)
+-A INPUT -p tcp --dport 8080 -j ACCEPT
+-A INPUT -p tcp --dport 3000:3100 -j ACCEPT
+
+# =============================================================================
+# ICMP (ping)
+# =============================================================================
+-A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+-A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
+-A INPUT -p icmp --icmp-type destination-unreachable -j ACCEPT
+
+# =============================================================================
+# Database (from specific host only)
+# =============================================================================
+-A INPUT -s 192.168.1.100 -p tcp --dport 3306 -j ACCEPT
+-A INPUT -s 192.168.1.100 -p tcp --dport 5432 -j ACCEPT
+
+# =============================================================================
+# Logging (rate limited)
+# =============================================================================
+-A INPUT -m limit --limit 3/min -j LOG --log-prefix "[iptables DROP] " --log-level 4
+
+# =============================================================================
+# Default Drop (implicit with chain policy, explicit here for clarity)
+# =============================================================================
+-A INPUT -j DROP
+
+# =============================================================================
+# Forward Chain (disabled for non-router)
+# =============================================================================
+-A FORWARD -j DROP
+
+COMMIT
+
+# =============================================================================
+# Notes for Migration:
+# =============================================================================
+# 1. iptables-translate can convert individual rules:
+#    iptables-translate -A INPUT -p tcp --dport 22 -j ACCEPT
+#
+# 2. iptables-restore-translate can convert entire rulesets:
+#    iptables-restore-translate < iptables-rules.txt > nftables-rules.nft
+#
+# 3. After translation, review and optimize:
+#    - Use inet family instead of ip (for IPv4+IPv6)
+#    - Use sets for IP lists
+#    - Use ct state instead of -m state --state
+#    - Combine multiport rules with { } syntax
+#
+# 4. Validate before applying:
+#    nft -c -f nftables-rules.nft
+# =============================================================================

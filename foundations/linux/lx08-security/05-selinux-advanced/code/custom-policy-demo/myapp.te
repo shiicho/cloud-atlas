@@ -1,0 +1,109 @@
+# =============================================================================
+# myapp.te - Custom SELinux Policy for myapp
+# =============================================================================
+#
+# This is an EXAMPLE policy for learning purposes.
+# In practice, always try Booleans and semanage before creating custom policies.
+#
+# Application: /opt/myapp/bin/myapp
+# Data: /opt/myapp/data/
+# Logs: /var/log/myapp/
+# Port: 8888/tcp
+#
+# Author: [Your Name]
+# Date: [Date]
+# Ticket: [Change Request Number]
+#
+# =============================================================================
+
+policy_module(myapp, 1.0)
+
+########################################
+# Type Declarations
+########################################
+
+# Process type (domain) for myapp
+type myapp_t;
+
+# Executable file type
+type myapp_exec_t;
+
+# Data file type
+type myapp_data_t;
+
+# Log file type
+type myapp_log_t;
+
+# Port type
+type myapp_port_t;
+
+########################################
+# Domain Transitions
+########################################
+
+# myapp_t is a domain type (can run processes)
+domain_type(myapp_t)
+
+# When myapp_exec_t is executed, transition to myapp_t domain
+domain_entry_file(myapp_t, myapp_exec_t)
+
+# Allow init (systemd) to start myapp
+init_daemon_domain(myapp_t, myapp_exec_t)
+
+########################################
+# File Access Rules
+########################################
+
+# myapp can read its data directory
+allow myapp_t myapp_data_t:dir { open read search getattr };
+allow myapp_t myapp_data_t:file { open read getattr };
+
+# myapp can write to its log directory
+allow myapp_t myapp_log_t:dir { open read search getattr add_name write };
+allow myapp_t myapp_log_t:file { open read write append create getattr setattr };
+
+# myapp can read its own executable
+allow myapp_t myapp_exec_t:file { open read getattr execute };
+
+########################################
+# Network Rules
+########################################
+
+# myapp can listen on its designated port
+allow myapp_t myapp_port_t:tcp_socket { name_bind };
+
+# myapp can accept connections
+allow myapp_t self:tcp_socket { create listen accept read write getattr setopt };
+
+########################################
+# Standard Permissions
+########################################
+
+# Allow reading /etc files for configuration
+files_read_etc_files(myapp_t)
+
+# Allow reading generic system state
+kernel_read_system_state(myapp_t)
+
+# Allow using standard C library
+libs_use_ld_so(myapp_t)
+
+# Allow logging to syslog
+logging_send_syslog_msg(myapp_t)
+
+########################################
+# NOTES
+########################################
+#
+# This policy follows the principle of least privilege:
+# - Only the necessary permissions are granted
+# - No access to sensitive types (shadow_t, etc.)
+# - No wildcard permissions
+#
+# Before using this policy:
+# 1. Review each 'allow' rule
+# 2. Verify the types match your file layout
+# 3. Test in Permissive mode first
+# 4. Document the policy purpose
+#
+# =============================================================================

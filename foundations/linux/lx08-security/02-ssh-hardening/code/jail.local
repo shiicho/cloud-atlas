@@ -1,0 +1,145 @@
+# =============================================================================
+# Fail2Ban Configuration for SSH Protection
+# =============================================================================
+#
+# Place this file at: /etc/fail2ban/jail.local
+#
+# This configuration:
+# - Protects SSH from brute-force attacks
+# - Bans IPs after 5 failed attempts
+# - Uses nftables for modern systems
+#
+# Installation:
+#   RHEL/CentOS: dnf install epel-release && dnf install fail2ban
+#   Debian/Ubuntu: apt install fail2ban
+#
+# After placing this file:
+#   systemctl enable --now fail2ban
+#   fail2ban-client status sshd
+#
+# =============================================================================
+
+[DEFAULT]
+# =============================================================================
+# Global Settings
+# =============================================================================
+
+# Ban duration (seconds)
+# 900 = 15 minutes (recommended starting point)
+# 3600 = 1 hour (for high-security environments)
+# -1 = permanent (not recommended, requires manual unban)
+bantime = 900
+
+# Time window for counting failures (seconds)
+# 600 = 10 minutes
+findtime = 600
+
+# Maximum failures before ban
+maxretry = 5
+
+# Action to take when banning
+# Choose based on your firewall:
+# - nftables-multiport: Modern systems (RHEL 9+, Debian 11+, Ubuntu 20.10+)
+# - iptables-multiport: Legacy systems
+# - firewalld-new: If using firewalld
+banaction = nftables-multiport
+
+# Whitelist - IPs that will never be banned
+# Add your management IPs here!
+ignoreip = 127.0.0.1/8 ::1
+# Example: ignoreip = 127.0.0.1/8 ::1 10.0.0.0/8 192.168.1.0/24
+
+# Email notifications (optional)
+# Requires configured mail system
+# destemail = admin@example.com
+# sender = fail2ban@example.com
+# action = %(action_mwl)s
+
+# =============================================================================
+# SSH Jail Configuration
+# =============================================================================
+
+[sshd]
+enabled = true
+port = ssh
+# For custom SSH ports:
+# port = 22,2222
+
+# Log file location (auto-detected on most systems)
+logpath = %(sshd_log)s
+
+# Backend for log reading
+backend = %(sshd_backend)s
+
+# Override defaults for SSH (more aggressive)
+# Uncomment for stricter protection:
+# maxretry = 3
+# bantime = 3600
+# findtime = 1800
+
+# Filter name (uses /etc/fail2ban/filter.d/sshd.conf)
+filter = sshd
+
+# Mode: normal, ddos, extra, aggressive
+# - normal: Standard brute-force detection
+# - aggressive: Also detects connection attempts
+mode = normal
+
+# =============================================================================
+# Additional Jails (Optional)
+# =============================================================================
+
+# Uncomment to protect other services:
+
+# [nginx-http-auth]
+# enabled = true
+# port = http,https
+# logpath = /var/log/nginx/error.log
+
+# [apache-auth]
+# enabled = true
+# port = http,https
+# logpath = /var/log/apache2/error.log
+
+# [postfix]
+# enabled = true
+# port = smtp,465,submission
+# logpath = /var/log/mail.log
+
+# =============================================================================
+# Recidive Jail - Ban repeat offenders longer
+# =============================================================================
+
+[recidive]
+enabled = true
+logpath = /var/log/fail2ban.log
+banaction = %(banaction_allports)s
+# Ban for 1 week after 5 bans
+bantime = 604800
+findtime = 86400
+maxretry = 5
+
+# =============================================================================
+# Usage Reference
+# =============================================================================
+#
+# Check status:
+#   fail2ban-client status
+#   fail2ban-client status sshd
+#
+# View banned IPs:
+#   fail2ban-client get sshd banned
+#
+# Manually ban an IP:
+#   fail2ban-client set sshd banip 192.168.1.100
+#
+# Manually unban an IP:
+#   fail2ban-client set sshd unbanip 192.168.1.100
+#
+# Check regex filter:
+#   fail2ban-regex /var/log/secure /etc/fail2ban/filter.d/sshd.conf
+#
+# View fail2ban log:
+#   tail -f /var/log/fail2ban.log
+#
+# =============================================================================

@@ -1,0 +1,278 @@
+{# =============================================================================
+   Compliance Report Template
+   =============================================================================
+   Purpose: Generate security compliance reports for auditing
+   Version: 1.0
+
+   Usage in Ansible:
+     - name: Generate compliance report
+       ansible.builtin.template:
+         src: compliance-report.j2
+         dest: "/var/log/compliance-report-{{ ansible_date_time.date }}.md"
+
+   Required Variables:
+     - ssh_config: Dictionary with SSH configuration values
+     - auditd_status: 'running' or 'stopped'
+     - audit_rules_count: Number of loaded audit rules
+     - selinux_mode: 'enforcing', 'permissive', or 'disabled'
+     - firewall_status: 'running' or 'stopped'
+     - hardening_results: List of hardening check results
+
+   Optional Variables:
+     - report_title: Custom report title
+     - auditor_name: Name of the person generating the report
+   ============================================================================= #}
+
+# {{ report_title | default('Security Hardening Compliance Report') }}
+
+---
+
+## Report Information
+
+| Item | Value |
+|------|-------|
+| **Generated** | {{ ansible_date_time.iso8601 }} |
+| **Generator** | Ansible Compliance Reporter v1.0 |
+| **Auditor** | {{ auditor_name | default('Automated') }} |
+| **Report ID** | {{ ansible_hostname }}-{{ ansible_date_time.date }}-{{ 99999999 | random }} |
+
+---
+
+## System Information
+
+| Item | Value |
+|------|-------|
+| **Hostname** | {{ ansible_hostname }} |
+| **FQDN** | {{ ansible_fqdn }} |
+| **Operating System** | {{ ansible_distribution }} {{ ansible_distribution_version }} |
+| **Kernel** | {{ ansible_kernel }} |
+| **Architecture** | {{ ansible_architecture }} |
+| **IP Address** | {{ ansible_default_ipv4.address | default('N/A') }} |
+| **Uptime** | {{ ansible_uptime_seconds | default(0) | int // 86400 }} days |
+| **Last Reboot** | {{ ansible_date_time.date }} (estimated) |
+
+---
+
+## Executive Summary
+
+{% set pass_count = 0 %}
+{% set fail_count = 0 %}
+{% set review_count = 0 %}
+
+{% if ssh_config is defined %}
+  {% if ssh_config.PermitRootLogin | default('') == 'no' %}{% set pass_count = pass_count + 1 %}{% else %}{% set fail_count = fail_count + 1 %}{% endif %}
+  {% if ssh_config.PasswordAuth | default('') == 'no' %}{% set pass_count = pass_count + 1 %}{% else %}{% set fail_count = fail_count + 1 %}{% endif %}
+  {% if ssh_config.PubkeyAuth | default('') == 'yes' %}{% set pass_count = pass_count + 1 %}{% else %}{% set fail_count = fail_count + 1 %}{% endif %}
+{% endif %}
+
+{% if selinux_mode | default('') == 'enforcing' %}{% set pass_count = pass_count + 1 %}{% elif selinux_mode | default('') == 'permissive' %}{% set review_count = review_count + 1 %}{% else %}{% set fail_count = fail_count + 1 %}{% endif %}
+
+{% if auditd_status | default('') == 'running' %}{% set pass_count = pass_count + 1 %}{% else %}{% set fail_count = fail_count + 1 %}{% endif %}
+
+{% if firewall_status | default('') == 'running' %}{% set pass_count = pass_count + 1 %}{% else %}{% set fail_count = fail_count + 1 %}{% endif %}
+
+| Category | Count |
+|----------|-------|
+| **PASS** | {{ pass_count }} |
+| **FAIL** | {{ fail_count }} |
+| **REVIEW** | {{ review_count }} |
+| **Total Checks** | {{ pass_count + fail_count + review_count }} |
+
+**Compliance Rate**: {{ ((pass_count * 100) / (pass_count + fail_count + review_count)) | round(1) if (pass_count + fail_count + review_count) > 0 else 0 }}%
+
+---
+
+## SSH Hardening Status
+
+### Configuration Settings
+
+| Setting | Expected | Actual | Status |
+|---------|----------|--------|--------|
+| PermitRootLogin | no | {{ ssh_config.PermitRootLogin | default('unknown') }} | {% if ssh_config.PermitRootLogin | default('') == 'no' %}**PASS**{% elif ssh_config.PermitRootLogin | default('') == 'unknown' %}UNKNOWN{% else %}**FAIL**{% endif %} |
+| PasswordAuthentication | no | {{ ssh_config.PasswordAuth | default('unknown') }} | {% if ssh_config.PasswordAuth | default('') == 'no' %}**PASS**{% elif ssh_config.PasswordAuth | default('') == 'unknown' %}UNKNOWN{% else %}**FAIL**{% endif %} |
+| PubkeyAuthentication | yes | {{ ssh_config.PubkeyAuth | default('unknown') }} | {% if ssh_config.PubkeyAuth | default('') == 'yes' %}**PASS**{% elif ssh_config.PubkeyAuth | default('') == 'unknown' %}UNKNOWN{% else %}**FAIL**{% endif %} |
+| PermitEmptyPasswords | no | {{ ssh_config.PermitEmptyPasswords | default('unknown') }} | {% if ssh_config.PermitEmptyPasswords | default('') == 'no' %}**PASS**{% elif ssh_config.PermitEmptyPasswords | default('') == 'unknown' %}UNKNOWN{% else %}**FAIL**{% endif %} |
+| MaxAuthTries | <= 4 | {{ ssh_config.MaxAuthTries | default('unknown') }} | {% if (ssh_config.MaxAuthTries | default(99) | int) <= 4 %}**PASS**{% else %}**FAIL**{% endif %} |
+| X11Forwarding | no | {{ ssh_config.X11Forwarding | default('unknown') }} | {% if ssh_config.X11Forwarding | default('') == 'no' %}**PASS**{% else %}REVIEW{% endif %} |
+
+### Key Algorithms
+
+| Type | Configured Algorithms |
+|------|----------------------|
+| PubkeyAcceptedAlgorithms | {{ ssh_config.PubkeyAcceptedAlgorithms | default('Not configured') }} |
+| HostKeyAlgorithms | {{ ssh_config.HostKeyAlgorithms | default('Not configured') }} |
+| KexAlgorithms | {{ ssh_config.KexAlgorithms | default('Not configured') }} |
+| Ciphers | {{ ssh_config.Ciphers | default('Not configured') }} |
+| MACs | {{ ssh_config.MACs | default('Not configured') }} |
+
+---
+
+## SELinux Status
+
+| Item | Value | Status |
+|------|-------|--------|
+| **Mode** | {{ selinux_mode | default('unknown') }} | {% if selinux_mode | default('') == 'enforcing' %}**PASS**{% elif selinux_mode | default('') == 'permissive' %}**REVIEW** (Should be Enforcing){% else %}**FAIL** (Disabled){% endif %} |
+| **Policy** | {{ selinux_policy | default('unknown') }} | - |
+| **Config File** | {{ selinux_config_mode | default('unknown') }} | {% if selinux_config_mode | default('') == 'enforcing' %}**PASS**{% else %}**REVIEW**{% endif %} |
+
+{% if selinux_mode | default('') != 'enforcing' %}
+> **Warning**: SELinux is not in enforcing mode. This is a security risk and may cause compliance failures.
+{% endif %}
+
+---
+
+## Audit System Status
+
+| Item | Value | Status |
+|------|-------|--------|
+| **auditd Service** | {{ auditd_status | default('unknown') }} | {% if auditd_status | default('') == 'running' %}**PASS**{% else %}**FAIL**{% endif %} |
+| **Rules Loaded** | {{ audit_rules_count | default(0) }} | {% if (audit_rules_count | default(0) | int) > 0 %}**PASS**{% else %}**FAIL** (No rules){% endif %} |
+| **Log File** | {{ audit_log_path | default('/var/log/audit/audit.log') }} | - |
+
+### Key Audit Rules
+
+{% if audit_rules is defined and audit_rules | length > 0 %}
+| Rule | Type |
+|------|------|
+{% for rule in audit_rules[:10] %}
+| `{{ rule }}` | - |
+{% endfor %}
+{% if audit_rules | length > 10 %}
+| ... and {{ audit_rules | length - 10 }} more rules | - |
+{% endif %}
+{% else %}
+> No audit rules information available.
+{% endif %}
+
+---
+
+## Firewall Status
+
+| Item | Value | Status |
+|------|-------|--------|
+| **Firewall Service** | {{ firewall_service | default('nftables/firewalld') }} | - |
+| **Status** | {{ firewall_status | default('unknown') }} | {% if firewall_status | default('') == 'running' %}**PASS**{% else %}**FAIL**{% endif %} |
+
+{% if firewall_rules is defined and firewall_rules | length > 0 %}
+### Open Ports
+
+| Port | Protocol | Service |
+|------|----------|---------|
+{% for rule in firewall_rules[:10] %}
+| {{ rule.port | default('N/A') }} | {{ rule.protocol | default('tcp') }} | {{ rule.service | default('unknown') }} |
+{% endfor %}
+{% endif %}
+
+---
+
+## PAM Configuration
+
+| Item | Status |
+|------|--------|
+| **pam_faillock configured** | {{ 'PASS' if pam_faillock_enabled | default(false) else 'FAIL' }} |
+| **pam_pwquality configured** | {{ 'PASS' if pam_pwquality_enabled | default(false) else 'FAIL' }} |
+
+{% if pam_password_policy is defined %}
+### Password Policy
+
+| Setting | Value |
+|---------|-------|
+| Minimum Length | {{ pam_password_policy.minlen | default('Not set') }} |
+| Require Digits | {{ pam_password_policy.dcredit | default('Not set') }} |
+| Require Uppercase | {{ pam_password_policy.ucredit | default('Not set') }} |
+| Require Special | {{ pam_password_policy.ocredit | default('Not set') }} |
+{% endif %}
+
+---
+
+## Recommendations
+
+{% if fail_count > 0 %}
+### Critical Issues (Must Fix)
+
+{% if ssh_config.PermitRootLogin | default('') != 'no' %}
+1. **Disable root login via SSH**
+   - Current: `PermitRootLogin {{ ssh_config.PermitRootLogin | default('yes') }}`
+   - Fix: Set `PermitRootLogin no` in `/etc/ssh/sshd_config`
+{% endif %}
+
+{% if ssh_config.PasswordAuth | default('') != 'no' %}
+2. **Disable password authentication**
+   - Current: `PasswordAuthentication {{ ssh_config.PasswordAuth | default('yes') }}`
+   - Fix: Set `PasswordAuthentication no` in `/etc/ssh/sshd_config`
+   - Prerequisite: Ensure SSH keys are configured for all users
+{% endif %}
+
+{% if selinux_mode | default('') == 'disabled' %}
+3. **Enable SELinux**
+   - Current: Disabled
+   - Fix: Set `SELINUX=enforcing` in `/etc/selinux/config` and reboot
+   - Warning: Test in permissive mode first
+{% endif %}
+
+{% if auditd_status | default('') != 'running' %}
+4. **Enable auditd**
+   - Current: Not running
+   - Fix: `systemctl enable --now auditd`
+{% endif %}
+
+{% if firewall_status | default('') != 'running' %}
+5. **Enable firewall**
+   - Current: Not running
+   - Fix: `systemctl enable --now nftables` or `firewalld`
+{% endif %}
+
+{% else %}
+No critical issues found. System meets baseline security requirements.
+{% endif %}
+
+{% if review_count > 0 %}
+### Items Requiring Review
+
+{% if selinux_mode | default('') == 'permissive' %}
+- **SELinux in Permissive Mode**: Review audit logs and consider switching to Enforcing
+{% endif %}
+
+{% if ssh_config.X11Forwarding | default('') == 'yes' %}
+- **X11 Forwarding Enabled**: Evaluate if this is required for your use case
+{% endif %}
+
+{% endif %}
+
+---
+
+## Compliance Standards Reference
+
+This report covers the following compliance requirements:
+
+| Standard | Sections |
+|----------|----------|
+| CIS Benchmark | 5.2.x (SSH), 4.1.x (Audit), 4.2.x (Logging) |
+| NIST SP 800-53 | AC-17, AU-2, AU-12, SC-8 |
+| RHEL STIG | V-230527, V-230529, V-230530 |
+
+---
+
+## Appendix: Verification Commands
+
+```bash
+# SSH Configuration
+sshd -T | grep -E 'permitrootlogin|passwordauthentication|pubkeyauthentication'
+
+# SELinux Status
+getenforce
+cat /etc/selinux/config | grep ^SELINUX=
+
+# Audit Status
+systemctl status auditd
+auditctl -l | wc -l
+
+# Firewall Status
+systemctl status nftables firewalld 2>/dev/null | grep Active
+nft list ruleset | head -20
+```
+
+---
+
+**Report Generated**: {{ ansible_date_time.iso8601 }}
+**Next Scheduled Audit**: {{ next_audit_date | default('Not scheduled') }}

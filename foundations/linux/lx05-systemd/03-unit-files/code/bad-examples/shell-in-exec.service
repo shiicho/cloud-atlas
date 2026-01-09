@@ -1,0 +1,57 @@
+# /etc/systemd/system/bad-example-shell.service
+#
+# =====================================================
+# ANTI-PATTERN: Complex shell commands in ExecStart
+# DO NOT USE THIS IN PRODUCTION!
+# =====================================================
+#
+# This file demonstrates what NOT to do with ExecStart
+
+[Unit]
+Description=Bad Example - Complex Shell in ExecStart (DO NOT USE!)
+
+[Service]
+Type=simple
+User=appuser
+
+# =====================================================
+# BAD: Complex shell pipeline in ExecStart
+# =====================================================
+#
+# Problems with this approach:
+# 1. Process tracking is broken (systemd tracks sh, not the app)
+# 2. Signal handling is broken (SIGTERM goes to sh, not app)
+# 3. Debugging is difficult (which part failed?)
+# 4. Exit codes are confusing (sh exit code vs app exit code)
+#
+ExecStart=/bin/sh -c 'cd /opt/app && source ./venv/bin/activate && python server.py 2>&1 | tee /var/log/app.log | grep -v DEBUG'
+
+[Install]
+WantedBy=multi-user.target
+
+# =====================================================
+# CORRECT APPROACH: Use a wrapper script
+# =====================================================
+#
+# 1. Create /opt/app/start.sh:
+#
+#    #!/bin/bash
+#    cd /opt/app
+#    source ./venv/bin/activate
+#    exec python server.py
+#
+# 2. Make it executable:
+#    chmod +x /opt/app/start.sh
+#
+# 3. In Unit file:
+#    ExecStart=/opt/app/start.sh
+#
+# 4. For logging, use journal:
+#    StandardOutput=journal
+#    StandardError=journal
+#
+# Benefits:
+# - systemd correctly tracks the Python process
+# - Signals are properly delivered
+# - Exit codes are meaningful
+# - Easy to debug and modify

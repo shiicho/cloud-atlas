@@ -1,0 +1,205 @@
+#!/usr/sbin/nft -f
+# =============================================================================
+# nftables Rules - Migrated and Optimized from iptables
+# =============================================================================
+#
+# Description: Optimized nftables ruleset translated from iptables-rules.txt
+# Purpose: Demonstrate proper nftables migration with improvements
+#
+# Key Improvements Over iptables:
+#   1. Uses inet family (IPv4 + IPv6 unified)
+#   2. Uses sets for IP management
+#   3. Cleaner syntax with { } for multiple values
+#   4. Better comments with comment keyword
+#   5. Native rate limiting
+#
+# Original: iptables-rules.txt
+# Generated: Manual optimization after iptables-restore-translate
+#
+# Usage:
+#   1. Validate: nft -c -f nftables-rules.nft
+#   2. Apply:    nft -f nftables-rules.nft
+#   3. Verify:   nft list ruleset
+#
+# =============================================================================
+
+# Clear existing rules
+flush ruleset
+
+# =============================================================================
+# Table: inet filter (IPv4 + IPv6 unified - improvement over iptables!)
+# =============================================================================
+table inet filter {
+
+    # -------------------------------------------------------------------------
+    # Set: trusted_ssh - IPs allowed to access SSH
+    # Improvement: Easy to manage, can be modified at runtime
+    # -------------------------------------------------------------------------
+    set trusted_ssh {
+        type ipv4_addr
+        flags interval
+        comment "IPs allowed to access SSH"
+        elements = {
+            10.0.0.0/8,
+            172.16.0.0/12,
+            192.168.0.0/16
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # Set: db_clients - IPs allowed to access databases
+    # -------------------------------------------------------------------------
+    set db_clients {
+        type ipv4_addr
+        comment "IPs allowed to access database ports"
+        elements = {
+            192.168.1.100
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # Chain: input
+    # Original iptables chain policy: DROP
+    # -------------------------------------------------------------------------
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # =================================================================
+        # Connection Tracking
+        # Original: -m state --state ESTABLISHED,RELATED -j ACCEPT
+        # Improved: ct state (native nftables syntax)
+        # =================================================================
+        ct state established,related accept comment "Allow established/related"
+        ct state invalid drop comment "Drop invalid packets"
+
+        # =================================================================
+        # Loopback
+        # Original: -i lo -j ACCEPT
+        # =================================================================
+        iif "lo" accept comment "Allow loopback"
+
+        # =================================================================
+        # SSH Access (from trusted networks)
+        # Original: Multiple -s rules for each network
+        # Improved: Single rule with set reference
+        # =================================================================
+        ip saddr @trusted_ssh tcp dport 22 accept comment "SSH from trusted networks"
+
+        # =================================================================
+        # Web Services
+        # Original: -m multiport --dports 80,443
+        # Improved: Native { } syntax
+        # =================================================================
+        tcp dport { 80, 443 } accept comment "HTTP/HTTPS"
+
+        # =================================================================
+        # Application Ports
+        # Original: Separate rules for 8080 and 3000:3100
+        # Improved: Can combine or keep separate for clarity
+        # =================================================================
+        tcp dport 8080 accept comment "HTTP Alt"
+        tcp dport 3000-3100 accept comment "Node.js apps"
+
+        # =================================================================
+        # ICMP
+        # Original: Separate rules for each type
+        # Improved: Combined with { } and rate limiting added
+        # =================================================================
+        ip protocol icmp icmp type {
+            echo-request,
+            echo-reply,
+            destination-unreachable
+        } limit rate 10/second accept comment "ICMP essential types (rate limited)"
+
+        # IPv6 ICMPv6 (not in original iptables - new addition!)
+        ip6 nexthdr icmpv6 icmpv6 type {
+            echo-request,
+            echo-reply,
+            nd-neighbor-solicit,
+            nd-neighbor-advert
+        } accept comment "ICMPv6 essential (NDP required)"
+
+        # =================================================================
+        # Database Access
+        # Original: Separate rules for each IP and port
+        # Improved: Set-based with combined ports
+        # =================================================================
+        ip saddr @db_clients tcp dport { 3306, 5432 } accept comment "Database from allowed clients"
+
+        # =================================================================
+        # Logging
+        # Original: -m limit --limit 3/min -j LOG
+        # Improved: Native rate limiting
+        # =================================================================
+        log prefix "[nftables DROP] " limit rate 3/minute comment "Log dropped (rate limited)"
+
+        # =================================================================
+        # Default Drop
+        # Original: -j DROP (explicit, chain policy was also DROP)
+        # Note: Implicit with policy drop, counter added for monitoring
+        # =================================================================
+        counter drop comment "Drop all other traffic"
+    }
+
+    # -------------------------------------------------------------------------
+    # Chain: forward
+    # Original iptables: -A FORWARD -j DROP
+    # -------------------------------------------------------------------------
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # Explicit drop with logging (improvement: visibility)
+        log prefix "[nftables FORWARD DROP] " limit rate 1/minute
+        counter drop comment "No forwarding allowed"
+    }
+
+    # -------------------------------------------------------------------------
+    # Chain: output
+    # Original iptables: policy ACCEPT (no explicit rules)
+    # -------------------------------------------------------------------------
+    chain output {
+        type filter hook output priority 0; policy accept;
+
+        # No restrictions on outbound by default
+        # Uncomment below for high-security environments:
+        # ct state established,related accept
+        # tcp dport { 80, 443 } accept
+        # udp dport { 53, 123 } accept
+        # drop
+    }
+}
+
+# =============================================================================
+# Migration Notes
+# =============================================================================
+#
+# Changes from iptables to nftables:
+#
+# | iptables                              | nftables                           |
+# |---------------------------------------|-------------------------------------|
+# | -m state --state ESTABLISHED          | ct state established               |
+# | -i lo                                 | iif "lo"                           |
+# | -s 10.0.0.0/8                         | ip saddr 10.0.0.0/8                |
+# | -p tcp --dport 22                     | tcp dport 22                       |
+# | -m multiport --dports 80,443          | tcp dport { 80, 443 }              |
+# | --dport 3000:3100                     | dport 3000-3100                    |
+# | -j ACCEPT                             | accept                             |
+# | -j DROP                               | drop                               |
+# | -j LOG --log-prefix "..."             | log prefix "..."                   |
+# | -m limit --limit 3/min                | limit rate 3/minute                |
+#
+# Improvements made during migration:
+#
+# 1. Unified IPv4/IPv6 (inet family instead of separate iptables/ip6tables)
+# 2. IP sets for easier management (can add/remove IPs at runtime)
+# 3. Combined similar rules where appropriate
+# 4. Added ICMPv6 rules for IPv6 support
+# 5. Added counters for monitoring
+# 6. Better comments for documentation
+#
+# Runtime set management:
+#   nft add element inet filter trusted_ssh '{ 203.0.113.50 }'
+#   nft delete element inet filter trusted_ssh '{ 203.0.113.50 }'
+#   nft list set inet filter trusted_ssh
+#
+# =============================================================================

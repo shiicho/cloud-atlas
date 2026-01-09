@@ -1,0 +1,85 @@
+# =============================================================================
+# 20-ssh-config.rules - SSH Configuration Monitoring
+# =============================================================================
+# Purpose: Track all changes to SSH configuration
+# Scenario: "Ghost Configuration Change" - unauthorized sshd_config modification
+# Course: LX08-SECURITY Lesson 07 - auditd
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SSH Server Configuration
+# -----------------------------------------------------------------------------
+
+# Main SSH daemon configuration file
+# This is THE critical file for SSH security
+# Key settings: PermitRootLogin, PasswordAuthentication, etc.
+-w /etc/ssh/sshd_config -p wa -k ssh_config
+
+# Drop-in configuration directory (RHEL 8+, modern systems)
+# Configurations here override main sshd_config
+-w /etc/ssh/sshd_config.d/ -p wa -k ssh_config
+
+# SSH moduli (Diffie-Hellman parameters)
+# Changes here could weaken key exchange
+-w /etc/ssh/moduli -p wa -k ssh_config
+
+# -----------------------------------------------------------------------------
+# SSH Host Keys
+# -----------------------------------------------------------------------------
+
+# Host keys identify the server
+# Unauthorized changes could indicate key compromise or MITM setup
+-w /etc/ssh/ssh_host_ed25519_key -p wa -k ssh_hostkeys
+-w /etc/ssh/ssh_host_ed25519_key.pub -p wa -k ssh_hostkeys
+-w /etc/ssh/ssh_host_rsa_key -p wa -k ssh_hostkeys
+-w /etc/ssh/ssh_host_rsa_key.pub -p wa -k ssh_hostkeys
+-w /etc/ssh/ssh_host_ecdsa_key -p wa -k ssh_hostkeys
+-w /etc/ssh/ssh_host_ecdsa_key.pub -p wa -k ssh_hostkeys
+
+# -----------------------------------------------------------------------------
+# SSH Client Configuration (Optional)
+# -----------------------------------------------------------------------------
+
+# System-wide SSH client configuration
+# Uncomment if you need to track client config changes
+# Note: This may generate many events in busy environments
+# -w /etc/ssh/ssh_config -p wa -k ssh_client_config
+# -w /etc/ssh/ssh_config.d/ -p wa -k ssh_client_config
+
+# -----------------------------------------------------------------------------
+# Authorized Keys - Root
+# -----------------------------------------------------------------------------
+
+# Root authorized_keys is critical - unauthorized changes grant root access
+-w /root/.ssh/ -p wa -k ssh_authorized_keys_root
+-w /root/.ssh/authorized_keys -p wa -k ssh_authorized_keys_root
+-w /root/.ssh/authorized_keys2 -p wa -k ssh_authorized_keys_root
+
+# -----------------------------------------------------------------------------
+# Authorized Keys - Service Accounts (Optional)
+# -----------------------------------------------------------------------------
+
+# Add monitoring for specific service accounts as needed
+# Example for common service users:
+# -w /home/deploy/.ssh/authorized_keys -p wa -k ssh_authorized_keys_deploy
+# -w /home/ansible/.ssh/authorized_keys -p wa -k ssh_authorized_keys_ansible
+
+# -----------------------------------------------------------------------------
+# SSH Known Hosts
+# -----------------------------------------------------------------------------
+
+# System-wide known hosts
+# Changes could indicate an attempt to accept rogue servers
+-w /etc/ssh/ssh_known_hosts -p wa -k ssh_known_hosts
+
+# Root known hosts
+-w /root/.ssh/known_hosts -p wa -k ssh_known_hosts_root
+
+# -----------------------------------------------------------------------------
+# SSH CA Keys (Certificate Authentication)
+# -----------------------------------------------------------------------------
+
+# If using SSH certificate authentication
+# Unauthorized CA changes could allow unauthorized access
+-w /etc/ssh/trusted_user_ca_keys -p wa -k ssh_ca
+-w /etc/ssh/revoked_keys -p wa -k ssh_ca

@@ -1,0 +1,207 @@
+#!/usr/sbin/nft -f
+# =============================================================================
+# Multi-Zone Network Firewall Rules
+# Three-Tier Architecture: Web -> App -> DB
+# =============================================================================
+#
+# This file contains the complete nftables ruleset for the three-zone
+# network architecture. It is designed for reference and documentation.
+#
+# In practice, the setup.sh script applies rules directly to each namespace.
+# This file shows the combined view of all zone rules.
+#
+# Security Model:
+#   - Default deny (policy drop)
+#   - Stateful firewall (ct state tracking)
+#   - Minimum privilege (only required ports open)
+#   - Zone isolation (App only from Web, DB only from App)
+#
+# =============================================================================
+
+# =============================================================================
+# WEB ZONE RULES (zone-web namespace)
+# =============================================================================
+#
+# Purpose: Public-facing web servers
+# Allowed inbound:
+#   - HTTP (80) from anywhere
+#   - HTTPS (443) from anywhere
+#   - SSH (22) from management network only
+# Allowed outbound: All (for package updates, API calls, etc.)
+#
+# Apply with: sudo ip netns exec zone-web nft -f web-zone.nft
+# =============================================================================
+
+# --- BEGIN zone-web rules ---
+# flush ruleset
+#
+# table inet filter {
+#     chain input {
+#         type filter hook input priority 0; policy drop;
+#
+#         # Connection tracking - CRITICAL, must be first rule
+#         ct state established,related accept comment "Allow established/related connections"
+#         ct state invalid drop comment "Drop invalid packets"
+#
+#         # Loopback interface - always allow
+#         iif "lo" accept comment "Allow loopback traffic"
+#
+#         # Web services - open to internet
+#         tcp dport 80 accept comment "HTTP - public web traffic"
+#         tcp dport 443 accept comment "HTTPS - secure web traffic"
+#
+#         # Management access - restricted to internal network
+#         ip saddr 10.100.0.0/16 tcp dport 22 accept comment "SSH from management network"
+#
+#         # Diagnostics
+#         icmp type echo-request accept comment "ICMP ping for health checks"
+#
+#         # Logging for dropped packets (rate limited to prevent log flood)
+#         log prefix "[zone-web DROP] " limit rate 3/minute comment "Log dropped packets"
+#     }
+#
+#     chain output {
+#         type filter hook output priority 0; policy accept;
+#     }
+# }
+# --- END zone-web rules ---
+
+
+# =============================================================================
+# APP ZONE RULES (zone-app namespace)
+# =============================================================================
+#
+# Purpose: Internal application servers (APIs, business logic)
+# Allowed inbound:
+#   - Port 8080 ONLY from Web Zone (10.100.1.10)
+#   - SSH (22) from management network only
+# Allowed outbound: All (for DB connections, external APIs)
+#
+# Security Note:
+#   Direct internet access to App Zone is BLOCKED
+#   Only Web Zone can reach App Zone on port 8080
+#
+# Apply with: sudo ip netns exec zone-app nft -f app-zone.nft
+# =============================================================================
+
+# --- BEGIN zone-app rules ---
+# flush ruleset
+#
+# table inet filter {
+#     chain input {
+#         type filter hook input priority 0; policy drop;
+#
+#         ct state established,related accept comment "Allow established/related"
+#         ct state invalid drop comment "Drop invalid packets"
+#
+#         iif "lo" accept comment "Allow loopback"
+#
+#         # Application port - ONLY from Web Zone
+#         # This is the key security rule: App Zone is isolated from direct internet access
+#         ip saddr 10.100.1.10 tcp dport 8080 accept comment "App service from Web Zone ONLY"
+#
+#         # Management access
+#         ip saddr 10.100.0.0/16 tcp dport 22 accept comment "SSH from management network"
+#
+#         # Diagnostics
+#         icmp type echo-request accept comment "ICMP ping"
+#
+#         log prefix "[zone-app DROP] " limit rate 3/minute
+#     }
+#
+#     chain output {
+#         type filter hook output priority 0; policy accept;
+#     }
+# }
+# --- END zone-app rules ---
+
+
+# =============================================================================
+# DB ZONE RULES (zone-db namespace)
+# =============================================================================
+#
+# Purpose: Database servers (MySQL, PostgreSQL, etc.)
+# Allowed inbound:
+#   - Port 3306 ONLY from App Zone (10.100.1.20)
+#   - SSH (22) from management network only
+# Allowed outbound: Limited (typically only for replication)
+#
+# Security Note:
+#   - Direct internet access to DB Zone is BLOCKED
+#   - Web Zone CANNOT directly access DB Zone
+#   - Only App Zone can reach DB Zone on port 3306
+#   - This prevents SQL injection attacks from reaching the database directly
+#
+# Apply with: sudo ip netns exec zone-db nft -f db-zone.nft
+# =============================================================================
+
+# --- BEGIN zone-db rules ---
+# flush ruleset
+#
+# table inet filter {
+#     chain input {
+#         type filter hook input priority 0; policy drop;
+#
+#         ct state established,related accept comment "Allow established/related"
+#         ct state invalid drop comment "Drop invalid packets"
+#
+#         iif "lo" accept comment "Allow loopback"
+#
+#         # Database port - ONLY from App Zone
+#         # Critical: Web Zone is explicitly NOT allowed to connect to DB directly
+#         ip saddr 10.100.1.20 tcp dport 3306 accept comment "MySQL from App Zone ONLY"
+#
+#         # Management access
+#         ip saddr 10.100.0.0/16 tcp dport 22 accept comment "SSH from management network"
+#
+#         # Diagnostics
+#         icmp type echo-request accept comment "ICMP ping"
+#
+#         log prefix "[zone-db DROP] " limit rate 3/minute
+#     }
+#
+#     chain output {
+#         type filter hook output priority 0; policy accept;
+#     }
+# }
+# --- END zone-db rules ---
+
+
+# =============================================================================
+# TRAFFIC FLOW SUMMARY
+# =============================================================================
+#
+#   Source          Destination     Port    Status    Reason
+#   ──────────────  ──────────────  ──────  ────────  ─────────────────────
+#   Internet        Web Zone        80/443  ALLOW     Public web access
+#   Internet        App Zone        8080    DENY      Not public facing
+#   Internet        DB Zone         3306    DENY      Not public facing
+#   Web Zone        App Zone        8080    ALLOW     Application traffic
+#   Web Zone        DB Zone         3306    DENY      Must go through App
+#   App Zone        DB Zone         3306    ALLOW     Database queries
+#   App Zone        Web Zone        80      ALLOW     (via established)
+#   DB Zone         App Zone        3306    ALLOW     (via established)
+#   Management      All Zones       22      ALLOW     Administrative access
+#
+# =============================================================================
+
+
+# =============================================================================
+# EXTENDING THE RULES
+# =============================================================================
+#
+# To add a new rule (example: allow Redis from App Zone to Cache Zone):
+#
+#   # In cache zone rules:
+#   ip saddr 10.100.1.20 tcp dport 6379 accept comment "Redis from App Zone"
+#
+# To add IP-based rate limiting (example: SSH brute-force protection):
+#
+#   tcp dport 22 ct state new limit rate 3/minute accept comment "SSH rate limit"
+#
+# To add a whitelist set:
+#
+#   define trusted_ips = { 10.0.0.0/8, 192.168.0.0/16 }
+#   ip saddr $trusted_ips accept comment "Trusted networks"
+#
+# =============================================================================

@@ -1,0 +1,25 @@
+# =============================================================================
+# myapp-logrotate.timer - Log Rotation Timer for MyApp
+# =============================================================================
+# Runs log rotation daily at 04:00
+# Uses Realtime timer (OnCalendar) for time-based execution
+# =============================================================================
+
+[Unit]
+Description=MyApp Log Rotation Timer
+
+[Timer]
+# Run daily at 04:00
+OnCalendar=*-*-* 04:00:00
+
+# IMPORTANT: Catch up on missed runs (e.g., server was down)
+Persistent=true
+
+# Random delay to prevent thundering herd (if multiple servers)
+RandomizedDelaySec=30min
+
+# Accuracy: 1 minute is fine for daily tasks
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

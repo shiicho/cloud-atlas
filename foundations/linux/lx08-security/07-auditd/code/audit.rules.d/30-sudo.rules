@@ -1,0 +1,118 @@
+# =============================================================================
+# 30-sudo.rules - sudo and Administrative Actions Monitoring
+# =============================================================================
+# Purpose: Track all sudo configuration changes and privileged command usage
+# Course: LX08-SECURITY Lesson 07 - auditd
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# sudo Configuration Files
+# -----------------------------------------------------------------------------
+
+# Main sudoers file - grants sudo privileges
+# Unauthorized changes here could grant attacker root access
+-w /etc/sudoers -p wa -k sudo_config
+
+# Drop-in sudoers directory
+# Each file here can grant sudo access
+-w /etc/sudoers.d/ -p wa -k sudo_config
+
+# sudoers temp file (visudo editing)
+-w /etc/sudoers.tmp -p wa -k sudo_config
+
+# -----------------------------------------------------------------------------
+# sudo Command Execution
+# -----------------------------------------------------------------------------
+
+# Track every sudo invocation
+# The -p x flag captures execution only (not read/write)
+-w /usr/bin/sudo -p x -k sudo_usage
+
+# sudoedit (secure editing via sudo)
+-w /usr/bin/sudoedit -p x -k sudo_usage
+
+# -----------------------------------------------------------------------------
+# su Command Execution
+# -----------------------------------------------------------------------------
+
+# Track su usage (switch user)
+-w /usr/bin/su -p x -k su_usage
+
+# -----------------------------------------------------------------------------
+# User Administration Commands
+# -----------------------------------------------------------------------------
+
+# User management
+-w /usr/sbin/useradd -p x -k user_admin
+-w /usr/sbin/userdel -p x -k user_admin
+-w /usr/sbin/usermod -p x -k user_admin
+
+# Group management
+-w /usr/sbin/groupadd -p x -k user_admin
+-w /usr/sbin/groupdel -p x -k user_admin
+-w /usr/sbin/groupmod -p x -k user_admin
+
+# Password management
+-w /usr/bin/passwd -p x -k password_change
+-w /usr/bin/chpasswd -p x -k password_change
+-w /usr/sbin/chpasswd -p x -k password_change
+
+# Account locking/unlocking
+-w /usr/sbin/usermod -p x -k account_modify
+
+# -----------------------------------------------------------------------------
+# Shadow Password Tools
+# -----------------------------------------------------------------------------
+
+# Tools that modify shadow password file
+-w /usr/bin/gpasswd -p x -k shadow_tools
+-w /usr/bin/chage -p x -k shadow_tools
+-w /usr/sbin/vipw -p x -k shadow_tools
+-w /usr/sbin/vigr -p x -k shadow_tools
+
+# -----------------------------------------------------------------------------
+# Polkit (PolicyKit) Administration
+# -----------------------------------------------------------------------------
+
+# Polkit is another privilege escalation mechanism
+-w /usr/bin/pkexec -p x -k polkit_usage
+-w /etc/polkit-1/ -p wa -k polkit_config
+
+# -----------------------------------------------------------------------------
+# Cron Administration
+# -----------------------------------------------------------------------------
+
+# crontab command tracks user cron modifications
+-w /usr/bin/crontab -p x -k cron_admin
+
+# at command for one-time scheduled tasks
+-w /usr/bin/at -p x -k at_admin
+-w /usr/bin/atq -p x -k at_admin
+-w /usr/bin/atrm -p x -k at_admin
+
+# -----------------------------------------------------------------------------
+# SELinux Administration
+# -----------------------------------------------------------------------------
+
+# SELinux mode changes
+-w /usr/sbin/setenforce -p x -k selinux_admin
+-w /usr/sbin/setsebool -p x -k selinux_admin
+-w /usr/sbin/semanage -p x -k selinux_admin
+-w /usr/sbin/restorecon -p x -k selinux_admin
+-w /usr/sbin/chcon -p x -k selinux_admin
+
+# SELinux configuration
+-w /etc/selinux/config -p wa -k selinux_config
+
+# -----------------------------------------------------------------------------
+# auditd Self-Protection
+# -----------------------------------------------------------------------------
+
+# Prevent tampering with audit rules
+-w /etc/audit/ -p wa -k audit_config
+-w /etc/audit/rules.d/ -p wa -k audit_config
+-w /var/log/audit/ -p wa -k audit_logs
+
+# auditctl command - modifying audit rules
+-w /sbin/auditctl -p x -k audit_admin
+-w /sbin/auditd -p x -k audit_admin

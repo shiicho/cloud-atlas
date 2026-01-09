@@ -1,0 +1,35 @@
+# =============================================================================
+# myapp-health.service - Health Check Service for MyApp
+# =============================================================================
+# Triggered by myapp-health.timer to check application health
+# Type=oneshot for short-lived tasks
+# =============================================================================
+
+[Unit]
+Description=MyApp Health Check
+# Only run if main service is active
+After=myapp.service
+Requires=myapp.service
+
+[Service]
+Type=oneshot
+User=myapp
+Group=myapp
+
+ExecStart=/opt/myapp/bin/health-check
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myapp-health
+
+# Quick timeout for health checks
+TimeoutStartSec=30
+
+# Security (inherit most from main service concept)
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadOnlyPaths=/opt/myapp
+ReadWritePaths=/var/log/myapp /var/lib/myapp

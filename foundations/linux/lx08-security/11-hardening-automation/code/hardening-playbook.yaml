@@ -1,0 +1,350 @@
+---
+# =============================================================================
+# SSH Hardening Playbook
+# =============================================================================
+# Purpose: Automated SSH security hardening following CIS Benchmark
+# Version: 1.0
+# Author: Security Team
+# Last Updated: 2026-01-04
+#
+# Usage:
+#   # Syntax check
+#   ansible-playbook hardening-playbook.yaml --syntax-check
+#
+#   # Dry run (check mode)
+#   ansible-playbook hardening-playbook.yaml --check --diff
+#
+#   # Execute
+#   ansible-playbook hardening-playbook.yaml
+#
+# Reference:
+#   - CIS Benchmark for RHEL 9
+#   - OpenSSH Best Practices 2025
+#   - cloud-atlas/foundations/linux/security/02-ssh-hardening/
+# =============================================================================
+
+- name: SSH Security Hardening
+  hosts: all
+  become: yes
+
+  # ===========================================================================
+  # Variables - Customize these for your environment
+  # ===========================================================================
+  vars:
+    # SSH Authentication Settings
+    ssh_permit_root_login: "no"
+    ssh_password_authentication: "no"
+    ssh_permit_empty_passwords: "no"
+    ssh_pubkey_authentication: "yes"
+    ssh_hostbased_authentication: "no"
+    ssh_ignore_rhosts: "yes"
+
+    # SSH Connection Settings
+    ssh_max_auth_tries: 3
+    ssh_login_grace_time: 60
+    ssh_max_startups: "10:30:60"
+    ssh_client_alive_interval: 300
+    ssh_client_alive_count_max: 2
+
+    # SSH Logging
+    ssh_log_level: "VERBOSE"
+    ssh_syslog_facility: "AUTH"
+
+    # SSH Miscellaneous
+    ssh_x11_forwarding: "no"
+    ssh_print_last_log: "yes"
+    ssh_print_motd: "no"
+
+    # Backup settings
+    backup_config: yes
+
+  # ===========================================================================
+  # Handlers - Triggered only when tasks report changes
+  # ===========================================================================
+  handlers:
+    # Handler 1: Validate SSH configuration syntax
+    # This runs BEFORE restart to catch errors
+    - name: Validate SSH config
+      ansible.builtin.command: sshd -t
+      changed_when: false
+      listen: "validate and restart sshd"
+
+    # Handler 2: Restart SSH service
+    # Only runs if validation passes
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+      listen: "validate and restart sshd"
+
+  # ===========================================================================
+  # Pre-tasks - Safety checks before hardening
+  # ===========================================================================
+  pre_tasks:
+    - name: Verify SSH service exists
+      ansible.builtin.service_facts:
+
+    - name: Check SSH is running
+      ansible.builtin.assert:
+        that:
+          - "'sshd.service' in ansible_facts.services or 'ssh.service' in ansible_facts.services"
+        fail_msg: "SSH service not found. Is OpenSSH installed?"
+        success_msg: "SSH service found, proceeding with hardening."
+
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: /etc/ssh/backup
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+      when: backup_config | bool
+
+    - name: Backup current sshd_config
+      ansible.builtin.copy:
+        src: /etc/ssh/sshd_config
+        dest: "/etc/ssh/backup/sshd_config.{{ ansible_date_time.iso8601_basic }}"
+        remote_src: yes
+        mode: '0600'
+      when: backup_config | bool
+
+  # ===========================================================================
+  # Tasks - SSH Hardening Configuration
+  # ===========================================================================
+  tasks:
+    # -------------------------------------------------------------------------
+    # Authentication Settings
+    # -------------------------------------------------------------------------
+    - name: Disable root login
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin {{ ssh_permit_root_login }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - authentication
+        - cis
+
+    - name: Disable password authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication {{ ssh_password_authentication }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - authentication
+        - cis
+
+    - name: Disable empty passwords
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitEmptyPasswords'
+        line: 'PermitEmptyPasswords {{ ssh_permit_empty_passwords }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - authentication
+
+    - name: Enable public key authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication {{ ssh_pubkey_authentication }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - authentication
+
+    - name: Disable host-based authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?HostbasedAuthentication'
+        line: 'HostbasedAuthentication {{ ssh_hostbased_authentication }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - authentication
+
+    - name: Ignore rhosts
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?IgnoreRhosts'
+        line: 'IgnoreRhosts {{ ssh_ignore_rhosts }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - authentication
+
+    # -------------------------------------------------------------------------
+    # Connection Settings
+    # -------------------------------------------------------------------------
+    - name: Set max authentication tries
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?MaxAuthTries'
+        line: 'MaxAuthTries {{ ssh_max_auth_tries }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - connection
+
+    - name: Set login grace time
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?LoginGraceTime'
+        line: 'LoginGraceTime {{ ssh_login_grace_time }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - connection
+
+    - name: Set max startups
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?MaxStartups'
+        line: 'MaxStartups {{ ssh_max_startups }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - connection
+
+    - name: Set client alive interval
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?ClientAliveInterval'
+        line: 'ClientAliveInterval {{ ssh_client_alive_interval }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - connection
+
+    - name: Set client alive count max
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?ClientAliveCountMax'
+        line: 'ClientAliveCountMax {{ ssh_client_alive_count_max }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - connection
+
+    # -------------------------------------------------------------------------
+    # Logging Settings
+    # -------------------------------------------------------------------------
+    - name: Set log level
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?LogLevel'
+        line: 'LogLevel {{ ssh_log_level }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - logging
+
+    - name: Set syslog facility
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?SyslogFacility'
+        line: 'SyslogFacility {{ ssh_syslog_facility }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - logging
+
+    # -------------------------------------------------------------------------
+    # Miscellaneous Settings
+    # -------------------------------------------------------------------------
+    - name: Disable X11 forwarding
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?X11Forwarding'
+        line: 'X11Forwarding {{ ssh_x11_forwarding }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - misc
+
+    - name: Enable print last log
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PrintLastLog'
+        line: 'PrintLastLog {{ ssh_print_last_log }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - misc
+
+    - name: Disable MOTD
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PrintMotd'
+        line: 'PrintMotd {{ ssh_print_motd }}'
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - misc
+
+    # -------------------------------------------------------------------------
+    # Algorithm Settings (2025+ Recommendations)
+    # -------------------------------------------------------------------------
+    - name: Configure secure key algorithms
+      ansible.builtin.blockinfile:
+        path: /etc/ssh/sshd_config
+        marker: "# {mark} ANSIBLE MANAGED - Key Algorithms"
+        block: |
+          # Secure key algorithms (2025+ recommendations)
+          # Reference: https://infosec.mozilla.org/guidelines/openssh
+          PubkeyAcceptedAlgorithms ssh-ed25519,sk-ssh-ed25519@openssh.com,rsa-sha2-512,rsa-sha2-256
+          HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+          KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+          Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+          MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+        validate: 'sshd -t -f %s'
+      notify: validate and restart sshd
+      tags:
+        - ssh
+        - algorithms
+        - security
+
+  # ===========================================================================
+  # Post-tasks - Verification
+  # ===========================================================================
+  post_tasks:
+    - name: Verify SSH configuration
+      ansible.builtin.command: sshd -t
+      changed_when: false
+      register: sshd_verify
+
+    - name: Display verification result
+      ansible.builtin.debug:
+        msg: "SSH configuration verification: {{ 'PASSED' if sshd_verify.rc == 0 else 'FAILED' }}"
+
+    - name: Gather SSH configuration status
+      ansible.builtin.shell: |
+        sshd -T | grep -E 'permitrootlogin|passwordauthentication|pubkeyauthentication|maxauthtries'
+      register: ssh_status
+      changed_when: false
+
+    - name: Display SSH hardening status
+      ansible.builtin.debug:
+        msg: |
+          SSH Hardening Status:
+          {{ ssh_status.stdout_lines | join('\n') }}

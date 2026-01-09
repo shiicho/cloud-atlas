@@ -3,7 +3,7 @@
 > **目标**：掌握管道和文本处理命令，分析 Web 日志  
 > **前置**：[02 · 变量与文件系统](../02-filesystem/)  
 > **时间**：20-30 分钟  
-> **实战项目**：Web 日志 Top 分析（故障初查场景）
+> **实战项目**：Web 日志 Top 分析（故障初查场景）  
 
 ## 将学到的内容
 
@@ -178,7 +178,7 @@ sudo tail -100 /var/log/messages | cut -c1-15,45-
 
 ## Step 4 — 常见日志路径
 
-> 在日本 IT 公司做运维，经常需要分析各种日志。熟悉这些路径很重要。
+> 在日本 IT 公司做运维，经常需要分析各种日志。熟悉这些路径很重要。  
 
 | 路径 | 用途 |
 |------|------|
@@ -217,7 +217,7 @@ echo "模拟日志已创建: ~/bash-course/logs/access.log"
 
 ## Step 5 — 调试技巧
 
-> 🔧 **调试卡片**：`set -euo pipefail` 是 Bash 脚本的最佳实践。
+> 🔧 **调试卡片**：`set -euo pipefail` 是 Bash 脚本的最佳实践。  
 
 ### set -euo pipefail
 
@@ -266,7 +266,7 @@ bash ~/bash-course/pipefail-demo.sh
 
 ## Mini-Project：Web 日志 Top 分析
 
-> **场景**：网站出现故障时，运维需要快速分析访问日志，找出 Top IP 和 Top 路径。这是日本 IT 公司「障害対応」的基本功。
+> **场景**：网站出现故障时，运维需要快速分析访问日志，找出 Top IP 和 Top 路径。这是日本 IT 公司「障害対応」的基本功。  
 
 ```bash
 nano ~/bash-course/log-analyzer.sh
