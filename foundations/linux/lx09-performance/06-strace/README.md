@@ -1,4 +1,4 @@
-# 06 - strace 系统调用追踪
+# 06 - strace 系统调用追踪（System Call Tracing）
 
 > **目标**：掌握 strace 系统调用追踪技能，识别常见性能问题模式（syscall storms），学会从系统调用层面定位应用性能瓶颈  
 > **前置**：Lesson 01 USE Method、Lesson 05 Network Performance  

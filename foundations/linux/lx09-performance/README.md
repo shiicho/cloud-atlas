@@ -16,6 +16,26 @@
 
 ---
 
+## 版本兼容性
+
+| 工具 | 课程版本 | 当前最新 | 说明 |
+|------|----------|----------|------|
+| **sysstat** | 12.5+ | 12.7.6 (2024) | iostat、mpstat、pidstat |
+| **perf** | 5.4+ | 6.x (2025) | 内核自带性能分析器 |
+| **BCC tools** | 0.24+ | 0.31.0 (2025) | eBPF 工具集 |
+| **bpftrace** | 0.17+ | 0.22.0 (2025) | eBPF 追踪语言 |
+| **FlameGraph** | v1.0 | v1.0 (stable) | Brendan Gregg 火焰图脚本 |
+| **Kernel** | 4.20+ | 6.12 | PSI 需要 4.20+，eBPF 推荐 5.x+ |
+| **RHEL** | 8/9 | 9.5 | RHEL 8 支持至 2029 |
+| **Ubuntu** | 20.04+ | 24.04 LTS | 22.04/24.04 推荐 |
+
+**注意事项：**
+- PSI (Pressure Stall Information) 需要 Linux 4.20+ 内核
+- eBPF/BCC 工具在 RHEL 8.1+ 完整支持，推荐 RHEL 9
+- `net.ipv4.tcp_tw_recycle` 在 Linux 4.12+ 已移除
+
+---
+
 ## 课程大纲
 
 | 课号 | 标题 | 核心内容 | 状态 |

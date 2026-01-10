@@ -1,4 +1,4 @@
-# 07 - perf 性能分析器
+# 07 - perf 性能分析器（perf Profiler）
 
 > **目标**：掌握 Linux 内核自带的 perf 性能分析器，学会 CPU profiling 和调用图生成  
 > **前置**：LX09-06 strace（理解系统调用追踪）  

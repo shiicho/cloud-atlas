@@ -1,4 +1,4 @@
-# 08 - Flamegraph 火焰图
+# 08 - Flamegraph 火焰图（Flamegraphs）
 
 > **目标**：掌握 Flamegraph 解读与生成技能，学会用可视化定位 CPU 热点和性能瓶颈  
 > **前置**：Lesson 07 perf 性能分析器（perf record、perf script）  
