@@ -892,7 +892,7 @@ ManagedOOMMemoryPressure=auto
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 ### Q: MemoryMax と MemoryHigh の違いは？
 

@@ -1049,7 +1049,7 @@ systemctl list-dependencies myapp.service
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 ### Q: After= と Requires= の違いは？
 

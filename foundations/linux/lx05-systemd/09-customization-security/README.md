@@ -855,7 +855,7 @@ MemoryDenyWriteExecute=yes
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 ### Q: systemd のハードニングで最初に設定すべきは？
 

@@ -872,7 +872,7 @@ WantedBy=multi-user.target
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 ### Q: Type=simple と Type=forking の違いは？
 

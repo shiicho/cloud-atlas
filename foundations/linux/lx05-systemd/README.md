@@ -21,6 +21,20 @@
 - **Timer 迁移**：从 cron 到 systemd timer
 - **日本 IT 场景**：運用監視、障害対応、変更管理
 
+## 版本兼容性
+
+| 环境 | 课程目标 | 当前最新 | 说明 |
+|------|----------|----------|------|
+| **systemd** | 240+ | 257 (2025) | 课程内容与最新版本兼容 |
+| **RHEL** | 8/9 | 9.5 | RHEL 8 使用 systemd 239+，RHEL 9 使用 252+ |
+| **Ubuntu** | 20.04+ | 24.04 LTS | Ubuntu 20.04 (systemd 245)，22.04 (249)，24.04 (255) |
+| **cgroup** | v2 | v2 | systemd 258 已弃用 cgroup v1；RHEL 9 默认 v2 |
+
+**注意事项：**
+- Lesson 08 资源控制使用 cgroup v2 语法，RHEL 8 用户需确认已切换到 unified 模式
+- LoadCredential 等新特性需要 systemd 250+（RHEL 9、Ubuntu 22.04+）
+- 所有命令在 RHEL 8/9 和 Ubuntu 20.04+ 上测试通过
+
 ## 课程大纲
 
 ### Part 1: 基础 (01-03)

@@ -557,7 +557,7 @@ PID 1 の特別な役割：
 - [systemd 官方文档](https://www.freedesktop.org/wiki/Software/systemd/)
 - [Lennart Poettering 的 systemd 设计文档](http://0pointer.de/blog/projects/systemd.html)
 - 下一课：[02 - 服务管理（systemctl 实战）](../02-systemctl/) - 学习使用 systemctl 管理服务
-- 相关课程：[LX02 - 系统管理基础](../../sysadmin/) - 用户、进程、权限管理
+- 相关课程：[LX02 - 系统管理基础](../lx02-sysadmin/) - 用户、进程、权限管理
 
 ---
 

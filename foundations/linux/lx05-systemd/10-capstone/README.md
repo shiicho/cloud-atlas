@@ -1149,7 +1149,7 @@ sudo systemctl restart myapp.service
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 ### Q: 本番サービスの systemd 設定で重要なポイントは？
 

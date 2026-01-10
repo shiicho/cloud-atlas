@@ -810,7 +810,7 @@ journalctl -u backup.service -n 50
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 ### Q: systemd timer と cron の違いは？
 
