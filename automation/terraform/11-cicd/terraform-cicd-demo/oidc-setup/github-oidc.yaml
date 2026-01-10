@@ -132,8 +132,8 @@ Resources:
               - s3:DeleteObject
               - s3:ListBucket
             Resource:
-              - arn:aws:s3:::tfstate-terraform-course-*
-              - arn:aws:s3:::tfstate-terraform-course-*/11-cicd/*
+              - arn:aws:s3:::tfstate-terraform-lab-*
+              - arn:aws:s3:::tfstate-terraform-lab-*/11-cicd/*
 
           # S3 operations (for demo bucket - the actual resource we manage)
           - Sid: S3DemoResourceAccess
