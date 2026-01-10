@@ -273,7 +273,7 @@ Docker bridge 网络架构：
 运行演示脚本：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/08-container-networking/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/08-container-networking/code
 sudo ./veth-bridge-demo.sh
 ```
 
@@ -368,7 +368,7 @@ sudo ip link del br0
 运行演示脚本：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/08-container-networking/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/08-container-networking/code
 sudo ./nat-setup.sh
 ```
 

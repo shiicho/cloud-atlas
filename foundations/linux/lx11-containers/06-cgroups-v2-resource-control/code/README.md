@@ -36,7 +36,7 @@ git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/c
 cd ~/cloud-atlas && git sparse-checkout set foundations/linux/containers
 
 # 进入代码目录
-cd ~/cloud-atlas/foundations/linux/containers/06-cgroups-v2-resource-control/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/06-cgroups-v2-resource-control/code
 
 # 添加执行权限
 chmod +x *.sh

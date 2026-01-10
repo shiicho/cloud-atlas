@@ -1,7 +1,7 @@
 # 03 - Namespace 深入：unshare 与 nsenter
 
 > **目标**：掌握 unshare 和 nsenter 命令，学会从宿主机级别调试容器  
-> **前置**：完成 [02 - Linux Namespace 基础](../02-namespace-basics/)  
+> **前置**：完成 [02 - Linux Namespace 基础](../02-namespace-overview/)  
 > **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **场景**：本番環境でのコンテナ障害対応（生产环境容器故障处理）  
 
@@ -788,4 +788,4 @@ PID Namespace の作成者自身は古い Namespace に残る。
 
 ## 系列导航
 
-[<- 02 - Namespace 基础](../02-namespace-basics/) | [系列首页](../) | [04 - User Namespace -->](../04-user-namespace-rootless/)
+[<- 02 - Namespace 基础](../02-namespace-overview/) | [系列首页](../) | [04 - User Namespace -->](../04-user-namespace-rootless/)

@@ -47,17 +47,17 @@
 ```bash
 # GitHub（海外用户）
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set foundations/linux/networking/12-capstone
+cd ~/cloud-atlas && git sparse-checkout set foundations/linux/lx06-networking/12-capstone
 
 # Gitee（中国大陆用户）
 git clone --filter=blob:none --sparse https://gitee.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set foundations/linux/networking/12-capstone
+cd ~/cloud-atlas && git sparse-checkout set foundations/linux/lx06-networking/12-capstone
 ```
 
 ### 1.2 一键部署
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/networking/12-capstone/code
+cd ~/cloud-atlas/foundations/linux/lx06-networking/12-capstone/code
 
 # 运行部署脚本（需要 root 权限）
 sudo ./setup.sh

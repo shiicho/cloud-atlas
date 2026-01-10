@@ -301,7 +301,7 @@ sudo rmdir /sys/fs/cgroup/lab-resource
 运行演示脚本：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/06-cgroups-v2-resource-control/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/06-cgroups-v2-resource-control/code
 sudo ./memory-limit-demo.sh
 ```
 
@@ -362,7 +362,7 @@ sudo rmdir /sys/fs/cgroup/demo-max 2>/dev/null
 运行演示脚本：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/06-cgroups-v2-resource-control/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/06-cgroups-v2-resource-control/code
 sudo ./cpu-throttle-demo.sh
 ```
 

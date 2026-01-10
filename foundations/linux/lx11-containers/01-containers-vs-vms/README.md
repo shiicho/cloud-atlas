@@ -297,7 +297,7 @@ sudo unshare --pid --net --fork --mount-proc bash -c 'uname -r'
 
 ```bash
 # 运行隔离演示脚本
-cd ~/cloud-atlas/foundations/linux/containers/01-containers-vs-vms/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/01-containers-vs-vms/code
 ./isolation-demo.sh
 ```
 

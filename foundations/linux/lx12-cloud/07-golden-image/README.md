@@ -796,7 +796,7 @@ esac
 
 ---
 
-## Step 5 - 2025 更新（15 分钟）
+## Step 5 - 2026 更新（15 分钟）
 
 ### 5.1 EC2 Image Builder vs Packer
 
@@ -817,7 +817,7 @@ esac
 
 ### 5.2 ARM64 / Graviton 镜像
 
-2025 年趋势：**Graviton 实例性价比显著**（比 x86 便宜约 20%，性能相当或更好）
+2026 年趋势：**Graviton 实例性价比显著**（比 x86 便宜约 20%，性能相当或更好）
 
 ```hcl
 # Packer 构建 ARM64 镜像

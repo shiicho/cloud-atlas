@@ -263,7 +263,7 @@ mount: permission denied (are you root?)
 **运行演示脚本**：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/09-container-security/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/09-container-security/code
 ./seccomp-demo.sh
 ```
 
@@ -322,7 +322,7 @@ syscall=56 是 `clone` 系统调用（unshare 内部使用）。
 **运行演示脚本**：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/09-container-security/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/09-container-security/code
 ./capabilities-demo.sh
 ```
 

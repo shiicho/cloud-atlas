@@ -192,7 +192,7 @@ sudo rmdir /sys/fs/cgroup/mystery-gone
 **运行演示脚本**：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./silent-oom-scenario.sh
 ```
 
@@ -303,7 +303,7 @@ nsenter はこのような環境でのトラブルシューティング必須ス
 **运行演示脚本**：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./distroless-debug-scenario.sh
 ```
 
@@ -427,7 +427,7 @@ Zabbix 告警：宿主机磁盘 100% 满。
 **运行演示脚本**：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./disk-mystery-scenario.sh
 ```
 
@@ -709,7 +709,7 @@ docker logs <container> --tail 1000
 **目标**：完整调查一次 OOM Kill 事件。
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./lab-oom-investigation.sh
 ```
 
@@ -725,7 +725,7 @@ sudo ./lab-oom-investigation.sh
 **目标**：使用 nsenter 调试无 shell 容器的网络问题。
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./lab-distroless-debug.sh
 ```
 
@@ -741,7 +741,7 @@ sudo ./lab-distroless-debug.sh
 **目标**：找到「隐藏」的磁盘空间消耗。
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./lab-disk-mystery.sh
 ```
 
@@ -757,7 +757,7 @@ sudo ./lab-disk-mystery.sh
 **目标**：绕过 docker exec 调试卡死容器。
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/11-debugging-troubleshooting/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/11-debugging-troubleshooting/code
 sudo ./lab-stuck-process.sh
 ```
 

@@ -296,7 +296,7 @@ ls -la /path/to/upper/deleted-file
 运行演示脚本：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/07-overlay-filesystems/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/07-overlay-filesystems/code
 sudo ./overlay-mount-demo.sh
 ```
 
@@ -455,7 +455,7 @@ docker stop overlay-lab && docker rm overlay-lab
 运行演示脚本：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/07-overlay-filesystems/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/07-overlay-filesystems/code
 sudo ./cow-demo.sh
 ```
 

@@ -467,7 +467,7 @@ ManagedOOMSwap=auto
 ManagedOOMMemoryPressure=auto
 ```
 
-> **2025 更新**：systemd 253+ 的 oomd 改进了基于 PSI 的决策，更加智能。  
+> **2023 更新**：systemd 253+（2023年2月发布）的 oomd 改进了基于 PSI 的决策，更加智能。  
 
 ---
 

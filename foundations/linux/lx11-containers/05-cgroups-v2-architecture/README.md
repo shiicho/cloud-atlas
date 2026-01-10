@@ -32,7 +32,7 @@ mount | grep cgroup
 cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot)
 ```
 
-**恭喜！** 你的系统使用 cgroups v2（统一层级）。这是 2025 年的主流配置。
+**恭喜！** 你的系统使用 cgroups v2（统一层级）。这是 2026 年的主流配置。
 
 **如果你看到这样的输出（v1）：**
 
@@ -191,9 +191,9 @@ cgroups v2 架构（统一层级）：
 | **配置文件** | 控制器特定（cpu.shares, memory.limit_in_bytes） | 统一命名（cpu.max, memory.max） |
 | **委托** | 复杂，需要分别委托 | 简单，子树整体委托 |
 | **systemd 集成** | 部分 | 完全 |
-| **2025 状态** | Legacy | **默认** |
+| **2026 状态** | Legacy | **默认** |
 
-### 2025 年发行版状态
+### 2026 年发行版状态
 
 | 发行版 | 默认版本 | 说明 |
 |--------|----------|------|

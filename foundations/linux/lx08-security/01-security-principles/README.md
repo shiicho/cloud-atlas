@@ -858,7 +858,7 @@ echo "$(date): sshd_config 修改完成，已重启服务" >> /var/log/change.lo
 - [Red Hat SELinux Guide](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/using_selinux/index) - 官方 SELinux 文档
 - [OWASP Threat Modeling](https://owasp.org/www-community/Threat_Modeling) - 威胁建模方法论
 - 下一课：[02 - SSH 现代化加固](../02-ssh-hardening/) - 学习密钥认证、Fail2Ban、回滚演练
-- 相关课程：[LX02 - 用户与权限](../../sysadmin/) - 复习 DAC 基础
+- 相关课程：[LX02 - 用户与权限](../../lx02-sysadmin/) - 复习 DAC 基础
 
 ---
 

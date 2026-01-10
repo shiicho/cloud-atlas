@@ -28,7 +28,7 @@ git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/c
 cd ~/cloud-atlas && git sparse-checkout set foundations/linux/containers
 
 # 进入 capstone 目录
-cd ~/cloud-atlas/foundations/linux/containers/12-capstone/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/12-capstone/code
 ```
 
 ### 下载根文件系统
@@ -46,7 +46,7 @@ tar -xzf alpine-minirootfs.tar.gz -C rootfs
 
 ```bash
 # 复制脚手架脚本
-cp ~/cloud-atlas/foundations/linux/containers/12-capstone/code/*.sh ~/container-lab/
+cp ~/cloud-atlas/foundations/linux/lx11-containers/12-capstone/code/*.sh ~/container-lab/
 
 # 执行完整构建脚本
 cd ~/container-lab

@@ -58,9 +58,9 @@ iptables 诞生于 2001 年，服务了 Linux 20+ 年。但它有几个问题：
 | 框架碎片化 | 4 个工具（iptables/ip6tables/arptables/ebtables） | 1 个统一框架 |
 | 规则更新 | 非原子（有短暂空窗期） | **原子更新** |
 | 语法 | 复杂、每个协议不同 | 简洁、类似编程语言 |
-| 默认状态（2025） | **维护模式** | RHEL 9, Debian 11+, Ubuntu 22.04+ 默认 |
+| 默认状态（2026） | **维护模式** | RHEL 9, Debian 11+, Ubuntu 22.04+ 默认 |
 
-**2025 年现状**：
+**2026 年现状**：
 
 ```
 主流发行版防火墙后端：
@@ -73,7 +73,7 @@ Fedora 32+                → nftables（默认）
 RHEL/CentOS 7             → iptables（EOL: 2024-06-30）
 ```
 
-> **如果你在 2025 年还用 iptables 配置新服务器，需要升级技能了。**  
+> **如果你在 2026 年还用 iptables 配置新服务器，需要升级技能了。**  
 
 ### 1.2 nftables 层级结构
 
@@ -128,7 +128,7 @@ nftables 层级结构：
 | `arp` | ARP 包 | arptables |
 | `bridge` | 桥接包 | ebtables |
 
-> **推荐**：2025 年新配置应优先使用 `inet` 族，同时处理 IPv4 和 IPv6。  
+> **推荐**：2026 年新配置应优先使用 `inet` 族，同时处理 IPv4 和 IPv6。  
 
 ### 1.4 Chain 的 Hook 点
 

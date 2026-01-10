@@ -564,7 +564,7 @@ spec:
 **运行演示脚本**：
 
 ```bash
-cd ~/cloud-atlas/foundations/linux/containers/10-oci-runtimes/code
+cd ~/cloud-atlas/foundations/linux/lx11-containers/10-oci-runtimes/code
 ./runc-demo.sh
 ```
 
