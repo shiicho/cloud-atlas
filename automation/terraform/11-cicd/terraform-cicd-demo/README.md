@@ -146,8 +146,8 @@ git remote add origin https://github.com/YOUR_USERNAME/my-terraform-cicd.git
 
 GitHub 不再接受 HTTPS git 操作使用密码。需要 Personal Access Token (PAT)：
 
-<details>
-<summary><strong>📋 如何创建 GitHub PAT（点击展开）</strong></summary>
+<details open>
+<summary><strong>📋 如何创建 GitHub PAT</strong></summary>
 
 1. 访问 [GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens/new?scopes=repo,workflow)
 2. 点击 **"Generate new token"** → **"Generate new token (classic)"**

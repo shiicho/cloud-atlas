@@ -1,12 +1,12 @@
 # github-oidc.yaml
-# CloudFormation 模板：配置 GitHub Actions OIDC Provider
+# CloudFormation Template: GitHub Actions OIDC Provider Setup
 #
-# 功能：
-# - 创建 OIDC Identity Provider（信任 GitHub）
-# - 创建 IAM Role（GitHub Actions 可以 Assume）
-# - 配置信任策略（限制到特定仓库）
+# Features:
+# - Creates OIDC Identity Provider (trusts GitHub)
+# - Creates IAM Role (GitHub Actions can assume)
+# - Configures trust policy (restricted to specific repo)
 #
-# 部署命令：
+# Deploy:
 # aws cloudformation deploy \
 #   --template-file github-oidc.yaml \
 #   --stack-name github-oidc-terraform \
@@ -16,58 +16,48 @@
 #     RepoName=your-repo
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: |
-  GitHub Actions OIDC Provider and IAM Role for Terraform
-  无需存储 Access Key，使用临时凭证
+Description: GitHub Actions OIDC Provider and IAM Role for Terraform (no Access Keys needed, uses temporary credentials)
 
 # =============================================================================
-# Parameters - 参数
+# Parameters
 # =============================================================================
 Parameters:
   GitHubOrg:
     Type: String
-    Description: |
-      GitHub 组织名或用户名
-      例如：your-org 或 your-username
+    Description: GitHub organization or username (e.g., your-org or your-username)
 
   RepoName:
     Type: String
-    Description: |
-      GitHub 仓库名
-      例如：terraform-infra
+    Description: GitHub repository name (e.g., terraform-infra)
 
   OIDCAudience:
     Type: String
     Default: sts.amazonaws.com
-    Description: |
-      OIDC Audience 值
-      默认为 sts.amazonaws.com，无需修改
+    Description: OIDC Audience value (default is sts.amazonaws.com, usually no need to change)
 
   AllowedBranches:
     Type: String
     Default: "*"
-    Description: |
-      允许的分支模式
-      例如：main, feature/*, 或 * 表示所有分支
+    Description: Allowed branch pattern (e.g., main, feature/*, or * for all branches)
 
 # =============================================================================
-# Resources - 资源
+# Resources
 # =============================================================================
 Resources:
   # ---------------------------------------------------------------------------
   # OIDC Identity Provider
   # ---------------------------------------------------------------------------
-  # 在 AWS 中注册 GitHub 作为可信的身份提供商
-  # 一个 AWS 账户只需要创建一次，可以被多个 Role 共享
+  # Registers GitHub as a trusted identity provider in AWS
+  # Only needs to be created once per AWS account, can be shared by multiple roles
   GitHubOIDCProvider:
     Type: AWS::IAM::OIDCProvider
     Properties:
       Url: https://token.actions.githubusercontent.com
       ClientIdList:
         - !Ref OIDCAudience
-      # GitHub OIDC 的 thumbprint
-      # 这是 GitHub 签发 OIDC 令牌时使用的证书指纹
-      # 参考：https://github.blog/changelog/2023-06-27-github-actions-update-on-oidc-integration-with-aws/
+      # GitHub OIDC thumbprint (certificate fingerprint)
+      # Note: AWS no longer validates these for GitHub - kept for backward compatibility
+      # Reference: https://github.blog/changelog/2023-06-27-github-actions-update-on-oidc-integration-with-aws/
       ThumbprintList:
         - 6938fd4d98bab03faadb97b34396831e3780aea1
         - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
@@ -80,16 +70,14 @@ Resources:
   # ---------------------------------------------------------------------------
   # IAM Role for Terraform
   # ---------------------------------------------------------------------------
-  # GitHub Actions 将 Assume 这个 Role 来执行 Terraform
+  # GitHub Actions will assume this role to run Terraform
   GitHubActionsRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub github-actions-terraform-${RepoName}
-      Description: !Sub |
-        IAM Role for GitHub Actions to run Terraform
-        Repository: ${GitHubOrg}/${RepoName}
+      Description: !Sub IAM Role for GitHub Actions to run Terraform (Repository: ${GitHubOrg}/${RepoName})
 
-      # 信任策略：只信任来自特定仓库的 GitHub Actions
+      # Trust policy: Only trust GitHub Actions from specific repository
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -99,16 +87,16 @@ Resources:
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringEquals:
-                # Audience 必须匹配
+                # Audience must match
                 token.actions.githubusercontent.com:aud: !Ref OIDCAudience
               StringLike:
-                # Subject 必须匹配仓库和分支
-                # 格式：repo:org/repo:ref:refs/heads/branch
-                # 或：repo:org/repo:pull_request（PR 触发）
-                # 或：repo:org/repo:*（所有触发方式）
+                # Subject must match repo and branch
+                # Format: repo:org/repo:ref:refs/heads/branch
+                # Or: repo:org/repo:pull_request (PR trigger)
+                # Or: repo:org/repo:* (all triggers)
                 token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepoName}:*
 
-      # 最大会话时长：1 小时（适合大型 Terraform 操作）
+      # Max session duration: 1 hour (suitable for large Terraform operations)
       MaxSessionDuration: 3600
 
       Tags:
@@ -120,8 +108,8 @@ Resources:
   # ---------------------------------------------------------------------------
   # IAM Policy for Terraform
   # ---------------------------------------------------------------------------
-  # 授予 Terraform 操作 AWS 资源的权限
-  # 注意：这是示例权限，生产环境应该根据实际需要收窄
+  # Grants Terraform permission to operate AWS resources
+  # Note: This is example permissions - production should be scoped down as needed
   TerraformPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -131,7 +119,7 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          # State 后端访问
+          # State backend access
           - Sid: TerraformStateAccess
             Effect: Allow
             Action:
@@ -143,7 +131,7 @@ Resources:
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}/*
 
-          # EC2 操作（示例）
+          # EC2 operations (example)
           - Sid: EC2Access
             Effect: Allow
             Action:
@@ -158,7 +146,7 @@ Resources:
               StringEquals:
                 aws:RequestedRegion: ap-northeast-1
 
-          # S3 操作（示例）
+          # S3 operations (example)
           - Sid: S3Access
             Effect: Allow
             Action:
@@ -170,7 +158,7 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::*-${AWS::AccountId}
 
-          # IAM 只读（用于 data sources）
+          # IAM read-only (for data sources)
           - Sid: IAMReadOnly
             Effect: Allow
             Action:
@@ -181,16 +169,14 @@ Resources:
             Resource: "*"
 
   # ---------------------------------------------------------------------------
-  # Separate Plan Role (可选：Plan 和 Apply 权限分离)
+  # Separate Plan Role (Optional: Split Plan and Apply permissions)
   # ---------------------------------------------------------------------------
-  # 更严格的安全模式：Plan 只能读取，Apply 可以写入
+  # Stricter security mode: Plan is read-only, Apply can write
   GitHubActionsPlanRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub github-actions-terraform-plan-${RepoName}
-      Description: !Sub |
-        Read-only IAM Role for terraform plan
-        Repository: ${GitHubOrg}/${RepoName}
+      Description: !Sub Read-only IAM Role for terraform plan (Repository: ${GitHubOrg}/${RepoName})
 
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -203,7 +189,7 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: !Ref OIDCAudience
               StringLike:
-                # 只允许 PR 触发（pull_request 事件）
+                # Only allow PR triggers (pull_request events)
                 token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepoName}:pull_request
 
       MaxSessionDuration: 3600
@@ -216,7 +202,7 @@ Resources:
         - Key: ManagedBy
           Value: CloudFormation
 
-  # Plan Role 的只读策略
+  # Plan Role read-only policy
   TerraformPlanPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -226,7 +212,7 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          # State 只读
+          # State read-only
           - Sid: TerraformStateReadOnly
             Effect: Allow
             Action:
@@ -236,7 +222,7 @@ Resources:
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}
               - !Sub arn:aws:s3:::terraform-state-${AWS::AccountId}/*
 
-          # 所有资源只读
+          # All resources read-only
           - Sid: ReadOnlyAccess
             Effect: Allow
             Action:
@@ -250,7 +236,7 @@ Resources:
             Resource: "*"
 
 # =============================================================================
-# Outputs - 输出
+# Outputs
 # =============================================================================
 Outputs:
   OIDCProviderArn:
@@ -260,24 +246,20 @@ Outputs:
       Name: !Sub ${AWS::StackName}-OIDCProviderArn
 
   RoleArn:
-    Description: |
-      IAM Role ARN for Terraform (full access)
-      添加到 GitHub Secrets: AWS_ROLE_ARN
+    Description: IAM Role ARN for Terraform (full access) - Add to GitHub Secrets as AWS_ROLE_ARN
     Value: !GetAtt GitHubActionsRole.Arn
     Export:
       Name: !Sub ${AWS::StackName}-RoleArn
 
   PlanRoleArn:
-    Description: |
-      IAM Role ARN for Terraform Plan (read-only)
-      用于更严格的权限分离
+    Description: IAM Role ARN for Terraform Plan (read-only) - For stricter permission separation
     Value: !GetAtt GitHubActionsPlanRole.Arn
     Export:
       Name: !Sub ${AWS::StackName}-PlanRoleArn
 
   TrustPolicyExample:
-    Description: 信任策略中的 Subject 格式示例
+    Description: Trust policy Subject format examples
     Value: !Sub |
-      repo:${GitHubOrg}/${RepoName}:ref:refs/heads/main - 只允许 main 分支
-      repo:${GitHubOrg}/${RepoName}:pull_request - 只允许 PR
-      repo:${GitHubOrg}/${RepoName}:* - 允许所有
+      repo:${GitHubOrg}/${RepoName}:ref:refs/heads/main - main branch only
+      repo:${GitHubOrg}/${RepoName}:pull_request - PRs only
+      repo:${GitHubOrg}/${RepoName}:* - all triggers
