@@ -101,8 +101,25 @@ terraform {
 Initialize this folder as a new Git repository:
 
 ```bash
-git init
+git init -b main
 git add .
+```
+
+> **Note**: `-b main` creates the branch as 'main' (GitHub's default). Without it, git creates 'master' and shows a hint message.
+
+**Configure Git identity** (if not already set):
+
+```bash
+# Set your name and email for commits
+git config user.name "Your Name"
+git config user.email "your-email@example.com"
+```
+
+> **Note**: This is required for `git commit`. You can use any name/email - it identifies who made the commit.
+
+Now create the initial commit:
+
+```bash
 git commit -m "Initial commit: Terraform CI/CD demo"
 ```
 
@@ -123,7 +140,6 @@ After creating, connect your local repo:
 ```bash
 # Replace YOUR_USERNAME with your GitHub username
 git remote add origin https://github.com/YOUR_USERNAME/my-terraform-cicd.git
-git branch -M main
 ```
 
 **Configure Git authentication** (first time only):
