@@ -35,6 +35,8 @@
 - LoadCredential 等新特性需要 systemd 250+（RHEL 9、Ubuntu 22.04+）
 - 所有命令在 RHEL 8/9 和 Ubuntu 20.04+ 上测试通过
 
+> 📌 详细版本信息请参考 [Linux 系列发行版生命周期](../)
+
 ## 课程大纲
 
 ### Part 1: 基础 (01-03)

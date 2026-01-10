@@ -34,6 +34,8 @@
 - eBPF/BCC 工具在 RHEL 8.1+ 完整支持，推荐 RHEL 9
 - `net.ipv4.tcp_tw_recycle` 在 Linux 4.12+ 已移除
 
+> 📌 详细版本信息请参考 [Linux 系列发行版生命周期](../)
+
 ---
 
 ## 课程大纲

@@ -38,6 +38,8 @@
 - Rootless 容器需要 User Namespace 内核支持（5.11+）
 - OCI Runtime Spec 1.2+ 用于现代容器配置
 
+> 📌 详细版本信息请参考 [Linux 系列发行版生命周期](../)
+
 ## 课程大纲
 
 ### Part 1: 概念 (01-02)

@@ -39,6 +39,8 @@
 - RHEL 9 使用 nftables 替代 iptables，firewalld 后端已切换
 - pam_tally2 在 RHEL 8+ 已弃用，使用 faillock 模块
 
+> 📌 详细版本信息请参考 [Linux 系列发行版生命周期](../)
+
 ## 课程大纲
 
 ### Part 1: 基础与 SSH (01-02)

@@ -38,6 +38,8 @@
 - EBS NVMe 设备名需要使用 ebsnvme-id 解析
 - cloud-init 日志在 /var/log/cloud-init*.log
 
+> 📌 详细版本信息请参考 [Linux 系列发行版生命周期](../)
+
 ## 课程大纲
 
 ### Part 1: 基础 (01-03)

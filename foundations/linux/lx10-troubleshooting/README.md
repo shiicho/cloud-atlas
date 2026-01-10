@@ -38,6 +38,8 @@
 - debuginfod 在 RHEL 9/Ubuntu 22.04+ 默认启用
 - GRUB2 恢复命令在 UEFI/BIOS 系统间有差异
 
+> 📌 详细版本信息请参考 [Linux 系列发行版生命周期](../)
+
 ## 课程大纲
 
 ### Part 1: 方法论 (01)
