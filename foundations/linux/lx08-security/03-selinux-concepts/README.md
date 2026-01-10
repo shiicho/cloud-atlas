@@ -474,7 +474,7 @@ echo "最终模式: $(getenforce)"
 
 ```bash
 # 进入代码目录
-cd ~/cloud-atlas/foundations/linux/security/03-selinux-concepts/code
+cd ~/cloud-atlas/foundations/linux/lx08-security/03-selinux-concepts/code
 
 # 运行上下文查看脚本
 bash context-viewer.sh

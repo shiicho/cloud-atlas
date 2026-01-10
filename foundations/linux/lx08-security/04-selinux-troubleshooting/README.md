@@ -487,7 +487,7 @@ curl http://localhost:8888/
 
 ```bash
 # 进入代码目录
-cd ~/cloud-atlas/foundations/linux/security/04-selinux-troubleshooting/code/nginx-403-scenario
+cd ~/cloud-atlas/foundations/linux/lx08-security/04-selinux-troubleshooting/code/nginx-403-scenario
 
 # 设置场景（制造问题）
 sudo bash setup.sh

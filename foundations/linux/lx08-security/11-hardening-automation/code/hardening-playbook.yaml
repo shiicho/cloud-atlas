@@ -20,7 +20,7 @@
 # Reference:
 #   - CIS Benchmark for RHEL 9
 #   - OpenSSH Best Practices 2025
-#   - cloud-atlas/foundations/linux/security/02-ssh-hardening/
+#   - cloud-atlas/foundations/linux/lx08-security/02-ssh-hardening/
 # =============================================================================
 
 - name: SSH Security Hardening

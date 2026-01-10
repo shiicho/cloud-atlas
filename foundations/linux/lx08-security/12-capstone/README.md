@@ -104,14 +104,14 @@ sudo dnf install -y audit fail2ban vim git
 ```bash
 # GitHub（海外用户）
 git clone --filter=blob:none --sparse https://github.com/shiicho/cloud-atlas ~/cloud-atlas
-cd ~/cloud-atlas && git sparse-checkout set foundations/linux/security/12-capstone
+cd ~/cloud-atlas && git sparse-checkout set foundations/linux/lx08-security/12-capstone
 
 # Gitee（中国大陆用户）
 # git clone --filter=blob:none --sparse https://gitee.com/shiicho/cloud-atlas ~/cloud-atlas
-# cd ~/cloud-atlas && git sparse-checkout set foundations/linux/security/12-capstone
+# cd ~/cloud-atlas && git sparse-checkout set foundations/linux/lx08-security/12-capstone
 
 # 查看提供的模板
-ls ~/cloud-atlas/foundations/linux/security/12-capstone/code/
+ls ~/cloud-atlas/foundations/linux/lx08-security/12-capstone/code/
 ```
 
 ---

@@ -26,7 +26,7 @@
 ansible --version || sudo dnf install ansible-core -y
 
 # 进入课程目录
-cd ~/cloud-atlas/foundations/linux/security/11-hardening-automation/code
+cd ~/cloud-atlas/foundations/linux/lx08-security/11-hardening-automation/code
 
 # 查看加固 playbook 的内容（先不要执行）
 cat hardening-playbook.yaml

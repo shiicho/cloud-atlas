@@ -772,7 +772,7 @@ cat /tmp/audit-report.txt
 
 ```bash
 # 使用提供的演练脚本
-cd /path/to/cloud-atlas/foundations/linux/security/07-auditd/code/ghost-change-scenario
+cd /path/to/cloud-atlas/foundations/linux/lx08-security/07-auditd/code/ghost-change-scenario
 
 # 1. 设置审计规则
 sudo bash setup-audit.sh

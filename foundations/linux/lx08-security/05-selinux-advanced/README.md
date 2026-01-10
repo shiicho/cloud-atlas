@@ -555,7 +555,7 @@ semodule -l | grep ${MODULE_NAME}
 
 ```bash
 # 进入实验目录
-cd ~/cloud-atlas/foundations/linux/security/05-selinux-advanced/code/wordpress-db-scenario
+cd ~/cloud-atlas/foundations/linux/lx08-security/05-selinux-advanced/code/wordpress-db-scenario
 
 # 查看脚本说明
 cat README.md
@@ -597,7 +597,7 @@ sudo semanage boolean -l | grep httpd_can_sendmail
 
 ```bash
 # 进入策略示例目录
-cd ~/cloud-atlas/foundations/linux/security/05-selinux-advanced/code/custom-policy-demo
+cd ~/cloud-atlas/foundations/linux/lx08-security/05-selinux-advanced/code/custom-policy-demo
 
 # 查看示例策略
 cat myapp.te
