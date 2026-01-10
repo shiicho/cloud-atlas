@@ -691,7 +691,6 @@ echo "Hello $USER"  # Hello terraform
 
 - [Bash Reference Manual - Shell Parameters](https://www.gnu.org/software/bash/manual/html_node/Shell-Parameters.html)
 - [Advanced Bash-Scripting Guide - Variables](https://tldp.org/LDP/abs/html/variables.html)
-- 相关课程：[LX01-09 · 环境变量和 PATH](../../foundations/09-environment-path/)
 
 ---
 

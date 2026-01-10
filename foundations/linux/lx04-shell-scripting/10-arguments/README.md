@@ -1019,7 +1019,7 @@ EOF
 chmod +x getopt-demo.sh
 
 # 测试（如果是 GNU getopt）
-if getopt --test > /dev/null 2>&1; [[ $? -eq 4 ]]; then
+if getopt --test > /dev/null 2>&1 && [[ $? -eq 4 ]]; then
     echo "=== 测试短选项 ==="
     ./getopt-demo.sh -v -s /src -d /dest file1.txt
 

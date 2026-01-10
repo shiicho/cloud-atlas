@@ -621,7 +621,7 @@ cleanup_old_logs() {
         return 0
     fi
 
-    echo "$old_files" | while read -r file; do
+    while read -r file; do
         if [[ -n "$file" ]]; then
             if [[ "$DRY_RUN" == true ]]; then
                 log_info "[DRY-RUN] 将删除过期: $file"
@@ -631,7 +631,7 @@ cleanup_old_logs() {
                 ((DELETED_COUNT++))
             fi
         fi
-    done
+    done <<< "$old_files"
 }
 
 # -----------------------------------------------------------------------------
@@ -1948,7 +1948,7 @@ validate_config() {
 **下一步学习建议**：
 
 - [LX05-SYSTEMD](../../lx05-systemd/) - systemd 服务管理，将脚本变成服务
-- [Ansible 课程](../../../automation/ansible/) - 声明式配置管理，超越 Shell 脚本
-- [Docker 课程](../../../devops/docker/) - 容器化，现代运维必备
+- [Ansible 课程](../../../../automation/ansible/) - 声明式配置管理，超越 Shell 脚本
+- [Docker 课程](../../../../devops/docker/) - 容器化，现代运维必备
 
 祝你在 Shell 脚本编程的道路上继续前进！
