@@ -1,8 +1,8 @@
 # 08 - 镜像加固与供应链安全（Image Hardening & Supply Chain Security）
 
 > **目标**：应用 CIS Benchmark 加固镜像，理解供应链安全基础，建立补丁管理流程  
-> **前置**：[07 - 金色镜像策略](../07-golden-image/)、[LX08 - Linux 安全基础](../../security/)  
-> **时间**：2 小时  
+> **前置**：[07 - 金色镜像策略](../07-golden-image/)、[LX08 - Linux 安全基础](../../lx08-security/)  
+> **时间**：⚡ 30 分钟（速读）/ 🔬 120 分钟（完整实操）  
 > **实战场景**：CIS 合规扫描、漏洞检测、加固自动化  
 
 ---

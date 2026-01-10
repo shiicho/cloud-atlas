@@ -2,7 +2,7 @@
 
 > **目标**：理解容器运行时层级架构，区分低级运行时（runc）和高级运行时（containerd/CRI-O），掌握 OCI 规范核心概念  
 > **前置**：[Lesson 09 - 容器安全](../09-container-security/)；理解 Namespace、cgroups、OverlayFS 基础  
-> **时间**：2.5 小时  
+> **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **场景**：コンテナランタイム選定（容器运行时选型），Kubernetes 运维  
 
 ---

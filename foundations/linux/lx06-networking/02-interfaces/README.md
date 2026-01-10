@@ -2,7 +2,7 @@
 
 > **目标**：掌握 Linux 网络接口的查看、配置与持久化方法  
 > **前置**：完成 [01-网络基础](../01-fundamentals/)，理解 TCP/IP 分层模型  
-> **时间**：60 分钟  
+> **时间**：⚡ 15 分钟（速读）/ 🔬 60 分钟（完整实操）  
 > **实战场景**：服务器上线前的静态 IP 配置  
 
 ---
@@ -666,7 +666,7 @@ nmcli connection up <conn-name>
 - [NetworkManager nmcli examples](https://networkmanager.dev/docs/api/latest/nmcli-examples.html)
 - [Predictable Network Interface Names](https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/)
 - 下一课：[03 - IP 路由](../03-routing/) -- 理解路由表和静态路由配置
-- 相关课程：[systemd 课程](../../systemd/) -- systemd-networkd 详解
+- 相关课程：[systemd 课程](../../lx05-systemd/) -- systemd-networkd 详解
 
 ---
 

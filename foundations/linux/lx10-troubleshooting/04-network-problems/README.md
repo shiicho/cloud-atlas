@@ -2,7 +2,7 @@
 
 > **目标**：掌握分层网络诊断方法，系统性排查连通性和性能问题  
 > **前置**：LX06-NETWORK 网络基础（ss、nftables、DNS）  
-> **时间**：2.5 小时  
+> **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **实战场景**：curl 超时但服务器在运行，间歇性 502 Bad Gateway  
 
 ---
@@ -1331,7 +1331,7 @@ systemctl start nginx でサービス起動
 - [Red Hat - Network Troubleshooting](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_managing_networking/index)
 - [TCP/IP Guide](http://www.tcpipguide.com/)
 - 下一课：[05 - 存储故障](../05-storage-issues/) -- 容量、inode、I/O 错误
-- 相关课程：[LX06-NETWORK](../../network/) -- 网络基础知识
+- 相关课程：[LX06-NETWORK](../../lx06-networking/) -- 网络基础知识
 
 ---
 

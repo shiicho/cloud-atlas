@@ -2,7 +2,7 @@
 
 > **目标**：掌握 mount/umount 操作和 fstab 配置，学会从 fstab 故障中恢复  
 > **前置**：完成 [03 - 文件系统选择与创建](../03-filesystems/)  
-> **时间**：60 分钟  
+> **时间**：⚡ 15 分钟（速读）/ 🔬 60 分钟（完整实操）  
 > **环境**：任意 Linux（Ubuntu/RHEL/AlmaLinux），需要 root 权限  
 
 ---

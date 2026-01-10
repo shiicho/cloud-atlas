@@ -2,7 +2,7 @@
 
 > **目标**：综合运用用户、权限、sudo 等知识，构建一个安全的多用户开发环境  
 > **前置**：完成 Lessons 01-11（用户管理、权限、sudo、进程、软件包）  
-> **时间**：3 小时  
+> **时间**：⚡ 40 分钟（速读）/ 🔬 180 分钟（完整实操）  
 > **实战场景**：为小型开发团队搭建 Linux 服务器环境  
 
 ---
@@ -1317,8 +1317,8 @@ sudo chattr +a /var/log/projects/*.log
 
 **下一步学习建议**：
 
-- [LX05-SYSTEMD](../../systemd/) - systemd 服务管理
-- [LX06-NETWORK](../../network/) - 网络配置与故障排除
-- [LX07-STORAGE](../../storage/) - 存储管理与 LVM
+- [LX05-SYSTEMD](../../lx05-systemd/) - systemd 服务管理
+- [LX06-NETWORK](../../lx06-networking/) - 网络配置与故障排除
+- [LX07-STORAGE](../../lx07-storage/) - 存储管理与 LVM
 
 祝你在 Linux 系统管理的道路上继续前进！

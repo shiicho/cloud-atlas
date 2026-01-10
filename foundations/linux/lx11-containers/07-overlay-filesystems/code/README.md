@@ -169,4 +169,4 @@ Copy-on-Write 规则:
 
 - [Lesson 06 - cgroups v2 资源限制](../06-cgroups-v2-resource-control/)
 - [Lesson 08 - 容器网络](../08-container-networking/)
-- [LX07 - Linux 存储](../../storage/)
+- [LX07 - Linux 存储](../../lx07-storage/)

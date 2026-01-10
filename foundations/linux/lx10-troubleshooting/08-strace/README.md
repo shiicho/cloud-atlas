@@ -2,7 +2,7 @@
 
 > **目标**：掌握 strace 追踪系统调用，定位应用层"黑盒"问题  
 > **前置**：LX05 systemd 基础、LX09 性能分析基础  
-> **时间**：2 小时  
+> **时间**：⚡ 30 分钟（速读）/ 🔬 120 分钟（完整实操）  
 > **核心理念**：当应用日志沉默时，系统调用会说话  
 
 ---
@@ -888,7 +888,7 @@ ls /usr/share/bcc/tools/
 - [strace man page](https://man7.org/linux/man-pages/man1/strace.1.html)
 - [Brendan Gregg - strace Wow Much Syscall](https://www.brendangregg.com/blog/2014-05-11/strace-wow-much-syscall.html)
 - [BPF Performance Tools (Book)](https://www.brendangregg.com/bpf-performance-tools-book.html)
-- 相关课程：[LX09-PERFORMANCE](../../performance/) - eBPF 详细介绍
+- 相关课程：[LX09-PERFORMANCE](../../lx09-performance/) - eBPF 详细介绍
 - 下一课：[09 - Core Dump 与崩溃分析](../09-core-dumps/)
 
 ---

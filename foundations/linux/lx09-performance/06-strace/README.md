@@ -2,7 +2,7 @@
 
 > **目标**：掌握 strace 系统调用追踪技能，识别常见性能问题模式（syscall storms），学会从系统调用层面定位应用性能瓶颈  
 > **前置**：Lesson 01 USE Method、Lesson 05 Network Performance  
-> **时间**：60-90 分钟  
+> **时间**：⚡ 20 分钟（速读）/ 🔬 75 分钟（完整实操）  
 > **实战场景**：アプリが遅い原因調査、syscall storm 定位、应用级性能分析  
 
 ---

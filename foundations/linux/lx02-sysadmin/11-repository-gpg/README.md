@@ -2,7 +2,7 @@
 
 > **目标**：掌握软件源的配置与管理，理解 GPG 签名验证机制，学会安全地添加第三方仓库  
 > **前置**：基础 Linux 命令行操作，软件包管理基础 (Lesson 09-10)  
-> **时间**：90-120 分钟  
+> **时间**：⚡ 25 分钟（速读）/ 🔬 90 分钟（完整实操）  
 > **实战场景**：企业环境下的软件源管理与安全验证  
 
 ---
@@ -531,7 +531,7 @@ set -e
 # 变量
 KEYRING_PATH="/etc/apt/keyrings/nodesource.gpg"
 SOURCES_PATH="/etc/apt/sources.list.d/nodesource.list"
-NODE_MAJOR="20"  # Node.js 主版本
+NODE_MAJOR="22"  # Node.js LTS 主版本（22.x 支持到 2027-04）
 
 # 1. 下载并安装 GPG 密钥
 echo "下载 GPG 密钥..."

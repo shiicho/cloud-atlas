@@ -2,7 +2,7 @@
 
 > **目标**：掌握 Capabilities 实现最小权限，替代 all-or-nothing 的 root  
 > **前置**：完成 Lesson 01-05（安全原则、SSH、SELinux）  
-> **时间**：2 小时  
+> **时间**：⚡ 30 分钟（速读）/ 🔬 120 分钟（完整实操）  
 > **实战场景**：非 root 服务绑定 80 端口、systemd 服务权限限制  
 
 ---
@@ -931,7 +931,7 @@ CAP_SYS_ADMIN ≈ root
 - [Docker Security: Capabilities](https://docs.docker.com/engine/security/#linux-kernel-capabilities) - Docker 安全指南
 - [systemd Security Options](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Capabilities) - systemd 文档
 - [RHEL Security Guide: Capabilities](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/security_hardening/index) - Red Hat 安全加固
-- 相关课程：[LX11 - 容器基础](../../containers/) - 深入容器安全
+- 相关课程：[LX11 - 容器基础](../../lx11-containers/) - 深入容器安全
 - 上一课：[05 - SELinux 进阶](../05-selinux-advanced/) - Booleans 与自定义策略
 
 ---

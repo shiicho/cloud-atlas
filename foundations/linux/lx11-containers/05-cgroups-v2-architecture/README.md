@@ -1,8 +1,8 @@
 # 05 - cgroups v2：统一资源控制架构
 
 > **目标**：理解 cgroups v2 的统一层级架构，掌握版本检测和层级探索  
-> **前置**：完成 [01 - 容器 vs 虚拟机](../01-containers-vs-vms/)；了解 [LX05-SYSTEMD](../../systemd/) 中的 cgroups 基础  
-> **时间**：2 小时  
+> **前置**：完成 [01 - 容器 vs 虚拟机](../01-containers-vs-vms/)；了解 [LX05-SYSTEMD](../../lx05-systemd/) 中的 cgroups 基础  
+> **时间**：⚡ 30 分钟（速读）/ 🔬 120 分钟（完整实操）  
 > **场景**：本番環境でのリソース制御確認（生产环境资源控制确认）  
 
 ---
@@ -714,7 +714,7 @@ mkdir /sys/fs/cgroup/mygroup  # 可能与 systemd 冲突
 
 ### 相关课程
 
-- [LX05-SYSTEMD](../../systemd/) - systemd 资源控制基础
+- [LX05-SYSTEMD](../../lx05-systemd/) - systemd 资源控制基础
 - 下一课：[06 - cgroups v2 资源限制实战](../06-cgroups-v2-resource-control/) - CPU/内存/IO 限制与 OOM 调查
 
 ### 推荐阅读

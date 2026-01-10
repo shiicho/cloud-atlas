@@ -2,7 +2,7 @@
 
 > **目标**：使用 Ansible 实现自动化安全加固，构建可审计、可重复的加固流程  
 > **前置**：完成 Lesson 01-10（安全原则、SSH、SELinux、auditd、nftables、PAM、CIS Benchmarks）  
-> **时间**：2 小时  
+> **时间**：⚡ 30 分钟（速读）/ 🔬 120 分钟（完整实操）  
 > **实战项目**：创建 SSH 加固 playbook + 合规报告生成  
 
 ---
@@ -799,7 +799,7 @@ cat code/compliance-report.j2
 
 ## Step 7 - 供应链安全入门（10 分钟）
 
-> **注意**：供应链安全的深入内容在 [LX11-CONTAINERS](../../containers/) 课程。这里只做简要介绍。  
+> **注意**：供应链安全的深入内容在 [LX11-CONTAINERS](../../lx11-containers/) 课程。这里只做简要介绍。  
 
 ### 7.1 什么是供应链安全？
 

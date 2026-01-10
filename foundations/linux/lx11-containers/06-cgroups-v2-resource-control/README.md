@@ -2,7 +2,7 @@
 
 > **目标**：掌握 cgroups v2 资源控制实战 —— 配置 CPU/内存/IO 限制，理解 OOM Kill 调查  
 > **前置**：[Lesson 05 - cgroups v2 架构](../05-cgroups-v2-architecture/)  
-> **时间**：2.5 小时  
+> **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **环境**：Linux 系统（cgroup v2 enabled，建议 Ubuntu 22.04+ / RHEL 9+)  
 
 ---
@@ -695,7 +695,7 @@ cat /sys/fs/cgroup/system.slice/docker-<id>.scope/cpu.max
 
 - [Lesson 05 - cgroups v2 架构](../05-cgroups-v2-architecture/) - cgroups v2 统一层级原理
 - [Lesson 11 - 容器故障排查](../11-debugging-troubleshooting/) - 完整排查方法论
-- [LX05 - systemd 资源控制](../../systemd/) - systemd 与 cgroups 集成
+- [LX05 - systemd 资源控制](../../lx05-systemd/) - systemd 与 cgroups 集成
 
 ### 推荐阅读
 

@@ -2,7 +2,7 @@
 
 > **目标**：掌握 Linux 内存分析技能，正确解读 free 输出，使用 USE Method 定位内存瓶颈  
 > **前置**：完成 Lesson 01 USE 方法论、Lesson 02 CPU 分析  
-> **时间**：90-120 分钟  
+> **时间**：⚡ 25 分钟（速读）/ 🔬 90 分钟（完整实操）  
 > **实战场景**：OOM Killer でサービス停止 - 原因調査、内存泄漏诊断  
 
 ---
@@ -1235,7 +1235,7 @@ PSS (Proportional Set Size):
 - [smem Memory Reporting Tool](https://www.selenic.com/smem/)
 - 上一课：[02 - CPU 分析](../02-cpu-analysis/) -- CPU 性能分析
 - 下一课：[04 - I/O 分析](../04-io-analysis/) -- 磁盘 I/O 性能分析
-- 相关课程：[LX07 - 存储管理](../../storage/) -- 理解块设备和文件系统
+- 相关课程：[LX07 - 存储管理](../../lx07-storage/) -- 理解块设备和文件系统
 
 ---
 

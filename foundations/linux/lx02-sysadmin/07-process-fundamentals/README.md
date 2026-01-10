@@ -2,7 +2,7 @@
 
 > **目标**：深入理解 Linux 进程概念，掌握进程监控和问题诊断的核心技能  
 > **前置**：基础 Linux 命令行操作，文件系统导航  
-> **时间**：120-150 分钟  
+> **时间**：⚡ 30 分钟（速读）/ 🔬 120 分钟（完整实操）  
 > **实战场景**：运用监视中的进程检查、故障排查中的问题进程识别  
 
 ---
@@ -1210,7 +1210,7 @@ ALERT_EMAIL="oncall@company.co.jp"
 - [ps(1) man page](https://man7.org/linux/man-pages/man1/ps.1.html)
 - 上一课：[06 - sudo 配置](../06-sudo-configuration/) -- 权限提升配置
 - 下一课：[08 - 信号与作业控制](../08-signals-job-control/) -- 进程信号和作业管理
-- 相关课程：[LX03 - 文本处理](../../text-processing/) -- 结合管道处理 ps 输出
+- 相关课程：[LX03 - 文本处理](../../lx03-text-processing/) -- 结合管道处理 ps 输出
 
 ---
 

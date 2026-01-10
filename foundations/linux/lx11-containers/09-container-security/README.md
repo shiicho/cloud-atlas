@@ -1,8 +1,8 @@
 # 09 - 容器安全：seccomp 与 Capabilities
 
 > **目标**：理解容器安全边界，掌握 seccomp 和 Capabilities 配置，识别并避免常见安全反模式  
-> **前置**：[Lesson 08 - 容器网络](../08-container-networking/)；了解 [LX08-SECURITY 第 6 课 Capabilities 基础](../../security/)  
-> **时间**：2.5 小时  
+> **前置**：[Lesson 08 - 容器网络](../08-container-networking/)；了解 [LX08-SECURITY 第 6 课 Capabilities 基础](../../lx08-security/)  
+> **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **场景**：セキュリティ監査対応（安全审计应对）  
 
 ---
@@ -127,7 +127,7 @@ echo "Exit code: $?"  # 0（成功）
 
 ### 回顾：从 LX08-SECURITY 到容器
 
-在 [LX08-SECURITY 第 6 课](../../security/) 中，你学习了 Linux Capabilities 的基础：
+在 [LX08-SECURITY 第 6 课](../../lx08-security/) 中，你学习了 Linux Capabilities 的基础：
 
 - 传统 Unix：root (UID 0) 拥有所有权限，普通用户几乎没有
 - Capabilities：将 root 权限分解为 40+ 个细粒度能力
@@ -663,7 +663,7 @@ docker inspect <container> | jq '.[0].HostConfig.Privileged'
 
 ### 相关课程
 
-- [LX08-SECURITY 第 6 课 - Linux Capabilities](../../security/) - Capabilities 基础
+- [LX08-SECURITY 第 6 课 - Linux Capabilities](../../lx08-security/) - Capabilities 基础
 - [Lesson 04 - User Namespace](../04-user-namespace-rootless/) - 用户隔离和 rootless 容器
 - [Lesson 11 - 容器故障排查](../11-debugging-troubleshooting/) - 完整调试方法论
 

@@ -2,7 +2,7 @@
 
 > **目标**：掌握 awk 的 BEGIN/END 块、变量、计算和关联数组，构建日志分析仪表板  
 > **前置**：[06 - awk 字段处理](../06-awk-fields/)  
-> **时间**：90-120 分钟  
+> **时间**：⚡ 25 分钟（速读）/ 🔬 90 分钟（完整实操）  
 > **实战项目**：日志指标仪表板（Log Metrics Dashboard）  
 
 ---
@@ -1143,7 +1143,7 @@ awk '{...} END {for(k in arr) print arr[k], k}' file | sort -rn
 - **官方文档**: [GNU awk Manual](https://www.gnu.org/software/gawk/manual/gawk.html)
 - **现代替代**: [datamash - GNU Data Statistics](https://www.gnu.org/software/datamash/)
 - **下一课**: [08 - 排序、去重和字段提取](../08-sorting-uniqueness/) - sort/uniq/cut
-- **进阶应用**: [LX10 - 故障排查](../../troubleshooting/) - 多文件关联的高级应用
+- **进阶应用**: [LX10 - 故障排查](../../lx10-troubleshooting/) - 多文件关联的高级应用
 
 ---
 

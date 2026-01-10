@@ -1,8 +1,8 @@
 # 08 - 容器网络：veth、Bridge 与 NAT
 
 > **目标**：深入理解容器网络原理 —— 手动配置 veth pair、bridge、NAT，掌握 nsenter 网络调试  
-> **前置**：[Lesson 07 - OverlayFS](../07-overlay-filesystems/)、[LX06 - 网络基础](../../network/)  
-> **时间**：2.5 小时  
+> **前置**：[Lesson 07 - OverlayFS](../07-overlay-filesystems/)、[LX06 - 网络基础](../../lx06-networking/)  
+> **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **环境**：Linux 系统（建议 Ubuntu 22.04+ / RHEL 9+，需要 root 权限）  
 
 ---
@@ -754,7 +754,7 @@ docker run --network=host myapp
 
 - [Lesson 03 - Namespace 深入](../03-namespace-deep-dive/) - nsenter 调试技巧
 - [Lesson 11 - 容器故障排查](../11-debugging-troubleshooting/) - 完整排查方法论
-- [LX06 - Linux 网络基础](../../network/) - 网络基础、nftables
+- [LX06 - Linux 网络基础](../../lx06-networking/) - 网络基础、nftables
 
 ### 推荐阅读
 

@@ -2,7 +2,7 @@
 
 > **目标**：掌握磁盘 I/O 性能分析技能，使用 iostat、iotop、pidstat 等工具定位 I/O 瓶颈  
 > **前置**：Lesson 01 USE Method、Lesson 03 Memory Analysis  
-> **时间**：60-90 分钟  
+> **时间**：⚡ 20 分钟（速读）/ 🔬 75 分钟（完整实操）  
 > **实战场景**：深夜のディスクスパイク調査、I/O bound 问题诊断  
 
 ---
@@ -1010,7 +1010,7 @@ cat /sys/block/nvme0n1/queue/scheduler
 - [io_uring 官方文档](https://kernel.dk/io_uring.pdf)
 - 上一课：[03 - 内存分析](../03-memory-analysis/)
 - 下一课：[05 - 网络性能](../05-network-performance/)
-- 相关课程：[LX07 - 存储管理](../../storage/) - 文件系统和块设备基础
+- 相关课程：[LX07 - 存储管理](../../lx07-storage/) - 文件系统和块设备基础
 
 ---
 
