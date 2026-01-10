@@ -132,7 +132,7 @@ git commit -m "Initial commit: Terraform CI/CD demo"
 
 1. 访问 [github.com/new](https://github.com/new)
 2. Repository name：`my-terraform-cicd`（或其他名称，需与后续步骤保持一致）
-3. **Private**（或 Public——你的选择）
+3. **Public**（免费账户必须选 Public，否则 Step 8 审批功能不可用）
 4. **不要**勾选 "Add a README file"（我们已有）
 5. 点击 **Create repository**
 
