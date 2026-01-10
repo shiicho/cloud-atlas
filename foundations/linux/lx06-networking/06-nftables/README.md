@@ -1,4 +1,4 @@
-# 06 - nftables 基础
+# 06 - nftables 基础（nftables Basics）
 
 > **目标**：理解 nftables 防火墙架构，配置基本过滤规则  
 > **前置**：完成 Lesson 05（套接字检查 ss）  
@@ -17,7 +17,7 @@
 
 ---
 
-## 先跑起来！（10 分钟）
+## Step 1 - 先跑起来：查看防火墙状态（10 分钟）
 
 > 在学习理论之前，先看看你的服务器防火墙状态。  
 
@@ -690,7 +690,7 @@ sudo journalctl -k | grep "nftables DROP" | tail -10
 - [Red Hat nftables Guide](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/configuring_firewalls_and_packet_filters/) - RHEL 9 官方指南
 - [Netfilter Project](https://netfilter.org/) - 内核防火墙项目
 - 相关课程：[07 - firewalld 区域](../07-firewalld/) - 更高级别的防火墙管理
-- 相关课程：[LX08-Security 08 - nftables 深入](../../security/08-nftables/) - 生产级防火墙配置
+- 相关课程：[LX08 - 安全加固](../../lx08-security/) - 生产级防火墙配置
 
 ---
 

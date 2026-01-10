@@ -281,11 +281,26 @@ start_test_services() {
     log_success "zone-app: python http.server on :8080"
 
     # DB Zone - Simple TCP listener on port 3306 (simulating MySQL)
-    ip netns exec zone-db bash -c 'while true; do nc -l -p 3306 -c "echo MySQL-Simulator"; done' &>/dev/null &
-    log_success "zone-db: nc listening on :3306"
+    # Note: Using ncat (from nmap-ncat) for portability, or fallback to bash TCP
+    if command -v ncat &>/dev/null; then
+        ip netns exec zone-db bash -c 'while true; do echo "MySQL-Simulator" | ncat -l -p 3306; done' &>/dev/null &
+    else
+        ip netns exec zone-db bash -c 'while true; do echo "MySQL-Simulator" | nc -l -p 3306 2>/dev/null || nc -l 3306 2>/dev/null; done' &>/dev/null &
+    fi
+    log_success "zone-db: listening on :3306"
 
-    # Wait for services to start
+    # Wait for services to start and verify
     sleep 2
+
+    # Verify services are running
+    local http_ok=0 app_ok=0 db_ok=0
+    ip netns exec zone-web ss -tln | grep -q ':80 ' && http_ok=1
+    ip netns exec zone-app ss -tln | grep -q ':8080 ' && app_ok=1
+    ip netns exec zone-db ss -tln | grep -q ':3306 ' && db_ok=1
+
+    if [[ $http_ok -eq 0 || $app_ok -eq 0 || $db_ok -eq 0 ]]; then
+        log_warn "Some services may not have started correctly. Check manually."
+    fi
 }
 
 print_summary() {

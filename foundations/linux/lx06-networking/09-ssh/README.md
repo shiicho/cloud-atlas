@@ -140,6 +140,10 @@ ssh-keygen -t ed25519 -C "your-email@example.com"
 ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
 ```
 
+> ⚠️ **注意：DSA 密钥已弃用**
+> OpenSSH 10.0（2025 年）完全移除了 DSA 密钥支持。DSA 自 OpenSSH 7.0（2015 年）起已默认禁用。
+> 如果遇到旧的 DSA 密钥，请迁移到 Ed25519 或 RSA。
+
 生成过程：
 
 ```

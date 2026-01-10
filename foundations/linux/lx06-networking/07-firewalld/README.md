@@ -1,4 +1,4 @@
-# 07 - firewalld 区域
+# 07 - firewalld 区域（firewalld Zones）
 
 > **目标**：使用 firewalld 的 zone 概念管理防火墙，实现基于信任级别的访问控制  
 > **前置**：了解 nftables 基础（06 课）  
