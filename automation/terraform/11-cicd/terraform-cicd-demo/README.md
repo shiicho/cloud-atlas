@@ -21,7 +21,7 @@
 - [ ] Git 已安装
 - [ ] 课程代码已克隆（`~/cloud-atlas/` 存在）
 
-> **没有课程代码？** 在实验实例上运行 `sync-course`，或参考 [lab-setup.md](../00-concepts/lab-setup.md)
+> **没有课程代码？** 在实验实例上运行 `sync-course`，或参考 [lab-setup.md](../../00-concepts/lab-setup.md)
 
 ---
 
@@ -64,7 +64,7 @@ BUCKET=$(aws cloudformation describe-stacks \
 echo "Your state bucket: $BUCKET"
 ```
 
-> **没有 terraform-lab Stack？** 先部署它：[lab-setup.md](../00-concepts/lab-setup.md)
+> **没有 terraform-lab Stack？** 先部署它：[lab-setup.md](../../00-concepts/lab-setup.md)
 
 **更新 backend.tf** 中的 Bucket 名称：
 
