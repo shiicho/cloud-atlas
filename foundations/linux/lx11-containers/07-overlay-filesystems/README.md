@@ -1,4 +1,4 @@
-# 07 - OverlayFS：容器镜像层原理
+# 07 - OverlayFS（Overlay Filesystems）
 
 > **目标**：理解 OverlayFS 分层架构与写时复制机制 —— Docker/Podman 镜像层的底层原理  
 > **前置**：[Lesson 06 - cgroups v2 资源限制](../06-cgroups-v2-resource-control/)；了解 [LX07-STORAGE](../../lx07-storage/) 中的文件系统基础  

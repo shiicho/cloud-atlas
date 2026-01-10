@@ -1,4 +1,4 @@
-# 08 - 容器网络：veth、Bridge 与 NAT
+# 08 - 容器网络（Container Networking）
 
 > **目标**：深入理解容器网络原理 —— 手动配置 veth pair、bridge、NAT，掌握 nsenter 网络调试  
 > **前置**：[Lesson 07 - OverlayFS](../07-overlay-filesystems/)、[LX06 - 网络基础](../../lx06-networking/)  

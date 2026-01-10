@@ -1,4 +1,4 @@
-# 04 - User Namespace 与 Rootless 容器
+# 04 - User Namespace（Rootless Containers）
 
 > **目标**：理解 User Namespace 的 UID 映射机制，配置 Rootless 容器，并能向安全审计解释隔离原理  
 > **前置**：完成 [03 - Namespace 深入](../03-namespace-deep-dive/)  

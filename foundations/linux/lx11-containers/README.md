@@ -21,6 +21,23 @@
 - **Shell 工具优先**：unshare/nsenter/ip 手把手实操
 - **从零构建容器**：Capstone 彻底理解原理
 
+## 版本兼容性
+
+| 工具 | 课程版本 | 当前最新 | 说明 |
+|------|----------|----------|------|
+| **runc** | 1.1+ | 1.2.4 (2025) | OCI 低级运行时 |
+| **containerd** | 1.7+ | 2.2 (2025) | 高级运行时 |
+| **cgroups** | v2 | v2 unified | RHEL 8+ 默认，v1 已弃用 |
+| **Kernel** | 5.10+ | 6.12 | 完整 cgroups v2 支持 |
+| **util-linux** | 2.37+ | 2.40 (2025) | unshare/nsenter |
+| **RHEL** | 8/9 | 9.5 | RHEL 8 支持至 2029 |
+| **Ubuntu** | 20.04+ | 24.04 LTS | 22.04/24.04 推荐 |
+
+**注意事项：**
+- cgroups v1 在 RHEL 10 已完全移除
+- Rootless 容器需要 User Namespace 内核支持（5.11+）
+- OCI Runtime Spec 1.2+ 用于现代容器配置
+
 ## 课程大纲
 
 ### Part 1: 概念 (01-02)

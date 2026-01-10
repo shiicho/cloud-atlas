@@ -1,4 +1,4 @@
-# 01 - 容器 vs 虚拟机：心智模型
+# 01 - 容器 vs 虚拟机（Containers vs VMs）
 
 > **目标**：建立正确的容器心智模型 —— 容器是「进程 + 约束」，不是轻量 VM  
 > **前置**：LX05-SYSTEMD、LX06-NETWORK、LX08-SECURITY 基础知识  

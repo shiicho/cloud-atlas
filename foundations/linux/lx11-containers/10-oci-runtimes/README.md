@@ -1,4 +1,4 @@
-# 10 - OCI 运行时：runc、containerd 与 CRI-O
+# 10 - OCI 运行时（OCI Runtimes）
 
 > **目标**：理解容器运行时层级架构，区分低级运行时（runc）和高级运行时（containerd/CRI-O），掌握 OCI 规范核心概念  
 > **前置**：[Lesson 09 - 容器安全](../09-container-security/)；理解 Namespace、cgroups、OverlayFS 基础  

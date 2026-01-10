@@ -1,4 +1,4 @@
-# 06 - cgroups v2：资源限制实战
+# 06 - cgroups v2 资源控制（Resource Control）
 
 > **目标**：掌握 cgroups v2 资源控制实战 —— 配置 CPU/内存/IO 限制，理解 OOM Kill 调查  
 > **前置**：[Lesson 05 - cgroups v2 架构](../05-cgroups-v2-architecture/)  

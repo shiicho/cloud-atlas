@@ -1,4 +1,4 @@
-# 02 · Linux Namespace：隔离的基石
+# 02 - Linux Namespace（Namespace Overview）
 
 > **目标**：理解 Namespace 如何控制进程"能看到什么"，掌握 7 种 Namespace 类型  
 > **前置**：已完成 [01 · 容器 vs 虚拟机](../01-containers-vs-vms/)  

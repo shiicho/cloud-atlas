@@ -1,4 +1,4 @@
-# 09 - 容器安全：seccomp 与 Capabilities
+# 09 - 容器安全（Container Security）
 
 > **目标**：理解容器安全边界，掌握 seccomp 和 Capabilities 配置，识别并避免常见安全反模式  
 > **前置**：[Lesson 08 - 容器网络](../08-container-networking/)；了解 [LX08-SECURITY 第 6 课 Capabilities 基础](../../lx08-security/)  

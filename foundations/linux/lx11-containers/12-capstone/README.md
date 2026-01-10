@@ -1,4 +1,4 @@
-# 12 - Capstone：从零构建容器
+# 12 - Capstone（Container Capstone）
 
 > **目标**：综合运用所有容器原语，从零构建一个完整的容器环境  
 > **前置**：[Lesson 01-11](../) 全部内容  

@@ -1,4 +1,4 @@
-# 05 - cgroups v2：统一资源控制架构
+# 05 - cgroups v2 架构（cgroups v2 Architecture）
 
 > **目标**：理解 cgroups v2 的统一层级架构，掌握版本检测和层级探索  
 > **前置**：完成 [01 - 容器 vs 虚拟机](../01-containers-vs-vms/)；了解 [LX05-SYSTEMD](../../lx05-systemd/) 中的 cgroups 基础  

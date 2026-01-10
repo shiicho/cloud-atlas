@@ -1,4 +1,4 @@
-# 03 - Namespace 深入：unshare 与 nsenter
+# 03 - Namespace 深入（Namespace Deep Dive）
 
 > **目标**：掌握 unshare 和 nsenter 命令，学会从宿主机级别调试容器  
 > **前置**：完成 [02 - Linux Namespace 基础](../02-namespace-overview/)  

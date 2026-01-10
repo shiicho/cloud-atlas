@@ -1,4 +1,4 @@
-# 11 - 容器故障排查：观测与定位
+# 11 - 容器故障排查（Debugging & Troubleshooting）
 
 > **目标**：建立容器故障排查系统方法论，整合前 10 课知识，掌握 OOM/网络/存储/进程四大问题的定位技巧  
 > **前置**：[Lesson 10 - OCI 运行时](../10-oci-runtimes/)；建议完成 Lesson 03 (nsenter)、06 (cgroups)、08 (网络)  
