@@ -1,4 +1,4 @@
-# 02 - 启动故障：GRUB、initramfs、紧急模式
+# 02 - 启动故障（Boot Issues）
 
 > **目标**：系统性诊断和恢复 Linux 启动故障  
 > **前置**：LX05-SYSTEMD 服务管理基础，LX07-STORAGE 存储基础  
