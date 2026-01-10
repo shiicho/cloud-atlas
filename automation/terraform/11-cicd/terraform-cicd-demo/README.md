@@ -102,7 +102,6 @@ terraform {
 
 ```bash
 git init -b main
-git add .
 ```
 
 > **注意**：`-b main` 直接创建 'main' 分支（GitHub 默认）。不加此参数，git 会创建 'master' 并显示提示信息。
@@ -110,16 +109,18 @@ git add .
 **配置 Git 身份**（如果尚未设置）：
 
 ```bash
-# 设置提交者名称和邮箱
+# 设置提交者名称和邮箱（本地仓库配置）
 git config user.name "Your Name"
 git config user.email "your-email@example.com"
 ```
 
 > **注意**：这是 `git commit` 的必要配置。可以使用任意名称/邮箱——它标识谁做了提交。
+> 不带 `--global` 的配置只对当前仓库有效，删除仓库时会自动清理。
 
-创建初始提交：
+**暂存文件并创建初始提交**：
 
 ```bash
+git add .
 git commit -m "Initial commit: Terraform CI/CD demo"
 ```
 
@@ -130,10 +131,12 @@ git commit -m "Initial commit: Terraform CI/CD demo"
 ### Step 4：创建 GitHub 仓库（5 分钟）
 
 1. 访问 [github.com/new](https://github.com/new)
-2. Repository name：`my-terraform-cicd`
+2. Repository name：`my-terraform-cicd`（或其他名称，需与后续步骤保持一致）
 3. **Private**（或 Public——你的选择）
 4. **不要**勾选 "Add a README file"（我们已有）
 5. 点击 **Create repository**
+
+> **再次运行本实验？** 如果之前的仓库已删除，可使用相同名称；否则选择新名称如 `my-terraform-cicd-v2`。
 
 创建后，连接本地仓库：
 
@@ -159,6 +162,23 @@ GitHub 不再接受 HTTPS git 操作使用密码。需要 Personal Access Token 
      - **`workflow`**（更新 GitHub Action 工作流）← `.github/workflows/` 必需
 4. 点击 **"Generate token"**
 5. **⚠️ 立即复制 Token** — 之后无法再次查看！
+
+</details>
+
+<details>
+<summary>💼 企业实践：PAT 生命周期管理</summary>
+
+在真实项目中，PAT 管理有严格要求：
+
+| 实践 | 说明 |
+|------|------|
+| **有效期** | 设置 30-90 天，绝不选择 "No expiration" |
+| **定期轮换** | Token 过期前创建新 Token，更新使用位置，删除旧 Token |
+| **最小权限** | 只勾选必要的 scope（本实验需要 `repo` + `workflow`）|
+| **命名规范** | 包含用途和日期，如 `cicd-demo-2026-01` |
+| **及时清理** | 项目结束后立即撤销（Step 14e 会教你如何操作）|
+
+**自动化替代方案**：生产环境推荐使用 GitHub App 或 OIDC 认证代替 PAT。
 
 </details>
 
@@ -235,9 +255,9 @@ aws cloudformation describe-stacks \
 为 Apply 工作流设置审批门禁：
 
 1. 访问 **Settings** > **Environments**
-2. 点击 **New environment**
-3. Name：`production`
-4. 点击 **Configure environment**
+2. 如果已有 `production` 环境，点击它；否则点击 **New environment**
+3. Name：`production`（如果是新建）
+4. 点击 **Configure environment**（如果是新建）或直接进入配置页面
 5. 在 "Deployment protection rules" 下，启用 **Required reviewers**
 6. 添加自己为审批者
 7. 点击 **Save protection rules**
@@ -287,10 +307,31 @@ git push -u origin feature/add-my-tag
 1. 访问你的 GitHub 仓库
 2. 应看到横幅："feature/add-my-tag had recent pushes"
 3. 点击 **Compare & pull request**
-4. Title："Add MyName tag"
+4. Title：GitHub 会自动填入 commit message（如 "feat: add MyName tag"），可以保留或修改
 5. 点击 **Create pull request**
 
 **检查点**：PR 已创建，"Terraform Plan" 工作流自动开始！
+
+<details>
+<summary>🔍 幕后解密：为什么创建 PR 会自动运行 Plan？</summary>
+
+这是 `.github/workflows/terraform-plan.yml` 中的触发器配置：
+
+```yaml
+on:
+  pull_request:
+    branches: [main]
+    paths: ['**/*.tf']
+```
+
+含义：
+- `pull_request` → 有人创建或更新 PR 时触发
+- `branches: [main]` → 只针对向 main 分支的 PR
+- `paths: ['**/*.tf']` → 只有 `.tf` 文件变更时触发
+
+**这就是 "代码即配置" 的威力**：触发条件写在代码里，透明可审计！
+
+</details>
 
 ---
 
@@ -306,9 +347,38 @@ git push -u origin feature/add-my-tag
    - Validate 状态
    - Plan 输出（显示你的新标签！）
 
+> **看到 Format ⚠️ 警告？** 这表示代码格式不符合 `terraform fmt` 标准。
+> 虽然不影响功能，但生产环境建议在 commit 前运行 `terraform fmt` 自动格式化。
+
 **检查点**：PR 有评论显示 `+ MyName = "your-name-here"` 在 plan 中。
 
 > **这就是 CI/CD 的威力**：每个变更在应用前都被审查！
+
+<details>
+<summary>🔍 幕后解密：Bot 评论是从哪里来的？</summary>
+
+这是 `.github/workflows/terraform-plan.yml` 中的 `github-script` 步骤：
+
+```yaml
+- uses: actions/github-script@v7
+  with:
+    script: |
+      github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: output  // Plan 结果以 Markdown 格式发布
+      })
+```
+
+含义：
+- `github-script` → 使用 GitHub API
+- `createComment` → 在 PR 上创建评论
+- `output` → 包含 format/init/validate/plan 的执行结果
+
+**关键洞察**：Bot 评论不是 "魔法"，是 workflow 调用 GitHub API 发布的！
+
+</details>
 
 ---
 
@@ -319,7 +389,34 @@ git push -u origin feature/add-my-tag
 3. 会看到 "Terraform Apply" 工作流被触发
 4. 工作流**暂停**等待审批
 
+<details>
+<summary>🔍 幕后解密：为什么 Merge 后自动运行 Apply？</summary>
+
+这是 `.github/workflows/terraform-apply.yml` 中的触发器配置：
+
+```yaml
+on:
+  push:
+    branches: [main]
+```
+
+含义：
+- `push` → 有代码推送时触发
+- `branches: [main]` → 只针对 main 分支
+
+**PR Merge = 向 main push 代码**，所以触发 Apply workflow！
+
+这是典型的 GitOps 模式：`main 分支 = 生产状态`
+
+</details>
+
 审批部署：
+
+> **审批前应该检查什么？**（日本 IT 实务：本番承認）
+> 1. 确认 Plan 输出与预期一致（检查 PR 中的 bot 评论）
+> 2. 检查没有意外的资源删除（`-` 开头的行）
+> 3. 验证变更范围是否正确
+> 4. 在生产环境中，通常需要另一位团队成员审批
 
 1. 点击工作流运行
 2. 点击 **Review deployments**
@@ -327,6 +424,28 @@ git push -u origin feature/add-my-tag
 4. 点击 **Approve and deploy**
 
 **检查点**：Apply 工作流完成，显示绿色勾号。
+
+<details>
+<summary>🔍 幕后解密：为什么需要人工审批？</summary>
+
+这是 `.github/workflows/terraform-apply.yml` 中的 environment 配置：
+
+```yaml
+jobs:
+  terraform-apply:
+    environment: production  # ← 关键！
+```
+
+在 Step 8 中，我们为 `production` 环境配置了 "Required reviewers"。
+
+当 workflow 指定 `environment: production` 时：
+1. GitHub 检查该环境的 protection rules
+2. 如果需要审批，workflow 暂停等待
+3. 审批者点击 "Approve" 后继续执行
+
+**这就是 "审批门禁"**：代码和配置共同控制部署流程！
+
+</details>
 
 > **日本 IT 职场**：这就是**本番承認**（生产审批）—— 变更只在人工审核后才应用。
 
@@ -409,10 +528,19 @@ cat ~/.git-credentials 2>/dev/null || echo "Credentials file removed"
 git config --global credential.helper 2>/dev/null || echo "Credential helper config removed"
 ```
 
-> **💡 提示**：如果你专门为此 demo 创建了 PAT，也在 GitHub 上撤销它：
-> Settings > Developer settings > Personal access tokens > 删除该 Token
+#### 14e. 撤销 GitHub PAT（安全！）
 
-#### 14e. 清理本地文件
+**⚠️ 重要**：你创建的 PAT 具有 `repo+workflow` 权限，可以完全控制你的所有仓库。必须撤销！
+
+1. 访问 [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+2. 找到你在 Step 4 创建的 token（名称类似 `terraform-cicd-demo`）
+3. 点击 **Delete** 并确认删除
+
+**检查点**：Token 列表中不再显示该 token。
+
+> **企业实践**：在真实项目中，PAT 应设置有效期（30-90 天），过期前轮换，绝不选择 "No expiration"。
+
+#### 14f. 清理本地文件
 
 ```bash
 # 移除 demo 文件夹
@@ -425,9 +553,9 @@ rm -rf ~/my-terraform-cicd
 - [ ] CloudFormation OIDC Stack 已删除
 - [ ] GitHub 仓库已删除
 - [ ] Git 凭证文件已移除（`~/.git-credentials`）
-- [ ] Git credential helper 配置已移除（`git config --global --unset credential.helper`）
+- [ ] Git credential helper 配置已移除
+- [ ] **GitHub PAT 已撤销**（安全！）
 - [ ] 本地 demo 文件夹已移除
-- [ ] （可选）GitHub 上的 PAT 已撤销
 
 ---
 
