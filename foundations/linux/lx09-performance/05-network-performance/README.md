@@ -124,7 +124,7 @@ BDP = Bandwidth × RTT
 
 ## Step 2 - ss 命令深入：Socket 队列与 TCP 内部状态（20 分钟）
 
-> **前置知识**：如果你还不熟悉 ss 基础用法，请先阅读 [LX06-05 套接字检查](../../networking/05-sockets/)  
+> **前置知识**：如果你还不熟悉 ss 基础用法，请先阅读 [LX06-05 套接字检查](../../lx06-networking/05-sockets/)  
 
 ### 2.1 ss -s：统计摘要
 
@@ -534,7 +534,7 @@ sudo sysctl -p /etc/sysctl.d/99-network-tuning.conf
 
 ## Step 6 - tcpdump 性能分析：延迟与重传（15 分钟）
 
-> **前置知识**：如果你还不熟悉 tcpdump 基础用法，请先阅读 [LX06-08 tcpdump 与抓包分析](../../networking/08-tcpdump/)  
+> **前置知识**：如果你还不熟悉 tcpdump 基础用法，请先阅读 [LX06-08 tcpdump 与抓包分析](../../lx06-networking/08-tcpdump/)  
 
 ### 6.1 从性能角度使用 tcpdump
 
@@ -1163,7 +1163,7 @@ LISTEN 状態の場合：
 - [iperf3 Documentation](https://iperf.fr/iperf-doc.php)
 - 上一课：[04 - I/O 分析](../04-io-analysis/)
 - 下一课：[06 - strace 系统调用追踪](../06-strace/)
-- 相关课程：[LX06-05 套接字检查](../../networking/05-sockets/)、[LX06-08 tcpdump](../../networking/08-tcpdump/)
+- 相关课程：[LX06-05 套接字检查](../../lx06-networking/05-sockets/)、[LX06-08 tcpdump](../../lx06-networking/08-tcpdump/)
 
 ---
 
