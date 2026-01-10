@@ -1,61 +1,61 @@
-# Terraform CI/CD Demo
+# Terraform CI/CD 动手实验
 
-> **Hands-on Lab**: Experience a real GitHub Actions CI/CD pipeline for Terraform
+> **动手实验**：体验真实的 GitHub Actions CI/CD 流水线
 
-This folder is a complete, ready-to-use template. Copy it to a new location, initialize as a Git repo, and push to GitHub to experience:
+这个文件夹是一个完整的、即用型模板。复制到新位置，初始化为 Git 仓库，推送到 GitHub 即可体验：
 
-- **Plan on PR**: Automatic `terraform plan` with results posted as PR comments
-- **Apply on Merge**: Automatic `terraform apply` with approval gate
-- **[OIDC Authentication](../../../../glossary/security/oidc.md)**: No AWS access keys needed
-
----
-
-## Prerequisites
-
-Before starting, ensure you have:
-
-- [ ] GitHub account
-- [ ] **GitHub Personal Access Token (PAT)** with `repo` + `workflow` scopes — [Create one here](https://github.com/settings/tokens/new?scopes=repo,workflow)
-- [ ] AWS account with admin access
-- [ ] AWS CLI configured (`aws sts get-caller-identity` works)
-- [ ] Git installed
-- [ ] Course repo cloned (`~/cloud-atlas/` exists)
-
-> **没有课程代码？** Run `sync-course` on the lab instance, or see [lab-setup.md](../00-concepts/lab-setup.md)
+- **PR 自动 Plan**：自动运行 `terraform plan`，结果作为 PR 评论发布
+- **合并后自动 Apply**：自动运行 `terraform apply`，带审批门禁
+- **[OIDC 认证](../../../../glossary/security/oidc.md)**：无需 AWS Access Key
 
 ---
 
-## Lab Steps
+## 前置要求
 
-### Step 1: Copy Template (3 min)
+开始之前，请确保：
 
-Copy this folder to a new location outside the course repo:
+- [ ] GitHub 账户
+- [ ] **GitHub Personal Access Token (PAT)**，需要 `repo` + `workflow` 权限 — [点击创建](https://github.com/settings/tokens/new?scopes=repo,workflow)
+- [ ] AWS 账户（管理员权限）
+- [ ] AWS CLI 已配置（`aws sts get-caller-identity` 可用）
+- [ ] Git 已安装
+- [ ] 课程代码已克隆（`~/cloud-atlas/` 存在）
+
+> **没有课程代码？** 在实验实例上运行 `sync-course`，或参考 [lab-setup.md](../00-concepts/lab-setup.md)
+
+---
+
+## 实验步骤
+
+### Step 1：复制模板（3 分钟）
+
+将此文件夹复制到课程仓库外的新位置：
 
 ```bash
-# On your lab instance (EC2 or local)
+# 在实验实例上（EC2 或本地）
 cp -r ~/cloud-atlas/automation/terraform/11-cicd/terraform-cicd-demo ~/my-terraform-cicd
 cd ~/my-terraform-cicd
 
-# Verify all files exist
+# 验证所有文件存在
 ls -la
 ls -la .github/workflows/
 ```
 
-**Checkpoint**: You should see `main.tf`, `providers.tf`, and `.github/workflows/` folder.
+**检查点**：应看到 `main.tf`、`providers.tf` 和 `.github/workflows/` 文件夹。
 
 ---
 
-### Step 2: Configure S3 Remote Backend (5 min)
+### Step 2：配置 S3 远程后端（5 分钟）
 
-The demo uses S3 remote backend for state storage. This is **critical** for CI/CD because:
-- State persists across GitHub Actions runs (runners are ephemeral)
-- State locking prevents concurrent apply conflicts
-- Cleanup via `terraform destroy` actually works!
+本实验使用 S3 远程后端存储 State。这对 CI/CD **至关重要**，因为：
+- State 在 GitHub Actions 运行之间持久化（Runner 是临时的）
+- State 锁定防止并发 apply 冲突
+- `terraform destroy` 清理实际有效！
 
-**Get your S3 bucket name** from the terraform-lab CloudFormation stack:
+**获取 S3 Bucket 名称**（来自 terraform-lab CloudFormation Stack）：
 
 ```bash
-# Get the bucket name created during course setup
+# 获取课程设置时创建的 Bucket 名称
 BUCKET=$(aws cloudformation describe-stacks \
   --stack-name terraform-lab \
   --query 'Stacks[0].Outputs[?OutputKey==`TfStateBucketName`].OutputValue' \
@@ -64,26 +64,26 @@ BUCKET=$(aws cloudformation describe-stacks \
 echo "Your state bucket: $BUCKET"
 ```
 
-> **没有 terraform-lab stack？** Deploy it first: [lab-setup.md](../00-concepts/lab-setup.md)
+> **没有 terraform-lab Stack？** 先部署它：[lab-setup.md](../00-concepts/lab-setup.md)
 
-**Update backend.tf** with your bucket name:
+**更新 backend.tf** 中的 Bucket 名称：
 
 ```bash
 cd ~/my-terraform-cicd
 
-# Replace PLACEHOLDER with your actual bucket name
+# 将 PLACEHOLDER 替换为实际的 Bucket 名称
 sed -i "s/PLACEHOLDER/$BUCKET/" backend.tf
 
-# Verify the change
+# 验证更改
 cat backend.tf
 ```
 
-You should see your bucket name in the configuration:
+应看到配置中的 Bucket 名称：
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket       = "tfstate-terraform-course-123456789012"  # Your bucket
+    bucket       = "tfstate-terraform-course-123456789012"  # 你的 Bucket
     key          = "11-cicd/cicd-demo/terraform.tfstate"
     region       = "ap-northeast-1"
     encrypt      = true
@@ -92,101 +92,101 @@ terraform {
 }
 ```
 
-**Checkpoint**: `backend.tf` shows your actual bucket name (not PLACEHOLDER).
+**检查点**：`backend.tf` 显示实际的 Bucket 名称（不是 PLACEHOLDER）。
 
 ---
 
-### Step 3: Initialize Git (3 min)
+### Step 3：初始化 Git（3 分钟）
 
-Initialize this folder as a new Git repository:
+将此文件夹初始化为新的 Git 仓库：
 
 ```bash
 git init -b main
 git add .
 ```
 
-> **Note**: `-b main` creates the branch as 'main' (GitHub's default). Without it, git creates 'master' and shows a hint message.
+> **注意**：`-b main` 直接创建 'main' 分支（GitHub 默认）。不加此参数，git 会创建 'master' 并显示提示信息。
 
-**Configure Git identity** (if not already set):
+**配置 Git 身份**（如果尚未设置）：
 
 ```bash
-# Set your name and email for commits
+# 设置提交者名称和邮箱
 git config user.name "Your Name"
 git config user.email "your-email@example.com"
 ```
 
-> **Note**: This is required for `git commit`. You can use any name/email - it identifies who made the commit.
+> **注意**：这是 `git commit` 的必要配置。可以使用任意名称/邮箱——它标识谁做了提交。
 
-Now create the initial commit:
+创建初始提交：
 
 ```bash
 git commit -m "Initial commit: Terraform CI/CD demo"
 ```
 
-**Checkpoint**: `git log` shows your initial commit.
+**检查点**：`git log` 显示初始提交。
 
 ---
 
-### Step 4: Create GitHub Repository (5 min)
+### Step 4：创建 GitHub 仓库（5 分钟）
 
-1. Go to [github.com/new](https://github.com/new)
-2. Repository name: `my-terraform-cicd`
-3. **Private** (or Public - your choice)
-4. **DO NOT** check "Add a README file" (we already have one)
-5. Click **Create repository**
+1. 访问 [github.com/new](https://github.com/new)
+2. Repository name：`my-terraform-cicd`
+3. **Private**（或 Public——你的选择）
+4. **不要**勾选 "Add a README file"（我们已有）
+5. 点击 **Create repository**
 
-After creating, connect your local repo:
+创建后，连接本地仓库：
 
 ```bash
-# Replace YOUR_USERNAME with your GitHub username
+# 将 YOUR_USERNAME 替换为你的 GitHub 用户名
 git remote add origin https://github.com/YOUR_USERNAME/my-terraform-cicd.git
 ```
 
-**Configure Git authentication** (first time only):
+**配置 Git 认证**（首次设置）：
 
-GitHub no longer accepts passwords for HTTPS git operations. You need a Personal Access Token (PAT):
+GitHub 不再接受 HTTPS git 操作使用密码。需要 Personal Access Token (PAT)：
 
 <details>
-<summary><strong>📋 How to create a GitHub PAT (click to expand)</strong></summary>
+<summary><strong>📋 如何创建 GitHub PAT（点击展开）</strong></summary>
 
-1. Go to [GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens/new?scopes=repo,workflow)
-2. Click **"Generate new token"** → **"Generate new token (classic)"**
-3. Fill in:
-   - **Note**: `terraform-cicd-demo` (or any description)
-   - **Expiration**: 30 days (or your preference)
-   - **Select scopes**: Check both:
-     - **`repo`** (Full control of private repositories)
-     - **`workflow`** (Update GitHub Action workflows) ← Required for `.github/workflows/`
-4. Click **"Generate token"**
-5. **⚠️ Copy the token immediately** - you won't see it again!
+1. 访问 [GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens/new?scopes=repo,workflow)
+2. 点击 **"Generate new token"** → **"Generate new token (classic)"**
+3. 填写：
+   - **Note**：`terraform-cicd-demo`（或任意描述）
+   - **Expiration**：30 days（或你的偏好）
+   - **Select scopes**：勾选以下两项：
+     - **`repo`**（完全控制私有仓库）
+     - **`workflow`**（更新 GitHub Action 工作流）← `.github/workflows/` 必需
+4. 点击 **"Generate token"**
+5. **⚠️ 立即复制 Token** — 之后无法再次查看！
 
 </details>
 
 ```bash
-# Store credentials (will prompt once, then remember)
+# 存储凭证（首次提示输入，之后记住）
 git config --global credential.helper store
 
-# Now push - when prompted:
-#   Username: your GitHub username
-#   Password: paste your PAT (not your GitHub password!)
+# 推送 - 提示时：
+#   Username: 你的 GitHub 用户名
+#   Password: 粘贴 PAT（不是 GitHub 密码！）
 git push -u origin main
 ```
 
-> **💡 Tip**: If you have [GitHub CLI](https://cli.github.com/) installed, you can run `gh auth login` for easier setup.
+> **💡 提示**：如果安装了 [GitHub CLI](https://cli.github.com/)，可以运行 `gh auth login` 更简单地设置。
 
-**Checkpoint**: Refresh GitHub page - you should see all files including `.github/workflows/`.
+**检查点**：刷新 GitHub 页面——应看到所有文件，包括 `.github/workflows/`。
 
 ---
 
-### Step 5: Deploy OIDC Infrastructure (10 min)
+### Step 5：部署 OIDC 基础设施（10 分钟）
 
-OIDC allows GitHub Actions to authenticate with AWS without storing access keys.
+OIDC 允许 GitHub Actions 无需存储 Access Key 即可认证 AWS。
 
 ```bash
 cd ~/my-terraform-cicd/oidc-setup
 
-# Deploy the CloudFormation stack
-# Replace YOUR_USERNAME with your GitHub username
+# 部署 CloudFormation Stack
+# 将 YOUR_USERNAME 替换为你的 GitHub 用户名
 aws cloudformation deploy \
   --template-file github-oidc.yaml \
   --stack-name github-oidc-terraform \
@@ -195,82 +195,82 @@ aws cloudformation deploy \
     GitHubOrg=YOUR_USERNAME \
     RepoName=my-terraform-cicd
 
-# Get the Role ARN (copy this for next step)
+# 获取 Role ARN（复制用于下一步）
 aws cloudformation describe-stacks \
   --stack-name github-oidc-terraform \
   --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' \
   --output text
 ```
 
-**Checkpoint**: You should see an ARN like `arn:aws:iam::123456789012:role/github-actions-my-terraform-cicd`
+**检查点**：应看到类似 `arn:aws:iam::123456789012:role/github-actions-my-terraform-cicd` 的 ARN。
 
 ---
 
-### Step 6: Configure GitHub Secret (3 min)
+### Step 6：配置 GitHub Secret（3 分钟）
 
-Add the Role ARN as a GitHub secret:
+将 Role ARN 添加为 GitHub Secret：
 
-1. Go to your GitHub repo
+1. 访问你的 GitHub 仓库
 2. **Settings** > **Secrets and variables** > **Actions**
-3. Click **New repository secret**
-4. Name: `AWS_ROLE_ARN`
-5. Value: (paste the Role ARN from Step 4)
-6. Click **Add secret**
+3. 点击 **New repository secret**
+4. Name：`AWS_ROLE_ARN`
+5. Value：（粘贴 Step 5 获取的 Role ARN）
+6. 点击 **Add secret**
 
-**Checkpoint**: Secrets page shows `AWS_ROLE_ARN` configured.
-
----
-
-### Step 7: Enable GitHub Actions (2 min)
-
-1. Go to **Actions** tab in your repo
-2. If prompted, click **"I understand my workflows, go ahead and enable them"**
-
-**Checkpoint**: You should see "Terraform Plan" and "Terraform Apply" workflows listed.
+**检查点**：Secrets 页面显示 `AWS_ROLE_ARN` 已配置。
 
 ---
 
-### Step 8: Configure Production Environment (5 min)
+### Step 7：启用 GitHub Actions（2 分钟）
 
-Set up an approval gate for the Apply workflow:
+1. 访问仓库的 **Actions** 标签页
+2. 如有提示，点击 **"I understand my workflows, go ahead and enable them"**
 
-1. Go to **Settings** > **Environments**
-2. Click **New environment**
-3. Name: `production`
-4. Click **Configure environment**
-5. Under "Deployment protection rules", enable **Required reviewers**
-6. Add yourself as a reviewer
-7. Click **Save protection rules**
-
-**Checkpoint**: Environment page shows "1 reviewer required".
-
-> **Japan IT Context**: This is the **approval flow (承認フロー)** used in production deployments.
+**检查点**：应看到 "Terraform Plan" 和 "Terraform Apply" 工作流已列出。
 
 ---
 
-### Step 9: Create Feature Branch (3 min)
+### Step 8：配置 Production 环境（5 分钟）
 
-Now let's trigger the CI/CD pipeline by making a change:
+为 Apply 工作流设置审批门禁：
+
+1. 访问 **Settings** > **Environments**
+2. 点击 **New environment**
+3. Name：`production`
+4. 点击 **Configure environment**
+5. 在 "Deployment protection rules" 下，启用 **Required reviewers**
+6. 添加自己为审批者
+7. 点击 **Save protection rules**
+
+**检查点**：Environment 页面显示 "1 reviewer required"。
+
+> **日本 IT 职场**：这就是生产部署中使用的**承認フロー**（审批流程）。
+
+---
+
+### Step 9：创建 Feature 分支（3 分钟）
+
+现在通过修改代码来触发 CI/CD 流水线：
 
 ```bash
 cd ~/my-terraform-cicd
 
-# Create a feature branch
+# 创建 feature 分支
 git checkout -b feature/add-my-tag
 ```
 
-Edit `main.tf` and add your custom tag in the tags block:
+编辑 `main.tf`，在 tags 块中添加自定义标签：
 
 ```hcl
   tags = {
     Name        = "CI/CD Demo Bucket"
     Environment = var.environment
-    # Add this line:
+    # 添加这行：
     MyName = "your-name-here"
   }
 ```
 
-Commit and push:
+提交并推送：
 
 ```bash
 git add main.tf
@@ -278,190 +278,190 @@ git commit -m "feat: add MyName tag"
 git push -u origin feature/add-my-tag
 ```
 
-**Checkpoint**: Branch visible on GitHub.
+**检查点**：分支在 GitHub 上可见。
 
 ---
 
-### Step 10: Create Pull Request (5 min)
+### Step 10：创建 Pull Request（5 分钟）
 
-1. Go to your GitHub repo
-2. You should see a banner: "feature/add-my-tag had recent pushes"
-3. Click **Compare & pull request**
-4. Title: "Add MyName tag"
-5. Click **Create pull request**
+1. 访问你的 GitHub 仓库
+2. 应看到横幅："feature/add-my-tag had recent pushes"
+3. 点击 **Compare & pull request**
+4. Title："Add MyName tag"
+5. 点击 **Create pull request**
 
-**Checkpoint**: PR created, and "Terraform Plan" workflow starts automatically!
-
----
-
-### Step 11: Review Plan Comment (5 min)
-
-Wait for the workflow to complete (1-2 minutes), then:
-
-1. Check the **Actions** tab - "Terraform Plan" should show green checkmark
-2. Return to your PR
-3. You should see a **bot comment** with the plan results:
-   - Format check status
-   - Init status
-   - Validate status
-   - Plan output (showing your new tag!)
-
-**Checkpoint**: PR has a comment showing `+ MyName = "your-name-here"` in the plan.
-
-> **This is the power of CI/CD**: Every change is reviewed before applying!
+**检查点**：PR 已创建，"Terraform Plan" 工作流自动开始！
 
 ---
 
-### Step 12: Merge and Observe Apply (5 min)
+### Step 11：查看 Plan 评论（5 分钟）
 
-1. Click **Merge pull request** > **Confirm merge**
-2. Go to **Actions** tab
-3. You'll see "Terraform Apply" workflow triggered
-4. The workflow **pauses** waiting for approval
+等待工作流完成（1-2 分钟），然后：
 
-Approve the deployment:
+1. 检查 **Actions** 标签页 —— "Terraform Plan" 应显示绿色勾号
+2. 返回你的 PR
+3. 应看到 **bot 评论**，包含 plan 结果：
+   - Format 检查状态
+   - Init 状态
+   - Validate 状态
+   - Plan 输出（显示你的新标签！）
 
-1. Click the workflow run
-2. Click **Review deployments**
-3. Check **production**
-4. Click **Approve and deploy**
+**检查点**：PR 有评论显示 `+ MyName = "your-name-here"` 在 plan 中。
 
-**Checkpoint**: Apply workflow completes with green checkmark.
-
-> **Japan IT Context**: This is **production approval (本番承認)** - changes only apply after human review.
+> **这就是 CI/CD 的威力**：每个变更在应用前都被审查！
 
 ---
 
-### Step 13: Verify Resources (3 min)
+### Step 12：合并并观察 Apply（5 分钟）
 
-Verify the S3 bucket was created with your tag:
+1. 点击 **Merge pull request** > **Confirm merge**
+2. 访问 **Actions** 标签页
+3. 会看到 "Terraform Apply" 工作流被触发
+4. 工作流**暂停**等待审批
+
+审批部署：
+
+1. 点击工作流运行
+2. 点击 **Review deployments**
+3. 勾选 **production**
+4. 点击 **Approve and deploy**
+
+**检查点**：Apply 工作流完成，显示绿色勾号。
+
+> **日本 IT 职场**：这就是**本番承認**（生产审批）—— 变更只在人工审核后才应用。
+
+---
+
+### Step 13：验证资源（3 分钟）
+
+验证 S3 Bucket 已创建并带有你的标签：
 
 ```bash
-# List buckets matching our pattern
+# 列出匹配模式的 Bucket
 aws s3api list-buckets --query "Buckets[?contains(Name, 'cicd-demo')]" --output table
 
-# Get the bucket name from the output, then check tags
+# 从输出获取 Bucket 名称，然后检查标签
 aws s3api get-bucket-tagging --bucket cicd-demo-XXXXXXXX
 ```
 
-**Checkpoint**: You should see your `MyName` tag in the output!
+**检查点**：应在输出中看到你的 `MyName` 标签！
 
 ---
 
-### Step 14: Cleanup (10 min)
+### Step 14：清理（10 分钟）
 
-**Important**: Complete cleanup prevents orphan resources and credential leaks.
+**重要**：完整清理防止孤儿资源和凭证泄露。
 
-#### 14a. Destroy Terraform Resources
+#### 14a. 销毁 Terraform 资源
 
-With S3 remote backend, `terraform destroy` works properly (state is persistent):
+使用 S3 远程后端，`terraform destroy` 正常工作（State 是持久的）：
 
 ```bash
-# Make sure AWS credentials are configured locally
+# 确保 AWS 凭证已在本地配置
 aws sts get-caller-identity
 
-# Go to your demo folder
+# 进入 demo 文件夹
 cd ~/my-terraform-cicd
 
-# Initialize Terraform (to connect to remote state)
+# 初始化 Terraform（连接远程 State）
 terraform init
 
-# Destroy all Terraform-managed resources
+# 销毁所有 Terraform 管理的资源
 terraform destroy -auto-approve
 ```
 
-**Checkpoint**: Output shows `Destroy complete! Resources: X destroyed.`
+**检查点**：输出显示 `Destroy complete! Resources: X destroyed.`
 
-#### 14b. Delete OIDC CloudFormation Stack
+#### 14b. 删除 OIDC CloudFormation Stack
 
 ```bash
-# Delete the OIDC stack
+# 删除 OIDC Stack
 aws cloudformation delete-stack --stack-name github-oidc-terraform
 
-# Wait for stack deletion
+# 等待 Stack 删除完成
 aws cloudformation wait stack-delete-complete --stack-name github-oidc-terraform
 
-# Confirm OIDC provider removed
+# 确认 OIDC Provider 已移除
 aws iam list-open-id-connect-providers
 ```
 
-#### 14c. Delete GitHub Repository
+#### 14c. 删除 GitHub 仓库
 
-1. Go to your GitHub repo > **Settings**
-2. Scroll to **Danger Zone** at bottom
-3. Click **Delete this repository**
-4. Type the repository name to confirm
-5. Click **I understand the consequences, delete this repository**
+1. 访问你的 GitHub 仓库 > **Settings**
+2. 滚动到底部 **Danger Zone**
+3. 点击 **Delete this repository**
+4. 输入仓库名称确认
+5. 点击 **I understand the consequences, delete this repository**
 
-#### 14d. Clean Up Git Credentials (Security)
+#### 14d. 清理 Git 凭证（安全）
 
-The GitHub PAT you used is stored locally. Remove it:
+你使用的 GitHub PAT 存储在本地。移除它：
 
 ```bash
-# Remove stored credentials file
+# 移除存储的凭证文件
 rm ~/.git-credentials 2>/dev/null || true
 
-# Remove credential helper config (set in Step 4)
+# 移除 credential helper 配置（Step 4 设置的）
 git config --global --unset credential.helper 2>/dev/null || true
 
-# Verify cleanup
+# 验证清理
 cat ~/.git-credentials 2>/dev/null || echo "Credentials file removed"
 git config --global credential.helper 2>/dev/null || echo "Credential helper config removed"
 ```
 
-> **💡 Tip**: If you created a PAT specifically for this demo, also revoke it on GitHub:  
-> Settings > Developer settings > Personal access tokens > Delete the token
+> **💡 提示**：如果你专门为此 demo 创建了 PAT，也在 GitHub 上撤销它：
+> Settings > Developer settings > Personal access tokens > 删除该 Token
 
-#### 14e. Clean Up Local Files
+#### 14e. 清理本地文件
 
 ```bash
-# Remove the demo folder
+# 移除 demo 文件夹
 cd ~
 rm -rf ~/my-terraform-cicd
 ```
 
-**Checkpoint**: All resources cleaned up:
-- [ ] Terraform resources destroyed (`terraform destroy`)
-- [ ] CloudFormation OIDC stack deleted
-- [ ] GitHub repository deleted
-- [ ] Git credentials file removed (`~/.git-credentials`)
-- [ ] Git credential helper config removed (`git config --global --unset credential.helper`)
-- [ ] Local demo folder removed
-- [ ] (Optional) PAT revoked on GitHub
+**检查点**：所有资源已清理：
+- [ ] Terraform 资源已销毁（`terraform destroy`）
+- [ ] CloudFormation OIDC Stack 已删除
+- [ ] GitHub 仓库已删除
+- [ ] Git 凭证文件已移除（`~/.git-credentials`）
+- [ ] Git credential helper 配置已移除（`git config --global --unset credential.helper`）
+- [ ] 本地 demo 文件夹已移除
+- [ ] （可选）GitHub 上的 PAT 已撤销
 
 ---
 
-## What You Learned
+## 你学到了什么
 
-- **OIDC Authentication**: Secure, keyless authentication for CI/CD
-- **Plan on PR**: Every change is previewed before applying
-- **Approval Gate**: Human approval required for production changes
-- **Full Automation**: No manual `terraform apply` needed
-
----
-
-## Troubleshooting
-
-### Workflow not triggering?
-
-- Check Actions tab is enabled
-- Verify `.github/workflows/` folder was pushed
-
-### OIDC authentication failed?
-
-- Verify `AWS_ROLE_ARN` secret is set correctly
-- Check CloudFormation stack deployed successfully
-- Ensure repo name matches exactly (case-sensitive)
-
-### Plan shows errors?
-
-- Check AWS credentials are working
-- Verify the IAM role has required permissions
+- **OIDC 认证**：CI/CD 的安全、无密钥认证
+- **PR 自动 Plan**：每个变更在应用前都被预览
+- **审批门禁**：生产变更需要人工审批
+- **全自动化**：无需手动 `terraform apply`
 
 ---
 
-## Next Steps
+## 故障排除
 
-- Try modifying `main.tf` again to see the full cycle
-- Explore adding Infracost for cost visibility
-- Implement branch protection rules
+### 工作流没有触发？
+
+- 检查 Actions 标签页是否已启用
+- 验证 `.github/workflows/` 文件夹已推送
+
+### OIDC 认证失败？
+
+- 验证 `AWS_ROLE_ARN` Secret 设置正确
+- 检查 CloudFormation Stack 部署成功
+- 确保仓库名称完全匹配（区分大小写）
+
+### Plan 显示错误？
+
+- 检查 AWS 凭证是否工作
+- 验证 IAM Role 有所需权限
+
+---
+
+## 下一步
+
+- 再次修改 `main.tf` 查看完整周期
+- 探索添加 Infracost 实现成本可见
+- 实现 Branch Protection Rules
