@@ -30,8 +30,10 @@ pwd && ls
 
 ```
 /home/terraform
-Desktop  Documents  Downloads  Music  Pictures  playground  Videos
+Desktop  Documents  Downloads  Music  Pictures  Videos
 ```
+
+> 💡 **你的输出可能不同**：目录列表因系统而异。重要的是理解 `pwd` 和 `ls` 的作用。
 
 🎉 **恭喜！你已经知道自己在哪，周围有什么了！**
 
@@ -149,7 +151,7 @@ ls
 ```
 
 ```
-Desktop  Documents  Downloads  Music  Pictures  playground  Videos
+Desktop  Documents  Downloads  Music  Pictures  Videos
 ```
 
 看到的是当前目录下的文件和文件夹。
@@ -161,13 +163,12 @@ ls -l
 ```
 
 ```
-total 28
+total 24
 drwxr-xr-x 2 terraform terraform 4096 Jan  4 10:00 Desktop
 drwxr-xr-x 2 terraform terraform 4096 Jan  4 10:00 Documents
 drwxr-xr-x 2 terraform terraform 4096 Jan  4 10:00 Downloads
 drwxr-xr-x 2 terraform terraform 4096 Jan  4 10:00 Music
 drwxr-xr-x 2 terraform terraform 4096 Jan  4 10:00 Pictures
-drwxr-xr-x 2 terraform terraform 4096 Jan  4 09:30 playground
 drwxr-xr-x 2 terraform terraform 4096 Jan  4 10:00 Videos
 ```
 

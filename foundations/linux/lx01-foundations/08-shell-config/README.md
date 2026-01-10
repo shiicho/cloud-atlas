@@ -160,7 +160,7 @@ alias mv='mv -i'
 # 实用类
 alias h='history'
 alias c='clear'
-alias ports='netstat -tulanp'
+alias ports='ss -tulanp'  # ss 是 netstat 的现代替代
 ```
 
 ### 3.4 永久保存 Alias

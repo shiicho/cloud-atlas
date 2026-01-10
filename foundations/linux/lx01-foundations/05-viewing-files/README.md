@@ -93,6 +93,20 @@ cat /var/log/syslog  # 可能刷屏几分钟！
 
 ## Step 3 — head 和 tail：看开头和结尾（20 分钟）
 
+> **📦 发行版兼容性**：本节使用 `/var/log/syslog` 作为示例（Ubuntu/Debian）。
+> - **RHEL/CentOS/AlmaLinux**: 使用 `/var/log/messages`
+> - **现代 systemd 系统**: 推荐使用 `journalctl`（后续课程详细介绍）
+>
+> ```bash
+> # RHEL 系列替代命令
+> head /var/log/messages
+> tail -f /var/log/messages
+>
+> # systemd 日志（推荐）
+> journalctl -n 20          # 最近 20 条
+> journalctl -f             # 实时跟踪
+> ```
+
 ### 3.1 head - 看开头
 
 ```bash

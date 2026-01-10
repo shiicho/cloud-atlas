@@ -45,11 +45,11 @@ ossyNMMMNyMMhsssssssssssssshmmmhssso   Memory: 1024MiB / 4096MiB
 
 🎉 **恭喜！你刚刚运行了第一个 Linux 命令！**
 
-> **💡 没有 neofetch？** 如果显示 `command not found`，试试这个：  
-> ```bash  
-> cat /etc/os-release  
+> **💡 没有 neofetch？** 试试 `fastfetch`（现代替代品）或 `cat /etc/os-release`：
+> ```bash
+> fastfetch        # 推荐，更快更现代
+> cat /etc/os-release  # 无需安装，内置命令
 > ```  
-> 这会显示你的操作系统信息——同样很酷！  
 
 ---
 
@@ -283,15 +283,24 @@ A: `sh` は POSIX 標準の最小限シェル、`bash` は機能拡張版（配�
 **`neofetch: command not found`**
 
 ```bash
+# neofetch 已停止维护，推荐使用 fastfetch（更快、维护活跃）
+# Ubuntu 23.04+ / Debian 13+
+sudo apt install fastfetch
+
+# RHEL 9 / AlmaLinux 9 / Rocky Linux 9
+sudo dnf install fastfetch
+
+# 旧系统仍可安装 neofetch
 # Ubuntu/Debian
 sudo apt install neofetch
+# RHEL/CentOS (需 EPEL)
+sudo dnf install epel-release && sudo dnf install neofetch
 
-# RHEL/CentOS
-sudo yum install epel-release && sudo yum install neofetch
-
-# または代替コマンド
+# 无需安装的替代命令
 cat /etc/os-release
 ```
+
+> **💡 Note**: neofetch 于 2024 年停止维护，fastfetch 是其现代替代品，速度更快且持续更新。
 
 **ターミナルが応答しない**
 

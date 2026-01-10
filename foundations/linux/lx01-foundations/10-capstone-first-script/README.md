@@ -445,9 +445,9 @@ echo -e "${RED}Error!${NC}"
 
 | 课程 | 内容 |
 |------|------|
-| [LX02-SYSADMIN](../../sysadmin/) | 用户管理、权限、服务 |
-| [LX03-TEXT](../../text-processing/) | grep、sed、awk、文本处理 |
-| [LX04-SHELL](../../shell-scripting/) | 高级 Shell 脚本 |
+| [LX02-SYSADMIN](../../lx02-sysadmin/) | 用户管理、权限、服务 |
+| [LX03-TEXT](../../lx03-text-processing/) | grep、sed、awk、文本处理 |
+| [LX04-SHELL](../../lx04-shell-scripting/) | 高级 Shell 脚本 |
 
 ---
 
@@ -519,7 +519,7 @@ Capstone 完成確認：
 
 ## 系列导航
 
-← [09 · 环境变量](../09-environment-path/) | [Home](../) | [LX02-SYSADMIN →](../../sysadmin/)
+← [09 · 环境变量](../09-environment-path/) | [Home](../) | [LX02-SYSADMIN →](../../lx02-sysadmin/)
 
 ---
 
