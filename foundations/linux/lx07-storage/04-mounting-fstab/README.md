@@ -1,4 +1,4 @@
-# 04 - 挂载与 fstab
+# 04 - 挂载与 fstab（Mounting and fstab）
 
 > **目标**：掌握 mount/umount 操作和 fstab 配置，学会从 fstab 故障中恢复  
 > **前置**：完成 [03 - 文件系统选择与创建](../03-filesystems/)  
@@ -329,7 +329,7 @@ sudo reboot
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 **Q: fstab の設定ミスで起動しなくなった場合、どう対応しますか？**
 

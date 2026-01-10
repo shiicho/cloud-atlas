@@ -1,4 +1,4 @@
-# 03 - 文件系统选择与创建
+# 03 - 文件系统选择与创建（Filesystems）
 
 > **目标**：理解 ext4 与 XFS 的差异，掌握文件系统创建与磁盘加密基础  
 > **前置**：完成 [02 - 分区管理](../02-partitioning/)  
@@ -389,7 +389,7 @@ cat /proc/sys/kernel/io_uring_disabled
 
 ---
 
-## 面试准备
+## 面试准备（Interview Prep）
 
 **Q: ext4 と XFS の違いは何ですか？**
 

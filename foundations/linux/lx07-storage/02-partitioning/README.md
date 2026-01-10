@@ -1,4 +1,4 @@
-# 02 - 分区管理
+# 02 - 分区管理（Partitioning）
 
 > **目标**：掌握 MBR 与 GPT 分区表差异，使用 fdisk/gdisk/sgdisk 进行分区操作  
 > **前置**：[01 - 块设备与持久命名](../01-block-devices-naming/)  

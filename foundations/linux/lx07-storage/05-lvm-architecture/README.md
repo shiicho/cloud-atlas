@@ -1,4 +1,4 @@
-# 05 - LVM 架构
+# 05 - LVM 架构（LVM Architecture）
 
 > **目标**：理解 LVM 三层架构（PV -> VG -> LV），掌握状态查看命令  
 > **前置**：完成 [04 - 挂载与 fstab](../04-mounting-fstab/)  
