@@ -1,4 +1,4 @@
-# 11 - 安全加固自动化 / Hardening Automation
+# 11 - 安全加固自动化（Hardening Automation）
 
 > **目标**：使用 Ansible 实现自动化安全加固，构建可审计、可重复的加固流程  
 > **前置**：完成 Lesson 01-10（安全原则、SSH、SELinux、auditd、nftables、PAM、CIS Benchmarks）  

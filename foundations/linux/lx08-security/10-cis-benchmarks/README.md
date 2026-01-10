@@ -1,4 +1,4 @@
-# 10 - CIS Benchmarks 合规实战 / CIS Benchmarks Compliance
+# 10 - CIS Benchmarks 合规实战（CIS Benchmarks Compliance）
 
 > **目标**：掌握 CIS Benchmark 合规扫描、结果分析和例外管理  
 > **前置**：完成 Lesson 01-09（安全原则、SSH、SELinux、auditd、PAM）  

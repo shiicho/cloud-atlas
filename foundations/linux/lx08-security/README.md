@@ -21,6 +21,24 @@
 - **场景驱动**：真实日本 IT 安全事件作为学习载体
 - **合规实战**：CIS Benchmarks、OpenSCAP 扫描
 
+## 版本兼容性
+
+| 工具 | 课程版本 | 当前最新 | 说明 |
+|------|----------|----------|------|
+| **OpenSSH** | 8.0+ | 9.9 (2024) | ed25519、FIDO2 支持 |
+| **SELinux** | targeted 3.5+ | 3.7 (2025) | RHEL 8/9 默认策略 |
+| **auditd** | 3.0+ | 3.1.6 (2025) | 审计规则、ausearch |
+| **nftables** | 0.9+ | 1.1.1 (2025) | RHEL 9+ 默认防火墙 |
+| **OpenSCAP** | 1.3+ | 1.4.1 (2025) | CIS Benchmark 扫描 |
+| **PAM** | 1.3+ | 1.7.0 (2025) | faillock 替代 pam_tally2 |
+| **RHEL** | 8/9 | 9.5 | RHEL 8 支持至 2029 |
+| **Ubuntu** | 20.04+ | 24.04 LTS | 22.04/24.04 推荐 |
+
+**注意事项：**
+- SELinux 默认在 RHEL/CentOS 启用，Ubuntu 需手动安装配置
+- RHEL 9 使用 nftables 替代 iptables，firewalld 后端已切换
+- pam_tally2 在 RHEL 8+ 已弃用，使用 faillock 模块
+
 ## 课程大纲
 
 ### Part 1: 基础与 SSH (01-02)

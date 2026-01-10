@@ -1,4 +1,4 @@
-# 09 - PAM 高级配置 / PAM Advanced Configuration
+# 09 - PAM 高级配置（PAM Advanced Configuration）
 
 > **目标**：掌握 PAM 模块堆栈、账户锁定和密码策略配置  
 > **前置**：完成 Lesson 02（SSH 加固）、Lesson 08（nftables）  

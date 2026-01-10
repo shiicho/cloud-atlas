@@ -1,4 +1,4 @@
-# 04 · SELinux 排错实战（SELinux Troubleshooting）
+# 04 - SELinux 排错实战（SELinux Troubleshooting）
 
 > **目标**：掌握 SELinux 问题诊断流程，学会永久修复文件上下文  
 > **前置**：完成 [Lesson 03 · SELinux 核心概念](../03-selinux-concepts/)  

@@ -1,4 +1,4 @@
-# 07 - auditd 审计系统 / Linux Audit System
+# 07 - auditd 审计系统（Linux Audit System）
 
 > **目标**：掌握 Linux 审计系统，实现关键文件监控、用户行为追踪、事故调查证据收集  
 > **前置**：完成 Lesson 01-06（安全原则、SSH、SELinux、Capabilities）  

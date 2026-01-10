@@ -1,4 +1,4 @@
-# 05 · SELinux 进阶：Booleans 与自定义策略（SELinux Advanced: Booleans & Custom Policies）
+# 05 - SELinux 进阶（SELinux Advanced: Booleans & Custom Policies）
 
 > **目标**：掌握 SELinux Booleans 的使用，理解何时需要自定义策略，避免 audit2allow 滥用  
 > **前置**：完成 Lesson 03-04（SELinux 核心概念与排错实战）  

@@ -1,4 +1,4 @@
-# 03 · SELinux 核心概念（SELinux Core Concepts）
+# 03 - SELinux 核心概念（SELinux Core Concepts）
 
 > **目标**：理解 SELinux 的保护作用，掌握三种模式和安全上下文  
 > **前置**：完成 Lesson 01-02（安全原则与 SSH 加固）  

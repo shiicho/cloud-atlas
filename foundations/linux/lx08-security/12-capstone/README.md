@@ -1,4 +1,4 @@
-# 12 - Capstone: CIS 合规加固服务器
+# 12 - Capstone（Security Capstone）
 
 > **目标**：独立完成生产级服务器安全加固，通过 OpenSCAP CIS Level 1 扫描 90%+  
 > **前置**：完成 Lessons 01-11（安全原则、SSH、SELinux、auditd、nftables、PAM、CIS）  

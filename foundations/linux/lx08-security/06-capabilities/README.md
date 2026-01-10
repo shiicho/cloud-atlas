@@ -1,4 +1,4 @@
-# 06 - Linux Capabilities：精细权限控制
+# 06 - Linux Capabilities（Capabilities）
 
 > **目标**：掌握 Capabilities 实现最小权限，替代 all-or-nothing 的 root  
 > **前置**：完成 Lesson 01-05（安全原则、SSH、SELinux）  

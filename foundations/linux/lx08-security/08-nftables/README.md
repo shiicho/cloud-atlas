@@ -1,4 +1,4 @@
-# 08 - nftables 深入：现代防火墙 / nftables Deep Dive: Modern Firewall
+# 08 - nftables 深入（nftables Deep Dive）
 
 > **目标**：掌握 nftables 现代防火墙配置，理解连接跟踪的重要性  
 > **前置**：完成 Lesson 01-07（安全原则、SSH、SELinux、auditd）  

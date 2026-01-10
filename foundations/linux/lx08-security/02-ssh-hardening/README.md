@@ -1,4 +1,4 @@
-# 02 - SSH 现代化加固 / Modern SSH Hardening
+# 02 - SSH 现代化加固（Modern SSH Hardening）
 
 > **目标**：掌握 2025-2026 年 SSH 安全加固最佳实践  
 > **前置**：完成 Lesson 01（安全原则与威胁建模）  
