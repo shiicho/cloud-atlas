@@ -1,7 +1,7 @@
 # 05 - 云存储：EBS 与持久化（Cloud Storage: EBS & Persistence）
 
 > **目标**：掌握云存储的三层扩容（卷→分区→文件系统），学会使用救援实例恢复"砖化"的云服务器  
-> **前置**：[01 - 云中 Linux 有何不同](../01-cloud-context/)、[LX07 存储管理](../../lx07-storage/)（lsblk、mount、fstab 基础）  
+> **前置**：[01 - 云中 Linux 有何不同](../01-cloud-context/)、[LX07 存储管理](../lx07-storage/)（lsblk、mount、fstab 基础）  
 > **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **实战场景**：诊断 "EBS 扩容了但磁盘还是满" 的幻影存储问题  
 
@@ -1468,7 +1468,7 @@ sudo sshd -t  # sshd
 - [Extend a Linux file system](https://docs.aws.amazon.com/ebs/latest/userguide/recognize-expanded-volume-linux.html) - EBS 扩容官方指南
 - [EC2 Serial Console](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-serial-console.html) - Serial Console 配置
 - 下一课：[06 - IAM 与实例配置文件](../06-iam-instance-profiles/) - 学习云凭证管理
-- 前置课程：[LX07 - 存储管理](../../lx07-storage/) - Linux 存储基础
+- 前置课程：[LX07 - 存储管理](../lx07-storage/) - Linux 存储基础
 
 ---
 

@@ -1,7 +1,7 @@
 # 09 - 可观测性集成（Observability Integration）
 
 > **目标**：配置 CloudWatch Agent 收集指标和日志，集成 journald，建立事故响应证据收集流程  
-> **前置**：[08 - 镜像加固与供应链安全](../08-image-hardening/)、[LX03 - 文本处理](../../lx03-text-processing/)（日志分析基础）  
+> **前置**：[08 - 镜像加固与供应链安全](../08-image-hardening/)、[LX03 - 文本处理](../lx03-text-processing/)（日志分析基础）  
 > **时间**：⚡ 40 分钟（速读）/ 🔬 150 分钟（完整实操）  
 > **实战场景**：CloudWatch Agent 配置、证据保全（証跡保全）、紧急响应（緊急対応）  
 

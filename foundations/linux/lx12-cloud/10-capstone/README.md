@@ -1219,7 +1219,7 @@ zip -r capstone-$(date +%Y%m%d).zip capstone/
 
 ### 関連コース
 
-- [LX11-CONTAINERS](../../lx11-containers/) - コンテナセキュリティ
+- [LX11-CONTAINERS](../lx11-containers/) - コンテナセキュリティ
 - [Terraform Course](../../../automation/terraform/) - IaC による AMI 管理
 - [CloudFormation Course](../../../automation/cloudformation/) - Launch Template 管理
 

@@ -1024,7 +1024,7 @@ write_files:
 - [cloud-init 官方文档](https://cloudinit.readthedocs.io/)
 - [AWS EC2 User Data 最佳实践](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html)
 - 下一课：[03 - 元数据服务与 IMDSv2](../03-metadata/) - 学习安全访问实例元数据
-- 相关课程：[LX05 - systemd 服务管理](../../lx05-systemd/) - 理解 cloud-init 如何与 systemd 集成
+- 相关课程：[LX05 - systemd 服务管理](../lx05-systemd/) - 理解 cloud-init 如何与 systemd 集成
 
 ---
 
