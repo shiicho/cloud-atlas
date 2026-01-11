@@ -243,8 +243,22 @@ aws cloudformation describe-stacks \
 
 ### Step 7：启用 GitHub Actions（2 分钟）
 
+<details open>
+<summary>💡 什么是 GitHub Actions？</summary>
+
+GitHub Actions 是 GitHub 内置的 CI/CD 工具。它在仓库发生特定事件时（如推送代码、创建 PR）自动运行工作流（脚本）。可以把它想象成一个机器人，监视你的仓库并自动执行命令。
+
+在本实验中，我们配置了两个工作流：
+- **Terraform Plan**：PR 创建时自动运行 `terraform plan`
+- **Terraform Apply**：合并到 main 后自动运行 `terraform apply`
+
+</details>
+
 1. 访问仓库的 **Actions** 标签页
-2. 如有提示，点击 **"I understand my workflows, go ahead and enable them"**
+2. **如果看到提示**要求启用工作流，点击 **"I understand my workflows, go ahead and enable them"**
+3. **如果没有提示**且已看到工作流列表（Terraform Plan、Terraform Apply），说明 Actions 已自动启用——直接进入下一步
+
+> **注意**：初次推送时可能会看到一个失败的工作流运行（因为 OIDC 尚未配置）。这是正常的，后续步骤会解决。
 
 **检查点**：应看到 "Terraform Plan" 和 "Terraform Apply" 工作流已列出。
 
@@ -451,6 +465,65 @@ jobs:
 
 ---
 
+### Step 12.5（可选）：体验 CI 失败（5 分钟）
+
+> **学习目标**：理解 CI/CD 如何捕获错误，以及如何修复后重新提交。
+
+这一步是可选的，但强烈建议体验一次——理解 CI 失败比只看成功更有价值！
+
+**故意引入格式错误**：
+
+```bash
+cd ~/my-terraform-cicd
+
+# 创建新分支
+git checkout -b feature/test-ci-failure
+
+# 故意破坏格式（移除空格）
+sed -i 's/Name        =/Name=/' main.tf
+
+# 查看变更
+git diff main.tf
+
+# 提交并推送
+git add main.tf
+git commit -m "test: intentional format error"
+git push -u origin feature/test-ci-failure
+```
+
+**创建 PR 并观察失败**：
+
+1. 在 GitHub 上为 `feature/test-ci-failure` 创建 PR
+2. 等待工作流运行（约 1 分钟）
+3. 观察 **Actions** 标签页——工作流显示红色 ❌
+4. 查看 PR 评论——bot 会显示 `terraform fmt` 检查失败
+
+**修复并重新推送**：
+
+```bash
+# 自动修复格式
+terraform fmt
+
+# 提交修复
+git add main.tf
+git commit -m "fix: correct format"
+git push
+```
+
+**观察**：返回 PR 页面，工作流重新运行并显示绿色 ✅
+
+**清理**：关闭此 PR（不合并），删除测试分支：
+
+```bash
+git checkout main
+git branch -D feature/test-ci-failure
+git push origin --delete feature/test-ci-failure
+```
+
+> **学到了什么**：CI/CD 自动捕获代码问题，你只需修复后重新推送！这就是 CI 的 "安全网" 价值。
+
+---
+
 ### Step 13：验证资源（3 分钟）
 
 验证 S3 Bucket 已创建并带有你的标签：
@@ -564,6 +637,7 @@ rm -rf ~/my-terraform-cicd
 - **OIDC 认证**：CI/CD 的安全、无密钥认证
 - **PR 自动 Plan**：每个变更在应用前都被预览
 - **审批门禁**：生产变更需要人工审批
+- **CI 失败处理**：理解错误信息，修复后重新推送
 - **全自动化**：无需手动 `terraform apply`
 
 ---
