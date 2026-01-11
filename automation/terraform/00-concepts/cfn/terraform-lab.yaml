@@ -172,15 +172,11 @@ Resources:
                   - !GetAtt TfStateBucket.Arn
                   - !Sub "${TfStateBucket.Arn}/*"
 
-  S3BucketCleanupLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${Project}-S3BucketCleanup
-      RetentionInDays: 7
+  # Note: Lambda auto-creates its LogGroup. We don't manage it in CFN to avoid
+  # race condition where Lambda logs recreate the LogGroup after CFN deletes it.
 
   S3BucketCleanupFunction:
     Type: AWS::Lambda::Function
-    DependsOn: S3BucketCleanupLogGroup
     Properties:
       FunctionName: !Sub ${Project}-S3BucketCleanup
       Description: Empties S3 bucket on CloudFormation stack deletion
@@ -248,7 +244,6 @@ Resources:
 
   TfStateBucketCleaner:
     Type: Custom::EmptyS3Bucket
-    DependsOn: S3BucketCleanupLogGroup  # Ensures log group deleted AFTER Lambda finishes
     Properties:
       ServiceToken: !GetAtt S3BucketCleanupFunction.Arn
       Bucket: !Ref TfStateBucket
